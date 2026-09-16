@@ -81,7 +81,7 @@ enum ISODate {
     /// YYYY-MM-DD in the current time zone.
     static func day(_ date: Date) -> String {
         let components = Calendar.current.dateComponents([.year, .month, .day], from: date)
-        return String(format: "%04d-%02d-%02d", components.year ?? 0, components.month ?? 0, components.day ?? 0)
+        return String(format: "%04ld-%02ld-%02ld", components.year ?? 0, components.month ?? 0, components.day ?? 0)
     }
 }
 

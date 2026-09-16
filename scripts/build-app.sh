@@ -38,8 +38,12 @@ clang -dynamiclib -fobjc-arc -Os -arch arm64 -arch x86_64 -mmacosx-version-min=1
 cp "$ROOT/MediaRemoteBridge/mediaremote-bridge.pl" "$APP/Contents/Resources/"
 
 codesign --force --options runtime --sign "$IDENTITY" "$APP/Contents/Frameworks/MediaRemoteBridge.dylib"
-codesign --force --options runtime --sign "$IDENTITY" \
-  --entitlements "$ROOT/Resources/Brim.entitlements" "$APP"
+ENTITLEMENTS="$ROOT/Resources/Brim.entitlements"
+if [[ "$CONFIG" == "debug" ]]; then
+  # Lets leaks, sample and vmmap inspect debug builds. Never in release builds.
+  ENTITLEMENTS="$ROOT/Resources/Brim.debug.entitlements"
+fi
+codesign --force --options runtime --sign "$IDENTITY" --entitlements "$ENTITLEMENTS" "$APP"
 
 echo "Built $APP"
 

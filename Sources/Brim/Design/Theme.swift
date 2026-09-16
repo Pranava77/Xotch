@@ -218,11 +218,12 @@ private extension Path {
 enum Format {
     /// 1:05:09 or 25:00
     static func clock(_ interval: TimeInterval) -> String {
-        let total = max(0, Int(interval.rounded(.up)))
+        guard interval.isFinite else { return "0:00" }
+        let total = Int(min(max(interval, 0), 359_999).rounded(.up))
         let hours = total / 3600, minutes = total / 60 % 60, seconds = total % 60
         return hours > 0
-            ? String(format: "%d:%02d:%02d", hours, minutes, seconds)
-            : String(format: "%d:%02d", minutes, seconds)
+            ? String(format: "%ld:%02ld:%02ld", hours, minutes, seconds)
+            : String(format: "%ld:%02ld", minutes, seconds)
     }
 
     static func bytes(_ value: Double) -> String {

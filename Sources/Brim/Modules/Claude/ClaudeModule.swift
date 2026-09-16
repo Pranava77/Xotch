@@ -8,6 +8,7 @@ final class ClaudeModule: NotchModule {
     var tint: Color? { nil }
     func expandedView() -> AnyView { AnyView(ClaudeView()) }
     func start() { ClaudeLiveService.shared.start() }
+    func stop() { ClaudeLiveService.shared.stop() }
 }
 
 private struct ClaudeView: View {

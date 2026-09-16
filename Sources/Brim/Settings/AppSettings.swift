@@ -23,6 +23,7 @@ enum SettingsKey {
     static let clipboardHistory = "clipboardHistory"
     static let mediaActivity = "mediaActivity"
     static let shelfExpiryHours = "shelfExpiryHours"
+    static let hideInFullScreen = "hideInFullScreen"
 }
 
 enum DisplayChoice {
@@ -50,6 +51,8 @@ enum AppSettings {
             SettingsKey.clipboardHistory: true,
             SettingsKey.mediaActivity: true,
             SettingsKey.shelfExpiryHours: 24,
+            SettingsKey.hideInFullScreen: true,
+            Diagnostics.shareKey: false,
         ])
     }
 
@@ -83,6 +86,10 @@ enum AppSettings {
 
     static var mediaActivity: Bool {
         UserDefaults.standard.bool(forKey: SettingsKey.mediaActivity)
+    }
+
+    static var hideInFullScreen: Bool {
+        UserDefaults.standard.bool(forKey: SettingsKey.hideInFullScreen)
     }
 
     /// 0 means keep shelf items until removed.

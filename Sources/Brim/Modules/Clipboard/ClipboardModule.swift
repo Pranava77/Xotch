@@ -7,6 +7,7 @@ final class ClipboardModule: NotchModule {
     let symbol = "doc.on.clipboard"
     func expandedView() -> AnyView { AnyView(ClipboardView()) }
     func start() { ClipboardService.shared.start() }
+    func stop() { ClipboardService.shared.stop() }
 }
 
 private struct ClipboardView: View {
@@ -31,7 +32,17 @@ private struct ClipboardView: View {
                     .help("Remove everything except pinned items")
             }
 
-            if !historyOn {
+            if clipboard.access == .denied {
+                EmptyStateView(symbol: "hand.raised",
+                               title: "Clipboard access is turned off",
+                               message: "macOS is set to block Brim from reading what you copy. Allow Brim under Paste in Privacy & Security to keep a history.",
+                               buttonTitle: "Open Privacy & Security") { ClipboardService.openPrivacySettings() }
+            } else if clipboard.access == .needsPermission && historyOn {
+                EmptyStateView(symbol: "doc.on.clipboard",
+                               title: "Allow Brim to see what you copy",
+                               message: "macOS asks before apps read the clipboard. Press Allow, choose Allow when macOS asks, then set Brim to always allow in Privacy & Security so history works in the background.",
+                               buttonTitle: "Allow") { clipboard.requestAccess() }
+            } else if !historyOn {
                 EmptyStateView(symbol: "doc.on.clipboard",
                                title: "Clipboard history is off",
                                message: "Turn it on to keep what you copy, on this Mac only.",
@@ -56,6 +67,7 @@ private struct ClipboardView: View {
                 }
             }
         }
+        .onAppear { clipboard.refreshAccess() }
     }
 }
 

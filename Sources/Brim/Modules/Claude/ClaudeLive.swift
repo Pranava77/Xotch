@@ -69,6 +69,11 @@ final class ClaudeLiveService {
     func stop() {
         server?.stop()
         server = nil
+        isListening = false
+        pruneTimer?.invalidate()
+        pruneTimer = nil
+        sessions = []
+        updateActivity()
     }
 
     // MARK: - Hook

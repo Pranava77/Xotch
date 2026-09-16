@@ -1,15 +1,19 @@
 import AppKit
 
-/// Puts a notch on the chosen displays, rebuilds when displays change,
-/// and routes pointer, keyboard and trackpad events to each notch.
+/// Puts a notch on the chosen displays, keeps them in step with display
+/// changes, sleep and full-screen apps, and routes pointer, keyboard and
+/// trackpad events to each notch.
 @MainActor
 final class ScreenManager {
     static let shared = ScreenManager()
 
-    private var controllers: [NotchWindowController] = []
+    private var controllers: [String: NotchWindowController] = [:]
     private var monitors: [Any] = []
-    private var observers: [NSObjectProtocol] = []
+    private var observers: [(NotificationCenter, NSObjectProtocol)] = []
     private var displayChoice = ""
+    private var hideInFullScreen = true
+    private var rebuildTask: Task<Void, Never>?
+    private var fullScreenTask: Task<Void, Never>?
     private var dragChangeCount = NSPasteboard(name: .drag).changeCount
     private var isFileDrag = false
 
@@ -17,44 +21,112 @@ final class ScreenManager {
         rebuild()
         installMonitors()
 
-        let center = NotificationCenter.default
-        observers.append(center.addObserver(
-            forName: NSApplication.didChangeScreenParametersNotification, object: nil, queue: .main
-        ) { [weak self] _ in
-            MainActor.assumeIsolated { self?.rebuild() }
-        })
-        observers.append(center.addObserver(
-            forName: UserDefaults.didChangeNotification, object: nil, queue: .main
-        ) { [weak self] _ in
-            MainActor.assumeIsolated { self?.settingsChanged() }
-        })
+        observe(NotificationCenter.default, NSApplication.didChangeScreenParametersNotification) { manager in
+            manager.scheduleRebuild()
+        }
+        observe(NotificationCenter.default, UserDefaults.didChangeNotification) { manager in
+            manager.settingsChanged()
+        }
+        let workspace = NSWorkspace.shared.notificationCenter
+        observe(workspace, NSWorkspace.willSleepNotification) { manager in
+            // Don't come back from sleep with the notch pinned open.
+            manager.closeAll()
+        }
+        observe(workspace, NSWorkspace.didWakeNotification) { manager in
+            manager.scheduleRebuild()
+            Task { await RevenueService.shared.refresh() }
+        }
+        observe(workspace, NSWorkspace.activeSpaceDidChangeNotification) { manager in
+            manager.scheduleFullScreenCheck()
+        }
+        observe(workspace, NSWorkspace.didActivateApplicationNotification) { manager in
+            manager.scheduleFullScreenCheck()
+        }
+    }
+
+    private func observe(_ center: NotificationCenter, _ name: Notification.Name,
+                         _ handler: @escaping @MainActor (ScreenManager) -> Void) {
+        let token = center.addObserver(forName: name, object: nil, queue: .main) { @Sendable [weak self] _ in
+            MainActor.assumeIsolated {
+                guard let self else { return }
+                handler(self)
+            }
+        }
+        observers.append((center, token))
     }
 
     func openPrimary() {
-        controllers.first?.open(pinned: true)
+        primary?.open(pinned: true)
     }
 
     func closeAll() {
-        controllers.forEach { $0.close() }
+        controllers.values.forEach { $0.close() }
     }
 
     /// Switches every notch to a module, e.g. from a Home card.
     func show(moduleID: String) {
-        controllers.forEach { $0.select(moduleID: moduleID) }
+        controllers.values.forEach { $0.select(moduleID: moduleID) }
+    }
+
+    private var primary: NotchWindowController? {
+        controllers.values.sorted { $0.screenFrame.minX < $1.screenFrame.minX }
+            .first { $0.hasHardwareNotch } ?? controllers.values.first
     }
 
     // MARK: - Displays
 
     private func settingsChanged() {
+        ModuleRegistry.syncRunning()
+        let hide = AppSettings.hideInFullScreen
+        if hide != hideInFullScreen {
+            hideInFullScreen = hide
+            checkFullScreen()
+        }
         if AppSettings.displayChoice != displayChoice {
-            rebuild()
+            scheduleRebuild()
         }
     }
 
-    private func rebuild() {
+    /// Display changes arrive in bursts; rebuild once they settle.
+    func scheduleRebuild() {
+        rebuildTask?.cancel()
+        rebuildTask = Task { [weak self] in
+            try? await Task.sleep(for: .milliseconds(300))
+            guard !Task.isCancelled else { return }
+            self?.rebuild()
+        }
+    }
+
+    /// Keeps notches whose display didn't change, so their state survives.
+    func rebuild() {
         displayChoice = AppSettings.displayChoice
-        controllers.forEach { $0.tearDown() }
-        controllers = targetScreens().map { NotchWindowController(screen: $0) }
+        hideInFullScreen = AppSettings.hideInFullScreen
+        let targets = targetScreens()
+        var next: [String: NotchWindowController] = [:]
+        let selected = primary?.model.selectedModuleID
+        for screen in targets {
+            let key = Self.key(for: screen)
+            if let existing = controllers[key] {
+                next[key] = existing
+            } else {
+                let controller = NotchWindowController(screen: screen)
+                if let selected {
+                    controller.model.selectedModuleID = selected
+                }
+                next[key] = controller
+            }
+        }
+        for (key, controller) in controllers where next[key] == nil {
+            controller.tearDown()
+        }
+        controllers = next
+        checkFullScreen()
+    }
+
+    /// A display's identity plus its geometry: a resolution change counts as a new display.
+    private static func key(for screen: NSScreen) -> String {
+        let frame = screen.frame
+        return "\(screen.displayID ?? 0)-\(Int(frame.minX)),\(Int(frame.minY)),\(Int(frame.width))x\(Int(frame.height))-\(Int(screen.safeAreaInsets.top))"
     }
 
     private func targetScreens() -> [NSScreen] {
@@ -71,6 +143,32 @@ final class ScreenManager {
             return [notched]
         }
         return Array(screens.prefix(1))
+    }
+
+    // MARK: - Full screen
+
+    private func scheduleFullScreenCheck() {
+        checkFullScreen()
+        // Entering or leaving full screen animates for a moment; look again after.
+        fullScreenTask?.cancel()
+        fullScreenTask = Task { [weak self] in
+            try? await Task.sleep(for: .milliseconds(900))
+            guard !Task.isCancelled else { return }
+            self?.checkFullScreen()
+        }
+    }
+
+    private func checkFullScreen() {
+        guard hideInFullScreen else {
+            controllers.values.forEach { $0.setHiddenForFullScreen(false) }
+            return
+        }
+        let windows = FullScreenDetector.onScreenWindows()
+        let primaryHeight = NSScreen.screens.first?.frame.height ?? 0
+        for controller in controllers.values {
+            let frame = FullScreenDetector.quartzFrame(of: controller.screenFrame, primaryHeight: primaryHeight)
+            controller.setHiddenForFullScreen(FullScreenDetector.isFullScreen(screen: frame, windows: windows))
+        }
     }
 
     // MARK: - Events
@@ -109,13 +207,16 @@ final class ScreenManager {
     }
 
     private func pointerMoved() {
+        #if DEBUG
+        pointerEvents += 1
+        #endif
         let location = NSEvent.mouseLocation
-        controllers.forEach { $0.pointerMoved(to: location) }
+        controllers.values.forEach { $0.pointerMoved(to: location) }
     }
 
     private func pointerPressed() {
         let location = NSEvent.mouseLocation
-        controllers.forEach { $0.pointerPressed(at: location) }
+        controllers.values.forEach { $0.pointerPressed(at: location) }
         // Remember the drag pasteboard, so a change means a new drag began.
         dragChangeCount = NSPasteboard(name: .drag).changeCount
         isFileDrag = false
@@ -124,28 +225,61 @@ final class ScreenManager {
     /// Another app is dragging something. Only file drags open the shelf.
     private func dragMoved() {
         let location = NSEvent.mouseLocation
-        guard controllers.contains(where: { $0.isInDragZone(location) }) else { return }
+        guard controllers.values.contains(where: { $0.isInDragZone(location) }) else { return }
         if !isFileDrag {
             let pasteboard = NSPasteboard(name: .drag)
             guard pasteboard.changeCount != dragChangeCount,
                   pasteboard.types?.contains(.fileURL) == true else { return }
             isFileDrag = true
         }
-        controllers.forEach { $0.fileDragMoved(to: location) }
+        controllers.values.forEach { $0.fileDragMoved(to: location) }
     }
 
     private func dragEnded() {
         guard isFileDrag else { return }
         isFileDrag = false
         dragChangeCount = NSPasteboard(name: .drag).changeCount
-        controllers.forEach { $0.fileDragEnded() }
+        controllers.values.forEach { $0.fileDragEnded() }
     }
 
     private func handleKey(_ event: NSEvent) -> Bool {
-        controllers.contains { $0.handleKey(event) }
+        controllers.values.contains { $0.handleKey(event) }
     }
 
     private func handleScroll(_ event: NSEvent) {
-        controllers.forEach { $0.handleScroll(event) }
+        controllers.values.forEach { $0.handleScroll(event) }
     }
+
+    #if DEBUG
+    private var pointerEvents = 0
+    private var lastCountReset = Date()
+
+    /// Pointer events per second since the last call.
+    func debugPointerRate() -> Double {
+        let rate = Double(pointerEvents) / max(Date().timeIntervalSince(lastCountReset), 0.001)
+        pointerEvents = 0
+        lastCountReset = Date()
+        return rate
+    }
+
+    var debugSummary: String {
+        controllers.map { key, controller in
+            "\(key): phase=\(controller.model.phase) hiddenForFullScreen=\(controller.isHiddenForFullScreen) module=\(controller.model.selectedModuleID)"
+        }.sorted().joined(separator: "; ")
+    }
+
+    /// Drops every notch and builds new ones, to check for leaks.
+    func debugForceRebuild() {
+        controllers.values.forEach { $0.tearDown() }
+        controllers = [:]
+        rebuild()
+    }
+
+    func debugOpen(moduleID: String) {
+        guard let primary else { return }
+        primary.model.selectedModuleID = moduleID
+        // No focus, so measuring doesn't take the keyboard from other apps.
+        primary.open(pinned: true, focus: false)
+    }
+    #endif
 }

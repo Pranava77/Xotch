@@ -68,7 +68,13 @@ final class WeatherService {
     init() {
         report = Storage.load(WeatherReport.self, from: "weather.json")
         manualPlace = Storage.load(Place.self, from: "weather-place.json")
-        locationDenied = location.isDenied
+    }
+
+    /// Refreshes only if that can't show a location prompt. Home uses this,
+    /// so the prompt only ever comes from the Weather module.
+    func refreshIfAllowed() {
+        guard manualPlace != nil || location.isAuthorized else { return }
+        refreshIfStale()
     }
 
     func refreshIfStale() {
@@ -315,6 +321,13 @@ final class LocationProvider: NSObject, CLLocationManagerDelegate, @unchecked Se
 
     var statusDescription: String {
         "status=\(manager.authorizationStatus.rawValue) servicesEnabled=\(CLLocationManager.locationServicesEnabled())"
+    }
+
+    var isAuthorized: Bool {
+        switch manager.authorizationStatus {
+        case .authorizedAlways, .authorizedWhenInUse: true
+        default: false
+        }
     }
 
     var isDenied: Bool {

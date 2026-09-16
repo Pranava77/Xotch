@@ -253,7 +253,8 @@ private struct StopwatchPane: View {
     }
 
     private func stopwatchText(_ elapsed: TimeInterval) -> String {
-        let hundredths = Int(elapsed * 100) % 100
-        return Format.clock(floor(elapsed)) + String(format: ".%02d", hundredths)
+        guard elapsed.isFinite else { return "0:00.00" }
+        let hundredths = Int((elapsed * 100).truncatingRemainder(dividingBy: 100))
+        return Format.clock(floor(elapsed)) + String(format: ".%02ld", hundredths)
     }
 }

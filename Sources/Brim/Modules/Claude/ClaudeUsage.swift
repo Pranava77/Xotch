@@ -127,14 +127,15 @@ actor ClaudeLogReader {
 
         for line in data.split(separator: 0x0A, omittingEmptySubsequences: true) {
             // Cheap byte checks first; most lines aren't assistant replies.
-            guard line.range(of: assistantMarker) != nil, line.range(of: usageMarker) != nil,
-                  let object = try? JSONSerialization.jsonObject(with: line) as? [String: Any],
+            guard line.range(of: assistantMarker) != nil, line.range(of: usageMarker) != nil else { continue }
+            autoreleasepool {
+            guard let object = try? JSONSerialization.jsonObject(with: line) as? [String: Any],
                   object["type"] as? String == "assistant",
                   let message = object["message"] as? [String: Any],
                   let usage = message["usage"] as? [String: Any],
                   let stamp = object["timestamp"] as? String,
                   let time = fractionalFormatter.date(from: stamp) ?? ISODate.parse(stamp),
-                  time >= cutoff else { continue }
+                  time >= cutoff else { return }
 
             let key = (message["id"] as? String ?? UUID().uuidString) + "|" + (object["requestId"] as? String ?? "")
             let tools = (message["content"] as? [[String: Any]] ?? [])
@@ -158,6 +159,7 @@ actor ClaudeLogReader {
                 replies[key] = existing
             } else {
                 replies[key] = reply
+            }
             }
         }
         return replies

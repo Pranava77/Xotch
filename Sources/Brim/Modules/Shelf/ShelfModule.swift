@@ -8,6 +8,7 @@ final class ShelfModule: NotchModule {
     let symbol = "tray.full"
     func expandedView() -> AnyView { AnyView(ShelfView()) }
     func start() { ShelfService.shared.start() }
+    func stop() { ShelfService.shared.stop() }
 }
 
 private struct ShelfView: View {
@@ -55,6 +56,7 @@ private struct ShelfView: View {
                     .foregroundStyle(Theme.tertiaryInk)
             }
         }
+        .onAppear { shelf.removeMissing() }
     }
 }
 

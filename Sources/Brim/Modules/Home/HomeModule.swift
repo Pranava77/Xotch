@@ -85,7 +85,7 @@ private struct HomeView: View {
         }
         .task {
             calendar.refresh()
-            weather.refreshIfStale()
+            weather.refreshIfAllowed()
         }
     }
 

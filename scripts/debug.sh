@@ -1,10 +1,19 @@
 #!/usr/bin/env bash
 # Sends a command to a running debug build of Brim.
-# Usage: scripts/debug.sh open | close | activity | snapshot <folder> | selftest <report file>
+# Usage: scripts/debug.sh open [module] | close | activity | activity-media | activity-timer |
+#        clear-activities | rebuild <count> | status <file> | snapshot <folder> | selftest <report file>
 set -euo pipefail
 
-COMMAND="${1:?usage: scripts/debug.sh open|close|activity|snapshot <folder>|selftest <report file>}"
-if [[ "$COMMAND" == "snapshot" ]]; then
+COMMAND="${1:?usage: scripts/debug.sh open [module]|close|activity|activity-media|activity-timer|clear-activities|rebuild <n>|status <file>|snapshot <folder>|selftest <file>}"
+if [[ "$COMMAND" == "open" && -n "${2:-}" ]]; then
+  COMMAND="open:$2"
+elif [[ "$COMMAND" == "rebuild" ]]; then
+  COMMAND="rebuild:${2:-1}"
+elif [[ "$COMMAND" == "status" ]]; then
+  REPORT="${2:?status needs a file path}"
+  mkdir -p "$(dirname "$REPORT")"
+  COMMAND="status:$(cd "$(dirname "$REPORT")" && pwd)/$(basename "$REPORT")"
+elif [[ "$COMMAND" == "snapshot" ]]; then
   FOLDER="$(cd "${2:?snapshot needs a folder}" 2>/dev/null && pwd || (mkdir -p "$2" && cd "$2" && pwd))"
   COMMAND="snapshot:$FOLDER"
 elif [[ "$COMMAND" == "selftest" ]]; then

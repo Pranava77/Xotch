@@ -12,6 +12,7 @@ final class MediaModule: NotchModule {
 
     func expandedView() -> AnyView { AnyView(MediaView()) }
     func start() { MediaService.shared.start() }
+    func stop() { MediaService.shared.stop() }
 }
 
 private struct MediaView: View {
@@ -56,7 +57,7 @@ private struct MediaView: View {
                             .accessibilityLabel("Previous track")
                         Button { media.togglePlayPause() } label: {
                             Image(systemName: playing.isPlaying ? "pause.fill" : "play.fill")
-                                .contentTransition(.symbolEffect(.replace))
+                                .swapTransition(on: playing.isPlaying)
                         }
                         .buttonStyle(IconButtonStyle(size: 44, prominent: true))
                         .accessibilityLabel(playing.isPlaying ? "Pause" : "Play")
@@ -75,7 +76,8 @@ private struct MediaView: View {
         } else {
             EmptyStateView(symbol: "exclamationmark.triangle",
                            title: "Now Playing isn't available",
-                           message: "macOS didn't answer Brim's request for media info. Quit and reopen Brim to try again.")
+                           message: "macOS didn't answer Brim's request for media info.",
+                           buttonTitle: "Try again") { media.retry() }
         }
     }
 }

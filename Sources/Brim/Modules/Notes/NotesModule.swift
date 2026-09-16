@@ -7,6 +7,7 @@ final class NotesModule: NotchModule {
     let symbol = "note.text"
     func expandedView() -> AnyView { AnyView(NotesView()) }
     func start() { NotesService.shared.start() }
+    func stop() { NotesService.shared.stop() }
 }
 
 private struct NotesView: View {

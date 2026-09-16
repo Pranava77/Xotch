@@ -21,3 +21,34 @@ enum Motion {
         reduceMotion ? .easeInOut(duration: 0.18) : animation
     }
 }
+
+/// A quick spring "pop" when a value changes. Used instead of SF Symbol effects,
+/// which load ~100 MB of symbol animation data while they run.
+private struct PopOnChange<Value: Equatable>: ViewModifier {
+    let value: Value
+    @State private var popped = false
+
+    func body(content: Content) -> some View {
+        content
+            .scaleEffect(popped ? 1.3 : 1)
+            .onChange(of: value, initial: true) { _, _ in
+                guard !Motion.reduceMotion else { return }
+                withAnimation(.spring(duration: 0.18, bounce: 0.4)) { popped = true }
+                Task {
+                    try? await Task.sleep(for: .milliseconds(180))
+                    withAnimation(.spring(duration: 0.4, bounce: 0.45)) { popped = false }
+                }
+            }
+    }
+}
+
+extension View {
+    func popOnChange<Value: Equatable>(of value: Value) -> some View {
+        modifier(PopOnChange(value: value))
+    }
+
+    /// Swaps an icon with a quick scale and fade when `value` changes.
+    func swapTransition<Value: Hashable>(on value: Value) -> some View {
+        id(value).transition(.scale(scale: 0.5).combined(with: .opacity))
+    }
+}
