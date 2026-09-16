@@ -8,10 +8,30 @@ private struct SnapshotModeKey: EnvironmentKey {
     static let defaultValue = false
 }
 
+private struct SnapshotDateKey: EnvironmentKey {
+    static let defaultValue: Date? = nil
+}
+
+private struct SnapshotClearGlassKey: EnvironmentKey {
+    static let defaultValue = false
+}
+
 extension EnvironmentValues {
     var snapshotMode: Bool {
         get { self[SnapshotModeKey.self] }
         set { self[SnapshotModeKey.self] = newValue }
+    }
+
+    /// A fixed time for snapshots, so the clock always reads the same.
+    var snapshotDate: Date? {
+        get { self[SnapshotDateKey.self] }
+        set { self[SnapshotDateKey.self] = newValue }
+    }
+
+    /// Snapshots that draw their own blurred backdrop: glass leaves it showing.
+    var snapshotClearGlass: Bool {
+        get { self[SnapshotClearGlassKey.self] }
+        set { self[SnapshotClearGlassKey.self] = newValue }
     }
 }
 

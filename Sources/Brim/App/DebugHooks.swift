@@ -10,7 +10,7 @@ import SwiftUI
 ///                      clear-activities [module] | celebrate | palette | ripple |
 ///                      theme <id> | mood <mood> | rebuild <count> |
 ///                      status <file> | snapshot <folder> | effects <folder> |
-///                      selftest <file>
+///                      marketing <folder> | selftest <file>
 ///
 /// `snapshot` renders every notch state to PNGs with ImageRenderer, so the
 /// shell can be checked without screen-recording permission.
@@ -88,6 +88,9 @@ enum DebugHooks {
             } else if command.hasPrefix("mood:") {
                 let mood = MascotMood(rawValue: String(command.dropFirst("mood:".count)))
                 ActivityCenter.shared.debugSet(celebrating: mood == .celebrating, drowsy: mood == .sleeping)
+            } else if command.hasPrefix("marketing:") {
+                let folder = String(command.dropFirst("marketing:".count))
+                Task { await MarketingShots.render(to: folder) }
             } else if command.hasPrefix("effects:") {
                 let folder = String(command.dropFirst("effects:".count))
                 Task { await renderEffects(to: folder) }
@@ -583,7 +586,7 @@ enum DebugHooks {
 
 /// Swaps every module's data for samples while `body` runs.
 @MainActor
-private func withSampleData(_ body: () -> Void) {
+func withSampleData(showingErrors: Bool = true, _ body: () -> Void) {
     MediaService.shared.withSample {
     CalendarService.shared.withSample {
     ClipboardService.shared.withSample {
@@ -591,7 +594,7 @@ private func withSampleData(_ body: () -> Void) {
     ShelfService.shared.withSample {
     WeatherService.shared.withSample {
     StatsService.shared.withSample {
-    RevenueService.shared.withSample {
+    RevenueService.shared.withSample(showingErrors: showingErrors) {
     AnalyticsService.shared.withSample {
     ClaudeUsageService.shared.withSample {
     ClaudeLiveService.shared.withSample {
@@ -610,7 +613,7 @@ private func withSampleData(_ body: () -> Void) {
 }
 
 @MainActor
-private final class SnapshotActions: NotchActions {
+final class SnapshotActions: NotchActions {
     var isPinned = false
     func tapped() {}
     func togglePin() {}

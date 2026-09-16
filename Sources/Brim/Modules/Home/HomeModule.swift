@@ -16,19 +16,21 @@ private struct HomeView: View {
     private var weather: WeatherService { .shared }
     private var revenue: RevenueService { .shared }
     @AppStorage(SettingsKey.showMascot) private var showMascot = true
+    @Environment(\.snapshotDate) private var snapshotDate
 
     var body: some View {
         HStack(alignment: .top, spacing: 14) {
             VStack(alignment: .leading, spacing: 10) {
                 HStack(alignment: .top, spacing: 0) {
                     TimelineView(.everyMinute) { context in
+                        let date = snapshotDate ?? context.date
                         VStack(alignment: .leading, spacing: 0) {
-                            Text(context.date, format: .dateTime.hour().minute())
+                            Text(date, format: .dateTime.hour().minute())
                                 .font(.system(size: 46, weight: .semibold, design: .rounded))
                                 .monospacedDigit()
                                 .lineLimit(1)
                                 .minimumScaleFactor(0.6)
-                            Text(context.date, format: .dateTime.weekday(.wide).month(.wide).day())
+                            Text(date, format: .dateTime.weekday(.wide).month(.wide).day())
                                 .font(.system(size: 13, weight: .medium))
                                 .foregroundStyle(Theme.secondaryInk)
                         }

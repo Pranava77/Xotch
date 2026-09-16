@@ -192,7 +192,8 @@ final class RevenueService {
     }
 
     #if DEBUG
-    func withSample(_ body: () -> Void) {
+    /// `showingErrors` adds an offline notice, to check how errors look.
+    func withSample(showingErrors: Bool = true, _ body: () -> Void) {
         let saved = (connected, sales, errors, lastUpdated)
         let now = Date()
         connected = [.stripe, .polar]
@@ -202,7 +203,7 @@ final class RevenueService {
             Sale(id: "3", provider: .stripe, amount: 149, currency: "USD", date: now.addingTimeInterval(-7200), customer: "Northwind", product: "Team plan"),
             Sale(id: "4", provider: .stripe, amount: 9.5, currency: "EUR", date: now.addingTimeInterval(-9000), customer: nil, product: "Tip"),
         ]
-        errors = [.polar: .offline]
+        errors = showingErrors ? [.polar: .offline] : [:]
         lastUpdated = now.addingTimeInterval(-60)
         body()
         (connected, sales, errors, lastUpdated) = saved

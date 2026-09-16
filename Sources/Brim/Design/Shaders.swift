@@ -356,6 +356,13 @@ struct ArtworkGlow: View {
             if kit.isReady, !snapshotMode {
                 GlowLayer(colors: colors, animating: isPlaying && !Motion.reduceMotion,
                           padding: padding, cornerRadius: cornerRadius)
+            } else if kit.isReady {
+                GeometryReader { geo in
+                    if let image = GlowView.still(colors: [colors.0, colors.1], size: geo.size,
+                                                  padding: padding, cornerRadius: cornerRadius) {
+                        Image(decorative: image, scale: 2)
+                    }
+                }
             } else {
                 // Plain stand-in: a blurred rounded rectangle.
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
@@ -438,6 +445,17 @@ final class GlowView: NSView {
         super.viewDidChangeBackingProperties()
         key = []
         render()
+    }
+
+    /// The glow as an image, for snapshots.
+    @MainActor
+    static func still(colors: [RGBA], size: CGSize, padding: CGFloat, cornerRadius: CGFloat) -> CGImage? {
+        guard colors.count == 2 else { return nil }
+        var uniforms = ShaderUniforms(time: 0, size: size, scale: 2, colorA: colors[0], colorB: colors[1])
+        uniforms[12] = Float(padding)
+        uniforms[13] = Float(cornerRadius)
+        uniforms[14] = 0.75
+        return ShaderKit.shared.image(.glow, size: size, scale: 2, uniforms: uniforms)
     }
 
     @MainActor
@@ -562,6 +580,12 @@ struct LEDText: View {
             if kit.isReady, !snapshotMode {
                 LEDLayer(text: text, color: color, rows: rows, pitch: pitch,
                          animating: !Motion.reduceMotion)
+            } else if kit.isReady {
+                GeometryReader { geo in
+                    if let image = LEDView.still(text: text, color: color, rows: rows, pitch: pitch, size: geo.size) {
+                        Image(decorative: image, scale: 2)
+                    }
+                }
             } else {
                 // Plain stand-in with the same footprint.
                 Text(text.uppercased())
@@ -716,6 +740,24 @@ final class LEDView: NSView {
             layer?.mask = nil
         }
         CATransaction.commit()
+    }
+
+    /// The display at rest, for snapshots. Text that doesn't fit fades out at the edge.
+    @MainActor
+    static func still(text: String, color: RGBA, rows: Int, pitch: CGFloat, size: CGSize) -> CGImage? {
+        let kit = ShaderKit.shared
+        guard let device = kit.device, size.width > 0 else { return nil }
+        let bitmap = DotMatrix.render(text, rows: rows)
+        guard let texture = DotMatrix.texture(bitmap, device: device) else { return nil }
+        var uniforms = ShaderUniforms(time: 0, size: size, scale: 2, colorA: color,
+                                      colorB: RGBA(red: color.red, green: color.green, blue: color.blue, alpha: 0.1))
+        uniforms[12] = Float(pitch)
+        uniforms[13] = Float(rows)
+        uniforms[14] = -1
+        uniforms[15] = Float(bitmap.columns)
+        uniforms[17] = Float(bitmap.columns)
+        uniforms[18] = CGFloat(bitmap.columns + 1) * pitch > size.width ? 1 : 0
+        return kit.image(.led, size: size, scale: 2, uniforms: uniforms, texture: texture)
     }
 
     /// Whole-column steps, pausing at the start of each pass.

@@ -26,6 +26,7 @@ With a debug build running:
 ./scripts/debug.sh theme aurora      # midnight, smoke, aurora or custom; also mood working|celebrating|sleeping|idle
 ./scripts/debug.sh snapshot ~/Desktop/brim-snapshots     # render every state to PNG (sample data)
 ./scripts/debug.sh effects ~/Desktop/brim-effects        # render the Metal and Core Animation effects to PNG
+./scripts/debug.sh marketing docs/images                 # regenerate the README's product images (sample data)
 ./scripts/debug.sh selftest ~/Desktop/brim-selftest.txt  # check the real services, write a report
 ./scripts/debug.sh status ~/Desktop/brim-status.txt      # notch state per display, pointer event rate
 ./scripts/debug.sh rebuild 30        # rebuild the notch windows, for leak checks
@@ -93,7 +94,7 @@ On macOS 26, reading the clipboard in the background needs permission: the Clipb
 
 ```
 Sources/Brim/
-├─ App/        BrimApp (menu bar + Settings scenes), AppDelegate, DebugHooks
+├─ App/        BrimApp (menu bar + Settings scenes), AppDelegate, DebugHooks, MarketingShots
 ├─ Notch/      NotchPanel, NotchGeometry, NotchWindowController, ScreenManager
 ├─ Shell/      NotchShape, NotchViewModel, ShellView (open content, switcher, live activity bar),
 │              EarViews (ring, pulse, ticker), CommandPalette, Celebration

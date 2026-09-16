@@ -1,105 +1,217 @@
-# Brim
+<p align="center">
+  <img src="docs/images/icon.png" width="112" alt="Brim's icon: a small notch-shaped face with glowing eyes">
+</p>
 
-**Your MacBook's notch, put to work.**
+<h1 align="center">Brim</h1>
 
-Brim turns the notch into a small control centre for your music, calendar, timers, files and clipboard. If you build products, it also shows today's sales, your site's visitors and what Claude Code is doing. It stays out of the way until you reach for it, and uses almost no battery while it waits.
+<p align="center">
+  <strong>Your MacBook's notch, put to work.</strong><br>
+  Music, calendar, timers, files and your clipboard, plus today's sales, your site's visitors and Claude Code, all one hover away.
+</p>
 
-> Brim is in private beta. Thanks for trying it. Tell us what you think from the menu bar icon › **Send Feedback…**
+<p align="center">
+  <a href="#get-the-beta"><strong>Get the beta</strong></a>
+  &nbsp;·&nbsp;
+  <a href="#everything-you-reach-for-in-one-place">Features</a>
+  &nbsp;·&nbsp;
+  <a href="#private-by-design">Privacy</a>
+  &nbsp;·&nbsp;
+  <a href="#questions">Questions</a>
+</p>
 
-## How it works
+<p align="center">
+  <img alt="macOS 14 or later" src="https://img.shields.io/badge/macOS-14%2B-111111?style=flat-square">
+  <img alt="Apple silicon and Intel" src="https://img.shields.io/badge/Apple%20silicon%20%2B%20Intel-111111?style=flat-square">
+  <img alt="No tracking" src="https://img.shields.io/badge/tracking-none-30C26A?style=flat-square">
+  <img alt="Private beta" src="https://img.shields.io/badge/status-private%20beta-FF9F0A?style=flat-square">
+</p>
 
-- **Peek:** move the pointer onto the notch and it grows slightly. Keep it there and Brim opens.
-- **Keep it open:** click the notch. It stays open until you press Esc or click somewhere else.
-- **Glance:** while the notch is closed, live updates sit either side of the camera. A timer counts down with a ring around it, the song playing shows its artwork, and Claude Code pulses while it works. You also see download progress and today's sales.
-- **Drop files:** drag any file towards the notch. The Shelf opens, and whatever you drop waits there until you need it.
+<p align="center">
+  <img src="docs/images/hero.jpg" alt="The Brim notch open at the top of a Mac screen, showing the time, weather, today's sales, the next meeting with a Join button, and the song playing">
+</p>
 
-## What's inside
+## Quiet until you need it
 
-| Module | What you get |
-|---|---|
-| **Home** | The time, the weather, your next meeting and what's playing, at a glance. Brim's little mascot naps when things are quiet and jumps for joy when you make a sale. |
-| **Now Playing** | Artwork, a dot-matrix track display, a scrubber and controls. Works with Music, Spotify, your browser and any other app that plays audio. The notch glows in the album's colours. |
-| **Calendar** | The next 7 days, one-click **Join** for Zoom, Google Meet and Teams, and reminders you can tick off. |
-| **Timers** | Focus sessions with breaks, countdowns, and a stopwatch with laps. A notification tells you when time's up. |
-| **Clipboard** | Everything you've copied, searchable, with pins for favourites. Anything a password manager marks as private is skipped. |
-| **Shelf** | Somewhere to park files. Drag them out when you need them, AirDrop them, or flick them away. |
-| **Notes** | A scratchpad that can sit beside the notch, plus notes that save as you type. |
-| **System** | CPU, memory, network speed, disk space and battery health. |
-| **Weather** | Now, the next 12 hours and the next 7 days, for where you are or a city you choose. |
-| **Revenue** | Today's sales from Stripe, Polar and Dodo Payments. Each new sale arrives with a burst of confetti, and today's total can stay beside the notch. |
-| **Analytics** | Live visitors, today's traffic, top pages and referrers from DataFast. |
-| **Claude Code** | Today's tokens, replies and streak, plus whether each session is working, needs you or is done. |
+Brim lives in the notch and doesn't get in your way.
 
-Don't need something? Hide it in **Settings › Modules**. Hidden modules stop working in the background.
+- **Peek:** move the pointer to the notch and it grows slightly.
+- **Open:** keep the pointer there and Brim opens.
+- **Keep it open:** click, and it stays open until you press Esc or click somewhere else.
 
-## Shortcuts and gestures
+When the notch is closed and nothing's happening, Brim uses no processor time at all.
 
-| To | Do this |
-|---|---|
-| Open and keep open | Click the notch |
-| Switch module | Press ⌘1–⌘9, or swipe sideways with two fingers |
-| Run a command | Press ⌘K |
-| Change the volume | Scroll on the closed notch |
-| Remove a file from the Shelf | Flick it upwards, or Option-click it |
-| Use a file from the Shelf | Drag it anywhere, or double-click to open it |
-| Close | Press Esc, or click anywhere else |
+## Live, right beside the camera
 
-Keyboard shortcuts work once you've clicked the notch.
+When something's happening, the notch grows two small "ears" to show it, without opening.
 
-**⌘K** jumps to anything. For example:
+<table>
+  <tr>
+    <td align="center" width="50%"><img src="docs/images/ears-timer.jpg" alt="A focus timer beside the notch, with a ring around its icon"><br><sub><b>Focus timer:</b> a ring fills as time passes</sub></td>
+    <td align="center" width="50%"><img src="docs/images/ears-music.jpg" alt="Album art and music bars beside the notch"><br><sub><b>Music:</b> artwork and bars that can follow the real sound</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/images/ears-claude.jpg" alt="Claude Code status beside the notch, reading Editing"><br><sub><b>Claude Code:</b> a soft pulse while it works; a faster one when it needs you</sub></td>
+    <td align="center"><img src="docs/images/ears-sale.jpg" alt="A new sale of 49 dollars beside the notch"><br><sub><b>A new sale:</b> with confetti and an optional "ka-ching"</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/images/ears-download.jpg" alt="Download progress at 62 percent beside the notch"><br><sub><b>Downloads:</b> how far along they are</sub></td>
+    <td align="center"><img src="docs/images/ears-volume.jpg" alt="A volume bar beside the notch"><br><sub><b>Volume:</b> scroll on the notch to change it</sub></td>
+  </tr>
+</table>
+
+If more than one thing is live, the most important shows, and small dots tell you others are waiting.
+
+## Everything you reach for, in one place
+
+<table>
+  <tr>
+    <td width="33%"><img src="docs/images/module-media.jpg" alt="Now Playing: album art with a soft glow, the track on a dot-matrix display, a scrubber and playback controls"></td>
+    <td width="33%"><img src="docs/images/module-calendar.jpg" alt="Calendar: the next few days with a Join button, and reminders"></td>
+    <td width="33%"><img src="docs/images/module-timers.jpg" alt="Timers: a 25-minute focus session ready to start"></td>
+  </tr>
+  <tr>
+    <td valign="top"><b>Now Playing</b><br><sub>Artwork, a dot-matrix track display and controls for Music, Spotify, your browser, or any other app playing audio.</sub></td>
+    <td valign="top"><b>Calendar</b><br><sub>The next 7 days, one-click Join for Zoom, Google Meet and Teams, and reminders you can tick off.</sub></td>
+    <td valign="top"><b>Timers</b><br><sub>Focus sessions with breaks, countdowns, and a stopwatch with laps.</sub></td>
+  </tr>
+  <tr>
+    <td><img src="docs/images/module-clipboard.jpg" alt="Clipboard: a searchable list of copied text, links and files, with one pinned"></td>
+    <td><img src="docs/images/module-shelf.jpg" alt="Shelf: three files waiting, with AirDrop and Clear buttons"></td>
+    <td><img src="docs/images/module-weather.jpg" alt="Weather: the current temperature, the next hours and the week ahead"></td>
+  </tr>
+  <tr>
+    <td valign="top"><b>Clipboard</b><br><sub>Everything you've copied, searchable and pinnable. Passwords from password managers are skipped.</sub></td>
+    <td valign="top"><b>Shelf</b><br><sub>Drop files on the notch to keep them handy. Drag them out later, AirDrop them, or flick them away.</sub></td>
+    <td valign="top"><b>Weather</b><br><sub>Now, the next 12 hours and the next 7 days, where you are or for any city.</sub></td>
+  </tr>
+</table>
+
+**Also inside:**
+- **Home:** the time, weather, your next meeting and what's playing.
+- **Notes:** a scratchpad that can sit beside the notch.
+- **System:** CPU, memory, network, disk and battery health.
+
+## Made for people who ship
+
+<table>
+  <tr>
+    <td width="33%"><img src="docs/images/module-revenue.jpg" alt="Revenue: 217 dollars today from four sales, with the latest sales listed"></td>
+    <td width="33%"><img src="docs/images/module-analytics.jpg" alt="Analytics: live visitors, today's traffic, top pages and referrers"></td>
+    <td width="33%"><img src="docs/images/module-claude.jpg" alt="Claude Code: today's tokens, a 4-day streak, a 7-day chart and live sessions"></td>
+  </tr>
+  <tr>
+    <td valign="top"><b>Revenue</b><br><sub>Today's sales from Stripe, Polar and Dodo Payments. Each new one arrives with a burst of confetti.</sub></td>
+    <td valign="top"><b>Analytics</b><br><sub>Live visitors, today's traffic, top pages and referrers from DataFast.</sub></td>
+    <td valign="top"><b>Claude Code</b><br><sub>Today's tokens and streak, and whether each session is working, needs you, or is done.</sub></td>
+  </tr>
+</table>
+
+Brim connects with read-only keys, and only when you add one.
+
+## Make it yours
+
+<table>
+  <tr>
+    <td width="33%"><img src="docs/images/theme-midnight.jpg" alt="The Midnight theme: a solid black notch"></td>
+    <td width="33%"><img src="docs/images/theme-smoke.jpg" alt="The Smoke Glass theme: a frosted notch showing a blur of the wallpaper"></td>
+    <td width="33%"><img src="docs/images/theme-aurora.jpg" alt="The Aurora theme: a deep blue notch with a violet glow"></td>
+  </tr>
+  <tr>
+    <td align="center"><b>Midnight</b></td>
+    <td align="center"><b>Smoke Glass</b><br><sub>Liquid Glass on macOS 26</sub></td>
+    <td align="center"><b>Aurora</b></td>
+  </tr>
+</table>
+
+- **Your own theme:** pick the background, text, accent and glow colours. The closed notch always stays black, so it blends in with the camera.
+- **The mascot:** Brim's little mascot lives on Home. It naps when things are quiet, thinks while you work, and jumps for joy at a sale.
+- **Your modules, your way:**
+  - Reorder or hide any module.
+  - Choose how the notch opens: hover or click.
+  - Choose which display it appears on. Macs without a notch get one drawn for them.
+
+## One shortcut for everything
+
+<img src="docs/images/palette.jpg" alt="The command palette over the open notch, suggesting 'Start a 10-minute timer' for the text '10'" align="right" width="46%">
+
+Press **⌘K** in the open notch and type:
 
 | Type | To |
 |---|---|
 | `cal` | Open Calendar |
-| `10 min` or `90s` | Start a timer |
+| `10 min` | Start a 10-minute timer |
 | `pause` | Pause the music |
-| `aurora` | Switch to the Aurora theme |
-| A few words you copied earlier | Copy them again |
+| `aurora` | Switch theme |
+| Something you copied | Copy it again |
 
-## Make it yours
+<br clear="right">
 
-Everything below is in the menu bar icon › **Settings…**.
+### Shortcuts and gestures
 
-- **Appearance:**
-  - Themes: Midnight, Smoke Glass (Liquid Glass on macOS 26), Aurora, or your own colours. The closed notch always stays black, so it blends in with the camera.
-  - Show or hide the mascot and the dot-matrix track display.
-- **Opening:** open on hover or on click, how long to hover, haptic feedback.
-- **Beside the notch:**
-  - music, and whether its bars follow the real sound
-  - download progress
-  - scrolling for volume
-- **Sales:** confetti for each sale, and an optional cash-register sound. Press **Celebrate** to try it.
-- **Display:**
-  - Which display gets the notch. Macs without a notch, and external displays, get one drawn for them.
-  - Whether to hide the notch while an app is full screen.
-- **General:** open Brim when you log in.
+| To | Do this |
+|---|---|
+| Switch module | ⌘1–⌘9, or swipe sideways with two fingers |
+| Change the volume | Scroll on the closed notch |
+| Remove a file from the Shelf | Flick it upwards |
+| Close | Esc, or click anywhere else |
 
-## Requirements
+## Private by design
 
-- macOS 14 Sonoma or later, on Apple silicon or Intel.
-- Best on a MacBook with a notch.
-- Liquid Glass needs macOS 26.
-- Music bars that follow the real sound need macOS 14.2 or later.
+- **No tracking:** no account, no analytics.
+- **Stays on your Mac:** your clipboard history, notes and files never leave your Mac. API keys are kept in your Keychain.
+- **Few connections:** Brim only contacts Open-Meteo for the weather, and the services you connect yourself.
+- **Audio:** when the music bars follow the real sound, Brim only measures how loud it is. Nothing is recorded.
+- **Crash reports:** never sent automatically. If you choose to keep them, you decide whether to email one.
 
-## Install
+<details>
+<summary><b>What Brim asks permission for, and when</b></summary>
+
+<br>
+
+Brim asks only when you use something that needs it.
+
+| Permission | When | Why |
+|---|---|---|
+| Calendars and Reminders | You choose **Allow** in Calendar | Your events and reminders |
+| Location | You open Weather without choosing a city | A local forecast |
+| Notifications | You start your first timer | Telling you when time's up |
+| Paste from other apps (macOS 26) | You choose **Allow** in Clipboard | Keeping your clipboard history |
+| System audio recording | You turn on real sound for the music bars | Measuring how loud the music is |
+| Downloads folder | macOS may ask when you turn on download progress | Showing how far downloads have got |
+
+Brim never asks for Accessibility, Screen Recording or Input Monitoring.
+
+</details>
+
+## Light on your battery
+
+| When | Processor use |
+|---|---|
+| Closed, nothing happening | 0% |
+| Closed, with music, Claude Code or a download beside it | 0% |
+| Open, on any module | 0.6% or less |
+
+Measured on a 14-inch MacBook Pro with an M5 Pro chip. Anything that only matters on screen, like system stats and the weather, pauses when you can't see it.
+
+## Get the beta
+
+Brim is in private beta. If you have an invite:
 
 1. Unzip the download and drag **Brim** to your Applications folder.
-2. Open Brim.
-3. If macOS says it can't check the app for malicious software:
-   1. Close the message.
-   2. Open **System Settings › Privacy & Security**.
-   3. Choose **Open Anyway** next to Brim.
+2. Open Brim. If macOS says it can't check the app, open **System Settings › Privacy & Security** and choose **Open Anyway**. Beta builds aren't signed yet; releases will be.
+3. Move the pointer to the notch. Brim lives in the menu bar and has no Dock icon.
 
-   Beta builds need this step; signed releases won't.
-4. Brim appears in the menu bar; there's no Dock icon. Move the pointer to the notch to start.
+**Requirements:**
+- macOS 14 Sonoma or later, on Apple silicon or Intel. It's best on a MacBook with a notch.
+- Liquid Glass needs macOS 26.
+- Music bars that follow the real sound need macOS 14.2.
 
-## Connect your services
+<details>
+<summary><b>Connect your services</b></summary>
 
-These are all optional.
+<br>
 
-### Revenue
-
-Open the Revenue module, choose your provider and paste a read-only key:
+**Revenue:** open the module, choose a provider and paste a read-only key.
 
 | Provider | Key to create |
 |---|---|
@@ -107,76 +219,73 @@ Open the Revenue module, choose your provider and paste a read-only key:
 | Polar | An organization access token with the `orders:read` scope |
 | Dodo Payments | An API key from Developer › API Keys |
 
-### Analytics
+**Analytics:** paste your DataFast website key. It starts with `df_` and is in your site's settings.
 
-Paste your DataFast website API key; it starts with `df_`. You'll find it in your site's settings.
+**Claude Code:**
+- Usage stats work straight away, from Claude Code's logs on your Mac.
+- For live status, press **Add hook**. Brim backs up `~/.claude/settings.json`, then adds a small entry so Claude Code can tell Brim what it's doing.
+- **Remove hook** takes that entry out again.
 
-### Claude Code
+</details>
 
-Usage stats work straight away, from Claude Code's logs on your Mac.
+## Questions
 
-For live status, press **Add hook**. Brim first backs up `~/.claude/settings.json`, then adds a small entry so Claude Code can tell Brim what it's doing. **Remove hook** takes that entry out again.
+<details>
+<summary><b>The notch disappeared.</b></summary>
 
-Keys are checked when you add them, and kept in your Mac's Keychain.
+Brim steps aside while an app is full screen. To keep it, turn off **Settings › Display › Hide the notch while an app is full screen**.
+</details>
 
-## Privacy
+<details>
+<summary><b>Now Playing is empty.</b></summary>
 
-- **No tracking:** no account, no tracking, no analytics.
-- **Kept on your Mac:** your clipboard history, notes and shelf are stored in `~/Library/Application Support/Brim`, and your settings in Brim's preferences. API keys are kept in your Keychain.
-- **Few connections:** Brim only contacts Open-Meteo for the weather, and the services you connect yourself.
-- **Audio:** when the music bars follow the real sound, Brim only measures how loud the music is. Nothing is recorded or kept.
-- **Crash reports:** never sent automatically. Turn on **Keep crash reports I can choose to send** and you can attach one to an email yourself.
-
-### Permissions
-
-Brim asks for a permission only when you use something that needs it:
-
-| Permission | When Brim asks | What it's for |
-|---|---|---|
-| Calendars and Reminders | When you choose **Allow** in Calendar | Your events and reminders |
-| Location | When you open Weather without choosing a city | A local forecast |
-| Notifications | When you start your first timer | Telling you when time's up |
-| Paste from other apps (macOS 26) | When you choose **Allow** in Clipboard | Keeping your clipboard history |
-| System audio recording | Only if you turn on real sound for the music bars | Measuring how loud the music is |
-| Downloads folder | macOS may ask if you turn on download progress | Showing how far a download has got |
-
-Brim never asks for Accessibility, Screen Recording or Input Monitoring.
-
-## Battery life
-
-Brim uses no processor time while the notch is closed and nothing is happening. It stays under 1% in every state we've measured, with the notch open or with something live beside it. Anything that only matters on screen, like system stats and the weather, pauses when you can't see it.
-
-## Troubleshooting
-
-**The notch disappeared.**
-Brim steps aside while an app is full screen. Leave full screen, or turn off **Settings › Display › Hide the notch while an app is full screen**.
-
-**Now Playing is empty.**
 Start playing something. If Brim says Now Playing isn't available, choose **Try again**.
+</details>
 
-**Clipboard history stays empty (macOS 26).**
-Open the Clipboard module and choose **Allow**. Then set Brim to always allow under **Paste** in **System Settings › Privacy & Security**.
+<details>
+<summary><b>My clipboard history is empty (macOS 26).</b></summary>
 
-**The music bars don't follow the music.**
-Allow Brim under **System Settings › Privacy & Security › Screen & System Audio Recording**, or turn real sound off to keep the built-in animation.
+Open Clipboard and choose **Allow**. Then set Brim to always allow under **Paste** in **System Settings › Privacy & Security**.
+</details>
 
-**No download progress.**
-Progress only appears for apps that report it to macOS, such as Safari and Chrome. Check that **Show download progress** is on.
+<details>
+<summary><b>The music bars don't follow the music.</b></summary>
 
-**macOS asked for Calendar access again after an update.**
-Beta builds aren't signed yet, so macOS can ask again. Signed releases won't.
+Allow Brim under **System Settings › Privacy & Security › Screen & System Audio Recording**, or turn real sound off in Settings to keep the built-in animation.
+</details>
 
-**⌘1–9 or ⌘K does nothing.**
+<details>
+<summary><b>I don't see download progress.</b></summary>
+
+Turn on **Settings › Show download progress**. Progress appears for apps that report it to macOS, such as Safari and Chrome.
+</details>
+
+<details>
+<summary><b>⌘K or ⌘1–9 does nothing.</b></summary>
+
 Click the notch first, so Brim receives your keyboard input.
+</details>
 
-## Uninstall
+<details>
+<summary><b>macOS asked for Calendar access again after an update.</b></summary>
+
+Beta builds aren't signed yet, so macOS can ask again. Signed releases won't.
+</details>
+
+<details>
+<summary><b>How do I uninstall Brim?</b></summary>
 
 1. If you added the Claude Code hook, press **Remove hook** in the Claude Code module.
-2. Quit Brim from the menu bar icon, then move it from Applications to the Trash.
+2. Quit Brim from the menu bar icon and move it to the Trash.
 3. To remove everything else as well:
    - delete `~/Library/Application Support/Brim` and `~/Library/Preferences/com.pranava.brim.plist`
    - in Keychain Access, delete the items named `com.pranava.brim`
+</details>
 
----
+## Feedback
 
-Building Brim from source? See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
+Choose **Send Feedback…** from the menu bar icon. It opens an email with your Brim and macOS versions filled in.
+
+<br>
+
+<p align="center"><sub>Building Brim from source? See <a href="docs/DEVELOPMENT.md">docs/DEVELOPMENT.md</a>.</sub></p>

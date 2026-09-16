@@ -7,13 +7,20 @@ struct NotchSurface: View {
     let shape: NotchShape
     let isOpen: Bool
     @Environment(\.snapshotMode) private var snapshotMode
+    @Environment(\.snapshotClearGlass) private var clearGlass
 
     var body: some View {
         let palette = Theme.palette
+        let glass = isOpen && palette.material == .glass
         ZStack(alignment: .top) {
-            if isOpen, palette.material == .glass, !snapshotMode {
-                GlassBackground(shape: shape, tint: palette.surface.color)
-                    .transition(.opacity)
+            if glass, !snapshotMode || clearGlass {
+                if snapshotMode {
+                    // The snapshot draws the blurred backdrop itself.
+                    shape.fill(palette.surface.color.opacity(0.55))
+                } else {
+                    GlassBackground(shape: shape, tint: palette.surface.color)
+                        .transition(.opacity)
+                }
                 // Fade to black at the top, so the glass meets the menu bar and
                 // the camera housing without a seam.
                 LinearGradient(colors: [.black, .black.opacity(0)], startPoint: .top, endPoint: .bottom)
