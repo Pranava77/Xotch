@@ -20,7 +20,8 @@ With a debug build running:
 ./scripts/debug.sh open        # open and pin the notch
 ./scripts/debug.sh close
 ./scripts/debug.sh activity    # show a sample live activity
-./scripts/debug.sh snapshot ~/Desktop/brim-snapshots   # render every state to PNG
+./scripts/debug.sh snapshot ~/Desktop/brim-snapshots   # render every state to PNG (sample data)
+./scripts/debug.sh selftest ~/Desktop/brim-selftest.txt  # check the real services, write a report
 ```
 
 ## Using the notch
@@ -30,6 +31,37 @@ With a debug build running:
 - Esc or a click anywhere else closes it.
 - Settings (menu bar icon → Settings…): hover or click to open, hover delay, haptics, which display, module order and visibility, open at login.
 
+## Modules
+
+| Module | What it does | Built on | Asks for |
+|---|---|---|---|
+| Home | Time, weather, next event, now playing | the other modules | — |
+| Now Playing | Artwork, scrubber, controls for any app; tints the notch | MediaRemote via `MediaRemoteBridge` | — |
+| Calendar | Next 7 days, Join buttons for Zoom/Meet/Teams, tick off reminders | EventKit | Calendars, Reminders |
+| Timers | Pomodoro, countdown, stopwatch with laps; live in the notch | UserNotifications | Notifications |
+| Clipboard | Searchable history, pinning; skips password managers | NSPasteboard | — |
+| Shelf | Drag files onto the notch, drag them out later, AirDrop | bookmarks, Quick Look | — |
+| Notes | Scratchpad (optionally shown in the notch) and notes | JSON in Application Support | — |
+| System | CPU, memory, network, disk, battery health | Mach, getifaddrs, IOKit | — |
+| Weather | Current, 12-hour and 7-day forecast | Open-Meteo, CoreLocation | Location (or pick a city) |
+| Revenue | Today's sales and total from Stripe, Polar, Dodo Payments; a banner per sale | REST APIs, read-only keys | A key you paste |
+| Analytics | Live visitors, today's traffic, top pages and referrers from DataFast | DataFast API, `df_` key | A key you paste |
+| Claude Code | Tokens, replies, tools, streak and 7-day chart; live session status | `~/.claude/projects` logs, a Claude Code hook | Adding the hook (optional) |
+
+Everything is stored in `~/Library/Application Support/Brim`; API keys are in your login Keychain. Brim only talks to Open-Meteo (weather) and the services you connect, with read-only keys.
+
+### Claude Code live status
+
+"Add hook" in the Claude module adds one command per event to `~/.claude/settings.json` (a backup is saved as `settings.json.brim-backup` first). The command pipes Claude Code's event JSON to `~/Library/Application Support/Brim/claude.sock`, a socket only your user can open, and does nothing if Brim isn't running. Each call takes about 15 ms. "Remove hook" takes the entries out again and leaves the rest of the file alone.
+
+### Now Playing and macOS 15.4+
+
+Apple only lets its own processes use the private MediaRemote framework, so Brim runs `/usr/bin/perl` with a tiny library (`MediaRemoteBridge/`) that reads media info and prints it as JSON lines. Same technique as [mediaremote-adapter](https://github.com/ungive/mediaremote-adapter), written from scratch. The build script compiles it into `Brim.app/Contents/Frameworks`.
+
+### Permissions during development
+
+The app is signed ad hoc, so macOS may ask for Calendar access, or for Keychain access to saved keys, again after a rebuild. A Developer ID signature (Phase 6) fixes that.
+
 ## Layout
 
 ```
@@ -37,9 +69,9 @@ Sources/Brim/
 ├─ App/        BrimApp (menu bar + Settings scenes), AppDelegate, DebugHooks
 ├─ Notch/      NotchPanel, NotchGeometry, NotchWindowController, ScreenManager
 ├─ Shell/      NotchShape, NotchViewModel, ShellView (open content, switcher, live activity bar)
-├─ Modules/    NotchModule protocol, ModuleRegistry, Phase 1 placeholder modules
-├─ Services/   ActivityCenter, Haptics
-├─ Design/     Motion (spring presets), Theme and Layout
+├─ Modules/    NotchModule protocol, ModuleRegistry, one folder per module (Service + Module/View)
+├─ Services/   ActivityCenter (banners + ongoing activities), Storage, Haptics, Permissions
+├─ Design/     Motion (spring presets), Theme, Layout, shared components
 └─ Settings/   AppSettings (UserDefaults keys), SettingsView
 ```
 
@@ -47,5 +79,7 @@ Sources/Brim/
 
 - One `NotchPanel` per display, sized for the largest state and never resized. It ignores the mouse except while the pointer is over the notch shape, so clicks elsewhere reach the apps underneath.
 - `ScreenManager` watches pointer movement with app-wide event monitors (no extra permissions needed) and passes it to each display's `NotchWindowController`, which runs the state machine: closed → peek → open, plus pinned.
-- "Activity" is derived: a closed or peeking notch widens its ears whenever `ActivityCenter` has something to show.
+- "Activity" is derived: a closed or peeking notch widens its ears whenever `ActivityCenter` has something to show. Banners ("+$49", "Copied") show for a few seconds; ongoing activities (a running timer, music) show while nothing else is.
+- Dragging a file towards the notch opens the Shelf; dropping it anywhere on the notch adds it.
+- Views that sample (System, Weather) only run while on screen, so a closed notch costs nothing.
 - `NotchShape` animates its shoulder and corner radii, so every state change is one spring on one shape.

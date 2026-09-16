@@ -30,5 +30,17 @@
 	<true/>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
+	<key>NSCalendarsFullAccessUsageDescription</key>
+	<string>Brim shows your upcoming events in the notch.</string>
+	<key>NSCalendarsUsageDescription</key>
+	<string>Brim shows your upcoming events in the notch.</string>
+	<key>NSRemindersFullAccessUsageDescription</key>
+	<string>Brim shows your reminders in the notch and lets you tick them off.</string>
+	<key>NSRemindersUsageDescription</key>
+	<string>Brim shows your reminders in the notch and lets you tick them off.</string>
+	<key>NSLocationUsageDescription</key>
+	<string>Brim uses your approximate location for the weather forecast.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Brim uses your approximate location for the weather forecast.</string>
 </dict>
 </plist>

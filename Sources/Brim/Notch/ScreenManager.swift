@@ -10,6 +10,8 @@ final class ScreenManager {
     private var monitors: [Any] = []
     private var observers: [NSObjectProtocol] = []
     private var displayChoice = ""
+    private var dragChangeCount = NSPasteboard(name: .drag).changeCount
+    private var isFileDrag = false
 
     func start() {
         rebuild()
@@ -34,6 +36,11 @@ final class ScreenManager {
 
     func closeAll() {
         controllers.forEach { $0.close() }
+    }
+
+    /// Switches every notch to a module, e.g. from a Home card.
+    func show(moduleID: String) {
+        controllers.forEach { $0.select(moduleID: moduleID) }
     }
 
     // MARK: - Displays
@@ -70,8 +77,15 @@ final class ScreenManager {
 
     private func installMonitors() {
         let moves: NSEvent.EventTypeMask = [.mouseMoved, .leftMouseDragged]
-        add(NSEvent.addGlobalMonitorForEvents(matching: moves) { [weak self] _ in
-            MainActor.assumeIsolated { self?.pointerMoved() }
+        add(NSEvent.addGlobalMonitorForEvents(matching: moves) { [weak self] event in
+            let isDrag = event.type == .leftMouseDragged
+            MainActor.assumeIsolated {
+                self?.pointerMoved()
+                if isDrag { self?.dragMoved() }
+            }
+        })
+        add(NSEvent.addGlobalMonitorForEvents(matching: .leftMouseUp) { [weak self] _ in
+            MainActor.assumeIsolated { self?.dragEnded() }
         })
         add(NSEvent.addLocalMonitorForEvents(matching: moves) { [weak self] event in
             MainActor.assumeIsolated { self?.pointerMoved() }
@@ -102,6 +116,29 @@ final class ScreenManager {
     private func pointerPressed() {
         let location = NSEvent.mouseLocation
         controllers.forEach { $0.pointerPressed(at: location) }
+        // Remember the drag pasteboard, so a change means a new drag began.
+        dragChangeCount = NSPasteboard(name: .drag).changeCount
+        isFileDrag = false
+    }
+
+    /// Another app is dragging something. Only file drags open the shelf.
+    private func dragMoved() {
+        let location = NSEvent.mouseLocation
+        guard controllers.contains(where: { $0.isInDragZone(location) }) else { return }
+        if !isFileDrag {
+            let pasteboard = NSPasteboard(name: .drag)
+            guard pasteboard.changeCount != dragChangeCount,
+                  pasteboard.types?.contains(.fileURL) == true else { return }
+            isFileDrag = true
+        }
+        controllers.forEach { $0.fileDragMoved(to: location) }
+    }
+
+    private func dragEnded() {
+        guard isFileDrag else { return }
+        isFileDrag = false
+        dragChangeCount = NSPasteboard(name: .drag).changeCount
+        controllers.forEach { $0.fileDragEnded() }
     }
 
     private func handleKey(_ event: NSEvent) -> Bool {

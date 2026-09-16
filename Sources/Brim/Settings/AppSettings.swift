@@ -20,6 +20,9 @@ enum SettingsKey {
     static let display = "displayChoice"
     static let moduleOrder = "moduleOrder"
     static let hiddenModules = "hiddenModules"
+    static let clipboardHistory = "clipboardHistory"
+    static let mediaActivity = "mediaActivity"
+    static let shelfExpiryHours = "shelfExpiryHours"
 }
 
 enum DisplayChoice {
@@ -44,6 +47,9 @@ enum AppSettings {
             SettingsKey.display: DisplayChoice.automatic,
             SettingsKey.moduleOrder: "",
             SettingsKey.hiddenModules: "",
+            SettingsKey.clipboardHistory: true,
+            SettingsKey.mediaActivity: true,
+            SettingsKey.shelfExpiryHours: 24,
         ])
     }
 
@@ -69,5 +75,18 @@ enum AppSettings {
 
     static var hiddenModules: String {
         UserDefaults.standard.string(forKey: SettingsKey.hiddenModules) ?? ""
+    }
+
+    static var clipboardHistory: Bool {
+        UserDefaults.standard.bool(forKey: SettingsKey.clipboardHistory)
+    }
+
+    static var mediaActivity: Bool {
+        UserDefaults.standard.bool(forKey: SettingsKey.mediaActivity)
+    }
+
+    /// 0 means keep shelf items until removed.
+    static var shelfExpiryHours: Int {
+        UserDefaults.standard.integer(forKey: SettingsKey.shelfExpiryHours)
     }
 }

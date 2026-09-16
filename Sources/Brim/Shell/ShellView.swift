@@ -9,12 +9,15 @@ struct ShellView: View {
     @AppStorage(SettingsKey.moduleOrder) private var moduleOrder = ""
     @AppStorage(SettingsKey.hiddenModules) private var hiddenModules = ""
     @Namespace private var namespace
+    @State private var isDropTarget = false
 
     var body: some View {
         let shape = NotchShape(shoulderRadius: model.shoulder, cornerRadius: model.cornerRadius)
         let size = model.bodySize
         let width = size.width + model.shoulder * 2
         let modules = ModuleRegistry.visible(order: moduleOrder, hidden: hiddenModules)
+        let selected = modules.first { $0.id == model.selectedModuleID } ?? modules[0]
+        let tint = model.phase == .open ? selected.tint : nil
 
         ZStack(alignment: .top) {
             shape
@@ -22,6 +25,11 @@ struct ShellView: View {
                 .shadow(color: .black.opacity(model.phase == .open ? 0.45 : 0), radius: 22, y: 10)
 
             ZStack(alignment: .top) {
+                if let tint {
+                    RadialGradient(colors: [tint.opacity(0.32), tint.opacity(0)],
+                                   center: .topLeading, startRadius: 10, endRadius: 520)
+                        .transition(.opacity)
+                }
                 if model.showsActivity, let activity = model.activities.current {
                     LiveActivityBar(activity: activity,
                                     notchSize: model.closedSize,
@@ -29,18 +37,26 @@ struct ShellView: View {
                         .transition(.blurFade)
                 }
                 if model.phase == .open {
-                    OpenContent(model: model, modules: modules, actions: actions, namespace: namespace)
+                    OpenContent(model: model, modules: modules, selected: selected,
+                                actions: actions, namespace: namespace)
                         .frame(width: Layout.openSize.width, height: Layout.openSize.height, alignment: .top)
                         .transition(.blurScale)
+                }
+                if isDropTarget {
+                    shape
+                        .stroke(Theme.accent, lineWidth: 2)
+                        .transition(.opacity)
                 }
             }
             .padding(.horizontal, model.shoulder)
             .frame(width: width, height: size.height, alignment: .top)
             .clipShape(shape)
+            .animation(Motion.switchModule, value: tint)
         }
         .frame(width: width, height: size.height)
         .contentShape(shape)
         .onTapGesture { actions.tapped() }
+        .modifier(ShelfDropTarget(onDrop: { actions.select(moduleID: "shelf") }, isTargeted: $isDropTarget))
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .ignoresSafeArea()
     }
@@ -51,12 +67,9 @@ struct ShellView: View {
 private struct OpenContent: View {
     let model: NotchViewModel
     let modules: [any NotchModule]
+    let selected: any NotchModule
     let actions: any NotchActions
     let namespace: Namespace.ID
-
-    private var selected: (any NotchModule)? {
-        modules.first { $0.id == model.selectedModuleID } ?? modules.first
-    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -64,70 +77,71 @@ private struct OpenContent: View {
                 .frame(height: model.closedSize.height)
 
             ZStack(alignment: .topLeading) {
-                if let selected {
-                    selected.expandedView()
-                        .id(selected.id)
-                        .transition(.push(from: model.switchEdge))
-                }
+                selected.expandedView()
+                    .id(selected.id)
+                    .transition(.push(from: model.switchEdge))
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            .padding(.horizontal, 24)
-            .padding(.top, 16)
-            .padding(.bottom, 22)
+            // minHeight 0: a tall module is clipped instead of pushing the dock away.
+            .frame(maxWidth: .infinity, minHeight: 0, maxHeight: .infinity, alignment: .topLeading)
+            .padding(.horizontal, 22)
+            .padding(.top, 10)
+            .padding(.bottom, 8)
             .clipped()
+
+            ModuleDock(modules: modules.map { $0.info },
+                       selectedID: selected.id,
+                       namespace: namespace) { actions.select(moduleID: $0) }
+                .frame(height: Layout.dockHeight)
+                .padding(.bottom, 6)
         }
         .foregroundStyle(Theme.ink)
     }
 
-    /// Tabs on the left of the camera housing, title and pin on the right.
+    /// Title left of the camera housing, pin on the right.
     private var topRow: some View {
         HStack(spacing: 0) {
-            ModuleSwitcher(modules: modules.map { $0.info },
-                           selectedID: selected?.id ?? "",
-                           namespace: namespace) { actions.select(moduleID: $0) }
+            Text(selected.title)
+                .font(.system(size: 13, weight: .semibold))
+                .contentTransition(.opacity)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
             Color.clear
                 .frame(width: model.closedSize.width)
 
-            HStack(spacing: 8) {
-                Text(selected?.title ?? "")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(Theme.secondaryInk)
-                    .contentTransition(.opacity)
-                    .padding(.leading, 12)
+            HStack {
                 Spacer(minLength: 0)
                 PinButton(isPinned: model.isPinned) { actions.togglePin() }
             }
             .frame(maxWidth: .infinity)
         }
-        .padding(.horizontal, 14)
+        .padding(.horizontal, 22)
     }
 }
 
-private struct ModuleSwitcher: View {
+private struct ModuleDock: View {
     let modules: [ModuleInfo]
     let selectedID: String
     let namespace: Namespace.ID
     let select: (String) -> Void
 
     var body: some View {
-        HStack(spacing: 2) {
+        HStack(spacing: 4) {
             ForEach(Array(modules.enumerated()), id: \.element.id) { index, module in
                 let isSelected = module.id == selectedID
                 Button {
                     select(module.id)
                 } label: {
                     Image(systemName: module.symbol)
-                        .font(.system(size: 12, weight: .semibold))
+                        .symbolVariant(isSelected ? .fill : .none)
+                        .font(.system(size: 13, weight: .semibold))
                         .matchedGeometryEffect(id: "icon-\(module.id)", in: namespace)
-                        .frame(width: 30, height: 22)
+                        .frame(width: 38, height: 30)
                         .foregroundStyle(isSelected ? Theme.ink : Theme.tertiaryInk)
                         .background {
                             if isSelected {
                                 Capsule()
                                     .fill(Theme.selection)
-                                    .matchedGeometryEffect(id: "tab-highlight", in: namespace)
+                                    .matchedGeometryEffect(id: "dock-highlight", in: namespace)
                             }
                         }
                         .contentShape(Capsule())
@@ -138,6 +152,8 @@ private struct ModuleSwitcher: View {
                 .accessibilityAddTraits(isSelected ? .isSelected : [])
             }
         }
+        .padding(4)
+        .background(Theme.fill, in: Capsule())
     }
 }
 
@@ -171,28 +187,78 @@ private struct LiveActivityBar: View {
 
     var body: some View {
         HStack(spacing: 0) {
-            Image(systemName: activity.symbol)
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(activity.tint)
-                .symbolEffect(.bounce, value: activity.id)
-                .matchedGeometryEffect(id: "icon-\(activity.moduleID)", in: namespace)
-                .padding(.leading, 12)
-                .frame(width: Layout.earWidth, alignment: .leading)
+            Group {
+                if let image = activity.image {
+                    Image(nsImage: image)
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(width: 22, height: 22)
+                        .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                } else {
+                    Image(systemName: activity.symbol)
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(activity.tint)
+                        .symbolEffect(.bounce, value: activity.id)
+                }
+            }
+            .matchedGeometryEffect(id: "icon-\(activity.moduleID)", in: namespace)
+            .padding(.leading, 12)
+            .frame(width: activity.earWidth, alignment: .leading)
 
             Color.clear
                 .frame(width: notchSize.width)
 
-            Text(activity.text)
+            trailing
                 .font(.system(size: 12.5, weight: .semibold, design: .rounded))
                 .monospacedDigit()
                 .foregroundStyle(Theme.ink)
-                .contentTransition(.numericText())
                 .lineLimit(1)
                 .padding(.trailing, 12)
-                .frame(width: Layout.earWidth, alignment: .trailing)
+                .frame(width: activity.earWidth, alignment: .trailing)
         }
         .frame(height: notchSize.height)
         .accessibilityElement(children: .combine)
+    }
+
+    @ViewBuilder private var trailing: some View {
+        switch activity.content {
+        case .text(let text):
+            Text(text)
+                .contentTransition(.numericText())
+        case .countdown(let until):
+            Text(timerInterval: Date.now...max(until, .now), countsDown: true)
+                .multilineTextAlignment(.trailing)
+                .foregroundStyle(activity.tint)
+        case .stopwatch(let since):
+            Text(since, style: .timer)
+                .multilineTextAlignment(.trailing)
+                .foregroundStyle(activity.tint)
+        case .playing:
+            EqualizerBars(tint: activity.tint)
+                .frame(width: 20, height: 14)
+        }
+    }
+}
+
+/// Four bars that bounce while music plays. Redraws ~12 times a second.
+private struct EqualizerBars: View {
+    let tint: Color
+
+    var body: some View {
+        TimelineView(.animation(minimumInterval: 1.0 / 12)) { context in
+            let time = context.date.timeIntervalSinceReferenceDate
+            HStack(alignment: .center, spacing: 2) {
+                ForEach(0..<4, id: \.self) { index in
+                    let phase = time * (5.1 + Double(index) * 1.7) + Double(index) * 1.3
+                    Capsule()
+                        .fill(tint)
+                        .frame(width: 3, height: 4 + 10 * CGFloat((sin(phase) + 1) / 2))
+                }
+            }
+            .frame(maxHeight: .infinity)
+            .animation(.linear(duration: 1.0 / 12), value: time)
+        }
+        .accessibilityLabel("Playing")
     }
 }
 
