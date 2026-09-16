@@ -8,6 +8,10 @@ struct SettingsView: View {
     @AppStorage(SettingsKey.display) private var display = DisplayChoice.automatic
     @AppStorage(SettingsKey.moduleOrder) private var moduleOrder = ""
     @AppStorage(SettingsKey.hiddenModules) private var hiddenModules = ""
+    @AppStorage(SettingsKey.clipboardHistory) private var clipboardHistory = true
+    @AppStorage(SettingsKey.mediaActivity) private var mediaActivity = true
+    @AppStorage(SettingsKey.shelfExpiryHours) private var shelfExpiryHours = 24
+    @State private var confirmClearClipboard = false
     @State private var openAtLogin = SMAppService.mainApp.status == .enabled
     @State private var loginMessage: String?
 
@@ -66,6 +70,26 @@ struct SettingsView: View {
                     .foregroundStyle(.secondary)
             }
 
+            Section("Features") {
+                Toggle("Show music beside the notch while it plays", isOn: $mediaActivity)
+                    .onChange(of: mediaActivity) { _, _ in MediaService.shared.settingsChanged() }
+                Picker("Keep shelf items for", selection: $shelfExpiryHours) {
+                    Text("1 hour").tag(1)
+                    Text("1 day").tag(24)
+                    Text("1 week").tag(168)
+                    Text("Until removed").tag(0)
+                }
+                Toggle("Keep clipboard history", isOn: $clipboardHistory)
+                LabeledContent("Clipboard history") {
+                    Button("Clear…") { confirmClearClipboard = true }
+                }
+                .confirmationDialog("Clear clipboard history?", isPresented: $confirmClearClipboard) {
+                    Button("Clear History", role: .destructive) { ClipboardService.shared.clearUnpinned() }
+                } message: {
+                    Text("Pinned items stay. This can't be undone.")
+                }
+            }
+
             Section("General") {
                 Toggle("Open Brim at login", isOn: $openAtLogin)
                     .onChange(of: openAtLogin) { _, enabled in setOpenAtLogin(enabled) }
@@ -77,7 +101,7 @@ struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
-        .frame(width: 480, height: 620)
+        .frame(width: 480, height: 680)
         .onAppear { NSApp.activate() }
     }
 

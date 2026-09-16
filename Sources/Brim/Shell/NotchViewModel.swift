@@ -33,8 +33,8 @@ final class NotchViewModel {
     var bodySize: CGSize {
         if phase == .open { return Layout.openSize }
         var size = closedSize
-        if showsActivity {
-            size.width += Layout.earWidth * 2
+        if showsActivity, let activity = activities.current {
+            size.width += activity.earWidth * 2
         }
         if phase == .peek {
             size.width += Layout.peekGrowth.width

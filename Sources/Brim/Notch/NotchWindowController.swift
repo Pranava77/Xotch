@@ -18,10 +18,13 @@ final class NotchWindowController: NotchActions {
     private var isHovering = false
     /// After Esc or an outside click, don't reopen until the pointer leaves.
     private var suppressHover = false
+    /// Opened because a file was dragged towards the notch.
+    private var openedForDrag = false
     private var openTask: Task<Void, Never>?
     private var closeTask: Task<Void, Never>?
     private var swipeDistance: CGFloat = 0
     private var swipeHandled = false
+    private var keyObserver: NSObjectProtocol?
 
     init(screen: NSScreen) {
         let geometry = NotchGeometry(screen: screen)
@@ -34,11 +37,24 @@ final class NotchWindowController: NotchActions {
         host.autoresizingMask = [.width, .height]
         panel.contentView = host
         panel.orderFrontRegardless()
+
+        // Clicking into a text field makes the panel key: keep it open while typing.
+        keyObserver = NotificationCenter.default.addObserver(
+            forName: NSWindow.didBecomeKeyNotification, object: panel, queue: .main
+        ) { @Sendable [weak self] _ in
+            MainActor.assumeIsolated {
+                guard let self, self.model.phase == .open else { return }
+                self.model.isPinned = true
+            }
+        }
     }
 
     func tearDown() {
         openTask?.cancel()
         closeTask?.cancel()
+        if let keyObserver {
+            NotificationCenter.default.removeObserver(keyObserver)
+        }
         panel.orderOut(nil)
         // The hosted ShellView holds this controller; drop it to break the cycle.
         panel.contentView = nil
@@ -65,6 +81,36 @@ final class NotchWindowController: NotchActions {
     func pointerPressed(at location: NSPoint) {
         guard model.phase == .open, !hotRect.contains(location) else { return }
         close()
+    }
+
+    /// A file drag from another app is moving; open the shelf when it nears the notch.
+    func fileDragMoved(to location: NSPoint) {
+        guard model.phase != .open, isInDragZone(location) else { return }
+        openedForDrag = true
+        model.selectedModuleID = "shelf"
+        setPhase(.open)
+        panel.ignoresMouseEvents = false
+    }
+
+    func fileDragEnded() {
+        guard openedForDrag else { return }
+        openedForDrag = false
+        closeTask?.cancel()
+        closeTask = Task { [weak self] in
+            // Leave time to see the file land.
+            try? await Task.sleep(for: .milliseconds(1400))
+            guard let self, !Task.isCancelled, !self.model.isPinned,
+                  !self.hotRect.contains(NSEvent.mouseLocation) else { return }
+            self.close()
+        }
+    }
+
+    /// Near enough to the notch that a dragged file should open the shelf.
+    func isInDragZone(_ location: NSPoint) -> Bool {
+        model.geometry.screenRect(
+            bodySize: CGSize(width: model.closedSize.width + 220, height: model.closedSize.height + 110),
+            shoulder: 0
+        ).contains(location)
     }
 
     /// The area that counts as "on the notch". The closed notch gets a little
@@ -96,7 +142,7 @@ final class NotchWindowController: NotchActions {
 
     private func hoverEnded() {
         openTask?.cancel()
-        guard model.phase != .closed, !model.isPinned else { return }
+        guard model.phase != .closed, !model.isPinned, !openedForDrag else { return }
         closeTask?.cancel()
         closeTask = Task { [weak self] in
             try? await Task.sleep(for: .milliseconds(300))
@@ -120,6 +166,7 @@ final class NotchWindowController: NotchActions {
     func close() {
         openTask?.cancel()
         closeTask?.cancel()
+        openedForDrag = false
         model.isPinned = false
         suppressHover = isHovering
         setPhase(.closed)
@@ -188,7 +235,7 @@ final class NotchWindowController: NotchActions {
             close()
             return true
         }
-        if event.modifierFlags.contains(.command),
+        if event.modifierFlags.intersection(.deviceIndependentFlagsMask) == .command,
            let characters = event.charactersIgnoringModifiers,
            let number = Int(characters), (1...9).contains(number) {
             let modules = ModuleRegistry.visibleNow
@@ -209,9 +256,9 @@ final class NotchWindowController: NotchActions {
             swipeDistance = 0
             swipeHandled = false
         case .changed:
-            guard !swipeHandled, abs(event.scrollingDeltaX) > abs(event.scrollingDeltaY) else { return }
+            guard !swipeHandled, abs(event.scrollingDeltaX) > abs(event.scrollingDeltaY) * 1.5 else { return }
             swipeDistance += event.scrollingDeltaX
-            if abs(swipeDistance) > 36 {
+            if abs(swipeDistance) > 44 {
                 swipeHandled = true
                 step(swipeDistance < 0 ? 1 : -1)
             }

@@ -1,21 +1,23 @@
 import SwiftUI
 
-/// Every feature in the notch is a module: an icon in the switcher and a
-/// view for the open notch. `start()` and `stop()` bracket any background work,
-/// so a module costs nothing while it's hidden.
+/// Every feature in the notch is a module: an icon in the dock and a view for
+/// the open notch. `start()` runs once at launch for modules that need to
+/// listen in the background (media, clipboard); anything that only matters on
+/// screen should run from the view's `.task` instead, so it stops when hidden.
 @MainActor
 protocol NotchModule: AnyObject {
     var id: String { get }
     var title: String { get }
     var symbol: String { get }
+    /// Tints the open notch while this module is showing.
+    var tint: Color? { get }
     func expandedView() -> AnyView
     func start()
-    func stop()
 }
 
 extension NotchModule {
+    var tint: Color? { nil }
     func start() {}
-    func stop() {}
 
     var info: ModuleInfo {
         ModuleInfo(id: id, title: title, symbol: symbol)
@@ -33,8 +35,16 @@ enum ModuleRegistry {
     static let all: [any NotchModule] = [
         HomeModule(),
         MediaModule(),
+        CalendarModule(),
         TimersModule(),
+        ClipboardModule(),
         ShelfModule(),
+        NotesModule(),
+        StatsModule(),
+        WeatherModule(),
+        RevenueModule(),
+        AnalyticsModule(),
+        ClaudeModule(),
     ]
 
     static func module(id: String) -> (any NotchModule)? {
@@ -58,5 +68,9 @@ enum ModuleRegistry {
 
     static var visibleNow: [any NotchModule] {
         visible(order: AppSettings.moduleOrder, hidden: AppSettings.hiddenModules)
+    }
+
+    static func startAll() {
+        all.forEach { $0.start() }
     }
 }
