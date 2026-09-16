@@ -56,7 +56,12 @@ final class ClipboardService {
         "com.dashlane.dashlanephonefinal",
     ]
 
+    enum Access: Equatable {
+        case allowed, needsPermission, denied
+    }
+
     private(set) var items: [ClipItem]
+    private(set) var access: Access = ClipboardService.currentAccess()
     @ObservationIgnored private var timer: Timer?
     @ObservationIgnored private var lastChangeCount = NSPasteboard.general.changeCount
     @ObservationIgnored private lazy var saver = SaveScheduler { [weak self] in
@@ -70,13 +75,63 @@ final class ClipboardService {
     }
 
     func start() {
+        lastChangeCount = NSPasteboard.general.changeCount
         guard timer == nil else { return }
-        let timer = Timer(timeInterval: 0.6, repeats: true) { @Sendable [weak self] _ in
+        // Once a second, with room for macOS to batch it with other work.
+        let timer = Timer(timeInterval: 1.0, repeats: true) { @Sendable [weak self] _ in
             MainActor.assumeIsolated { self?.poll() }
         }
-        timer.tolerance = 0.3
+        timer.tolerance = 0.5
         RunLoop.main.add(timer, forMode: .common)
         self.timer = timer
+    }
+
+    func stop() {
+        timer?.invalidate()
+        timer = nil
+    }
+
+    // MARK: - Access
+
+    /// macOS 26 asks before an app reads the general pasteboard in the background.
+    /// Brim only reads it once the person has set Brim to always allow.
+    private static func currentAccess() -> Access {
+        if #available(macOS 26, *) {
+            switch NSPasteboard.general.accessBehavior {
+            case .alwaysAllow: return .allowed
+            case .alwaysDeny: return .denied
+            default: return .needsPermission
+            }
+        }
+        if #available(macOS 15.4, *), NSPasteboard.general.accessBehavior == .alwaysDeny {
+            return .denied
+        }
+        return .allowed
+    }
+
+    func refreshAccess() {
+        let current = Self.currentAccess()
+        if current != access {
+            access = current
+        }
+    }
+
+    /// Reads the clipboard once, so macOS shows its prompt and lists Brim in
+    /// Privacy & Security, then opens that pane.
+    func requestAccess() {
+        _ = NSPasteboard.general.string(forType: .string)
+        refreshAccess()
+        guard access != .allowed else { return }
+        Task {
+            try? await Task.sleep(for: .seconds(1.5))
+            Self.openPrivacySettings()
+        }
+    }
+
+    static func openPrivacySettings() {
+        if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Pasteboard") {
+            NSWorkspace.shared.open(url)
+        }
     }
 
     private func poll() {
@@ -84,6 +139,8 @@ final class ClipboardService {
         guard pasteboard.changeCount != lastChangeCount else { return }
         lastChangeCount = pasteboard.changeCount
         guard AppSettings.clipboardHistory else { return }
+        refreshAccess()
+        guard access == .allowed else { return }
 
         let types = Set((pasteboard.types ?? []).map(\.rawValue))
         guard types.isDisjoint(with: Self.ignoredTypes) else { return }

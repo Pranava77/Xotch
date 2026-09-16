@@ -25,6 +25,11 @@ final class NotchWindowController: NotchActions {
     private var swipeDistance: CGFloat = 0
     private var swipeHandled = false
     private var keyObserver: NSObjectProtocol?
+    /// Stepped aside because a full-screen app fills this display.
+    private(set) var isHiddenForFullScreen = false
+
+    var screenFrame: NSRect { model.geometry.screenFrame }
+    var hasHardwareNotch: Bool { model.geometry.hasHardwareNotch }
 
     init(screen: NSScreen) {
         let geometry = NotchGeometry(screen: screen)
@@ -61,9 +66,21 @@ final class NotchWindowController: NotchActions {
         panel.close()
     }
 
+    func setHiddenForFullScreen(_ hidden: Bool) {
+        guard hidden != isHiddenForFullScreen else { return }
+        isHiddenForFullScreen = hidden
+        if hidden {
+            close()
+            panel.orderOut(nil)
+        } else {
+            panel.orderFrontRegardless()
+        }
+    }
+
     // MARK: - Pointer
 
     func pointerMoved(to location: NSPoint) {
+        guard !isHiddenForFullScreen else { return }
         let inside = hotRect.contains(location)
         if panel.ignoresMouseEvents == inside {
             panel.ignoresMouseEvents = !inside
@@ -85,7 +102,7 @@ final class NotchWindowController: NotchActions {
 
     /// A file drag from another app is moving; open the shelf when it nears the notch.
     func fileDragMoved(to location: NSPoint) {
-        guard model.phase != .open, isInDragZone(location) else { return }
+        guard !isHiddenForFullScreen, model.phase != .open, isInDragZone(location) else { return }
         openedForDrag = true
         model.selectedModuleID = "shelf"
         setPhase(.open)
@@ -153,11 +170,14 @@ final class NotchWindowController: NotchActions {
 
     // MARK: - State
 
-    func open(pinned: Bool) {
+    /// `focus` makes the panel key, so ⌘1–9 and typing work straight away.
+    func open(pinned: Bool, focus: Bool = true) {
         closeTask?.cancel()
         if pinned {
             model.isPinned = true
-            panel.makeKey()
+            if focus {
+                panel.makeKey()
+            }
         }
         setPhase(.open)
         panel.ignoresMouseEvents = !hotRect.contains(NSEvent.mouseLocation)

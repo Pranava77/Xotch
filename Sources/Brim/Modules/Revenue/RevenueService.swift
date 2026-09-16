@@ -17,6 +17,7 @@ final class RevenueService {
     private(set) var isRefreshing = false
 
     @ObservationIgnored private var announced: Set<String> = []
+    @ObservationIgnored private var isRunning = false
     @ObservationIgnored private var hasLoadedOnce = false
     @ObservationIgnored private var pollTask: Task<Void, Never>?
     @ObservationIgnored private var day = Calendar.current.startOfDay(for: .now)
@@ -35,8 +36,17 @@ final class RevenueService {
     }
 
     func start() {
-        connected = RevenueProviderKind.allCases.filter { KeychainStore.read($0.keychainAccount) != nil }
+        // Checking existence doesn't read the secret, so it never prompts.
+        connected = RevenueProviderKind.allCases.filter { KeychainStore.contains($0.keychainAccount) }
+        isRunning = true
         schedulePolling()
+    }
+
+    func stop() {
+        isRunning = false
+        pollTask?.cancel()
+        pollTask = nil
+        ActivityCenter.shared.setOngoing(nil, for: "revenue")
     }
 
     // MARK: - Connections
@@ -82,7 +92,7 @@ final class RevenueService {
 
     private func schedulePolling() {
         pollTask?.cancel()
-        guard isConnected else { return }
+        guard isConnected, isRunning else { return }
         pollTask = Task { [weak self] in
             while !Task.isCancelled {
                 await self?.refresh()
@@ -93,7 +103,7 @@ final class RevenueService {
     }
 
     func refresh() async {
-        guard isConnected, !isRefreshing else { return }
+        guard isConnected, isRunning, !isRefreshing else { return }
         isRefreshing = true
         defer { isRefreshing = false }
 
@@ -163,7 +173,7 @@ final class RevenueService {
     }
 
     private func updateActivity() {
-        guard UserDefaults.standard.bool(forKey: Self.showTotalKey), let top = totals.first else {
+        guard isRunning, UserDefaults.standard.bool(forKey: Self.showTotalKey), let top = totals.first else {
             ActivityCenter.shared.setOngoing(nil, for: "revenue")
             return
         }

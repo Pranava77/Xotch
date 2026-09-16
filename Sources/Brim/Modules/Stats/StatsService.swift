@@ -37,9 +37,10 @@ final class StatsService {
     private(set) var networkHistory: [Double] = []
 
     @ObservationIgnored private let host = mach_host_self()
-    @ObservationIgnored private var previousTicks: (busy: UInt64, total: UInt64)?
+    @ObservationIgnored private var previousTicks: [UInt32]?
     @ObservationIgnored private var previousNetwork: (received: UInt64, sent: UInt64, at: Date)?
     @ObservationIgnored private var batteryHealth: (health: Double?, cycles: Int?)?
+    @ObservationIgnored private var sampleCount = 0
     @ObservationIgnored private lazy var gate = VisibilityGate(interval: .seconds(2)) { [weak self] in
         self?.sample()
     }
@@ -52,11 +53,14 @@ final class StatsService {
         let cpu = cpuUsage() ?? snapshot?.cpu ?? 0
         let (used, total) = memory()
         let (download, upload) = networkRates()
-        let (free, capacity) = disk()
+        // Disk and battery change slowly and cost more to read: every 10 seconds.
+        let slow = sampleCount % 5 == 0 || snapshot == nil
+        sampleCount += 1
+        let (free, capacity) = slow ? disk() : (snapshot?.diskFree ?? 0, snapshot?.diskTotal ?? 0)
         snapshot = StatsSnapshot(cpu: cpu, memoryUsed: used, memoryTotal: total,
                                  download: download, upload: upload,
                                  diskFree: free, diskTotal: capacity,
-                                 battery: battery())
+                                 battery: slow ? battery() : snapshot?.battery)
         cpuHistory = Array((cpuHistory + [cpu]).suffix(30))
         networkHistory = Array((networkHistory + [download + upload]).suffix(30))
     }
@@ -96,13 +100,22 @@ final class StatsService {
             }
         }
         guard result == KERN_SUCCESS else { return nil }
-        let user = UInt64(info.cpu_ticks.0), system = UInt64(info.cpu_ticks.1)
-        let idle = UInt64(info.cpu_ticks.2), nice = UInt64(info.cpu_ticks.3)
-        let busy = user + system + nice
-        let total = busy + idle
-        defer { previousTicks = (busy, total) }
-        guard let previous = previousTicks, total > previous.total else { return nil }
-        return Double(busy - previous.busy) / Double(total - previous.total)
+        // user, system, idle, nice
+        let ticks = [info.cpu_ticks.0, info.cpu_ticks.1, info.cpu_ticks.2, info.cpu_ticks.3]
+        defer { previousTicks = ticks }
+        guard let previous = previousTicks else { return nil }
+        return Self.cpuUsage(from: previous, to: ticks)
+    }
+
+    /// Share of non-idle time between two samples. Each counter is 32-bit and
+    /// wraps (after about four weeks on a 16-core Mac), so deltas wrap too.
+    nonisolated static func cpuUsage(from old: [UInt32], to new: [UInt32]) -> Double? {
+        guard old.count == 4, new.count == 4 else { return nil }
+        let delta = zip(new, old).map { UInt64($0 &- $1) }
+        let busy = delta[0] + delta[1] + delta[3]
+        let total = busy + delta[2]
+        guard total > 0 else { return nil }
+        return Double(busy) / Double(total)
     }
 
     private func memory() -> (used: Double, total: Double) {

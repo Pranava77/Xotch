@@ -176,7 +176,7 @@ private struct ReminderRow: View {
                 Image(systemName: isDone ? "checkmark.circle.fill" : "circle")
                     .font(.system(size: 14))
                     .foregroundStyle(isDone ? Theme.positive : reminder.listColor.color)
-                    .contentTransition(.symbolEffect(.replace))
+                    .swapTransition(on: isDone)
                 VStack(alignment: .leading, spacing: 1) {
                     Text(reminder.title)
                         .font(.system(size: 12, weight: .medium))

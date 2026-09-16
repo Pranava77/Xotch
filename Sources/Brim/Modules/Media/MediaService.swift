@@ -43,8 +43,11 @@ final class MediaService {
     @ObservationIgnored private var input: FileHandle?
     @ObservationIgnored private var buffer = Data()
     @ObservationIgnored private var restarts = 0
+    @ObservationIgnored private var startedAt = Date()
+    @ObservationIgnored private var isStopped = true
 
     func start() {
+        isStopped = false
         guard process == nil else { return }
         guard let script = Bundle.main.url(forResource: "mediaremote-bridge", withExtension: "pl"),
               let library = Bundle.main.privateFrameworksURL?.appendingPathComponent("MediaRemoteBridge.dylib"),
@@ -69,9 +72,10 @@ final class MediaService {
                 MainActor.assumeIsolated { self?.receive(data) }
             }
         }
-        process.terminationHandler = { @Sendable [weak self] _ in
+        process.terminationHandler = { @Sendable [weak self] exited in
+            let id = ObjectIdentifier(exited)
             DispatchQueue.main.async {
-                MainActor.assumeIsolated { self?.bridgeExited() }
+                MainActor.assumeIsolated { self?.bridgeExited(id) }
             }
         }
 
@@ -83,7 +87,27 @@ final class MediaService {
         }
         self.process = process
         self.input = input.fileHandleForWriting
+        startedAt = Date()
         isAvailable = true
+    }
+
+    /// Ends the bridge; closing its input makes it exit.
+    func stop() {
+        isStopped = true
+        try? input?.close()
+        process?.terminate()
+        process = nil
+        input = nil
+        buffer.removeAll()
+        nowPlaying = nil
+        artwork = nil
+        ActivityCenter.shared.setOngoing(nil, for: "media")
+    }
+
+    func retry() {
+        restarts = 0
+        isAvailable = true
+        start()
     }
 
     // MARK: - Commands
@@ -95,7 +119,7 @@ final class MediaService {
             playing.elapsed = playing.position(at: .now)
             playing.timestamp = .now
             playing.isPlaying.toggle()
-            nowPlaying = playing
+            withAnimation(Motion.press) { nowPlaying = playing }
             updateActivity()
         }
     }
@@ -137,8 +161,6 @@ final class MediaService {
             isAvailable = false
             return
         }
-        restarts = 0
-
         if let encoded = object["artwork"] as? String {
             let image = encoded.isEmpty ? nil : Data(base64Encoded: encoded).flatMap(NSImage.init(data:))
             withAnimation(Motion.switchModule) {
@@ -168,18 +190,26 @@ final class MediaService {
         updateActivity()
     }
 
-    private func bridgeExited() {
-        process = nil
+    private func bridgeExited(_ exited: ObjectIdentifier) {
+        // Ignore a bridge that was already replaced or deliberately stopped.
+        guard let process, ObjectIdentifier(process) == exited else { return }
+        self.process = nil
         input = nil
         buffer.removeAll()
+        guard !isStopped else { return }
+        if Date().timeIntervalSince(startedAt) > 60 {
+            restarts = 0
+        }
         guard restarts < 3 else {
             isAvailable = false
             return
         }
         restarts += 1
+        let delay = Duration.seconds(1 << restarts)
         Task { [weak self] in
-            try? await Task.sleep(for: .seconds(2))
-            self?.start()
+            try? await Task.sleep(for: delay)
+            guard let self, !self.isStopped else { return }
+            self.start()
         }
     }
 

@@ -20,6 +20,7 @@ final class ShelfService {
 
     private(set) var items: [ShelfItem]
     private(set) var thumbnails: [UUID: NSImage] = [:]
+    @ObservationIgnored private var expiryTimer: Timer?
     @ObservationIgnored private lazy var saver = SaveScheduler { [weak self] in
         guard let self else { return }
         Storage.save(self.items, to: "shelf.json")
@@ -31,11 +32,18 @@ final class ShelfService {
 
     func start() {
         removeExpired()
+        guard expiryTimer == nil else { return }
         let timer = Timer(timeInterval: 600, repeats: true) { @Sendable [weak self] _ in
             MainActor.assumeIsolated { self?.removeExpired() }
         }
         timer.tolerance = 60
         RunLoop.main.add(timer, forMode: .common)
+        expiryTimer = timer
+    }
+
+    func stop() {
+        expiryTimer?.invalidate()
+        expiryTimer = nil
     }
 
     func url(for item: ShelfItem) -> URL? {
@@ -109,13 +117,26 @@ final class ShelfService {
         }
     }
 
+    /// By date only: resolving bookmarks at launch could trigger a folder-access
+    /// prompt (Desktop, Documents) before the person opens the Shelf.
     private func removeExpired() {
         let hours = AppSettings.shelfExpiryHours
         guard hours > 0 else { return }
         let cutoff = Date().addingTimeInterval(-Double(hours) * 3600)
-        let kept = items.filter { $0.added > cutoff && url(for: $0) != nil }
+        let kept = items.filter { $0.added > cutoff }
         guard kept.count != items.count else { return }
         items = kept
+        saver.schedule()
+    }
+
+    /// Drops items whose file is gone. Called when the Shelf is shown.
+    func removeMissing() {
+        let kept = items.filter { item in
+            guard let url = url(for: item) else { return false }
+            return FileManager.default.fileExists(atPath: url.path)
+        }
+        guard kept.count != items.count else { return }
+        withAnimation(Motion.switchModule) { items = kept }
         saver.schedule()
     }
 

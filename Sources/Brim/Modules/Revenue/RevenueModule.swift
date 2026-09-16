@@ -7,6 +7,7 @@ final class RevenueModule: NotchModule {
     let symbol = "chart.line.uptrend.xyaxis"
     func expandedView() -> AnyView { AnyView(RevenueView()) }
     func start() { RevenueService.shared.start() }
+    func stop() { RevenueService.shared.stop() }
 }
 
 private struct RevenueView: View {

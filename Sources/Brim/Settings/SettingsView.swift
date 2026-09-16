@@ -11,6 +11,8 @@ struct SettingsView: View {
     @AppStorage(SettingsKey.clipboardHistory) private var clipboardHistory = true
     @AppStorage(SettingsKey.mediaActivity) private var mediaActivity = true
     @AppStorage(SettingsKey.shelfExpiryHours) private var shelfExpiryHours = 24
+    @AppStorage(SettingsKey.hideInFullScreen) private var hideInFullScreen = true
+    @AppStorage(Diagnostics.shareKey) private var shareDiagnostics = false
     @State private var confirmClearClipboard = false
     @State private var openAtLogin = SMAppService.mainApp.status == .enabled
     @State private var loginMessage: String?
@@ -44,6 +46,7 @@ struct SettingsView: View {
                         Text(name).tag(DisplayChoice.named(name))
                     }
                 }
+                Toggle("Hide the notch while an app is full screen", isOn: $hideInFullScreen)
             }
 
             Section {
@@ -90,6 +93,27 @@ struct SettingsView: View {
                 }
             }
 
+            Section {
+                Toggle("Keep crash reports I can choose to send", isOn: $shareDiagnostics)
+                    .onChange(of: shareDiagnostics) { _, _ in Diagnostics.shared.settingsChanged() }
+                if shareDiagnostics, Diagnostics.shared.lastCrashReport != nil {
+                    LabeledContent("Brim quit unexpectedly last time") {
+                        HStack {
+                            Button("Show Report") { Diagnostics.shared.revealCrashReport() }
+                            Button("Email Report…") { Diagnostics.shared.emailCrashReport() }
+                        }
+                    }
+                }
+                LabeledContent("Feedback") {
+                    Button("Send Feedback…") { Diagnostics.shared.sendFeedback() }
+                }
+            } header: {
+                Text("Privacy and feedback")
+            } footer: {
+                Text("Brim never sends anything by itself. With this on, it keeps macOS's crash details on this Mac so you can attach them to an email.")
+                    .foregroundStyle(.secondary)
+            }
+
             Section("General") {
                 Toggle("Open Brim at login", isOn: $openAtLogin)
                     .onChange(of: openAtLogin) { _, enabled in setOpenAtLogin(enabled) }
@@ -101,7 +125,7 @@ struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
-        .frame(width: 480, height: 680)
+        .frame(width: 480, height: 720)
         .onAppear { NSApp.activate() }
     }
 

@@ -1,9 +1,9 @@
 import SwiftUI
 
 /// Every feature in the notch is a module: an icon in the dock and a view for
-/// the open notch. `start()` runs once at launch for modules that need to
-/// listen in the background (media, clipboard); anything that only matters on
-/// screen should run from the view's `.task` instead, so it stops when hidden.
+/// the open notch. `start()` and `stop()` bracket background work (media,
+/// clipboard) and follow whether the module is shown in Settings; anything that
+/// only matters on screen should run from the view's `.task` instead.
 @MainActor
 protocol NotchModule: AnyObject {
     var id: String { get }
@@ -13,11 +13,13 @@ protocol NotchModule: AnyObject {
     var tint: Color? { get }
     func expandedView() -> AnyView
     func start()
+    func stop()
 }
 
 extension NotchModule {
     var tint: Color? { nil }
     func start() {}
+    func stop() {}
 
     var info: ModuleInfo {
         ModuleInfo(id: id, title: title, symbol: symbol)
@@ -70,7 +72,19 @@ enum ModuleRegistry {
         visible(order: AppSettings.moduleOrder, hidden: AppSettings.hiddenModules)
     }
 
-    static func startAll() {
-        all.forEach { $0.start() }
+    private static var running: Set<String> = []
+
+    /// Starts modules that are shown and stops ones the user hid.
+    static func syncRunning() {
+        let shown = Set(visibleNow.map { $0.id })
+        for module in all {
+            if shown.contains(module.id), !running.contains(module.id) {
+                module.start()
+                running.insert(module.id)
+            } else if !shown.contains(module.id), running.contains(module.id) {
+                module.stop()
+                running.remove(module.id)
+            }
+        }
     }
 }

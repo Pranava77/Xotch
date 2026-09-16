@@ -39,6 +39,7 @@ final class NotesService {
         }
     }
     private(set) var notes: [Note]
+    @ObservationIgnored private var isRunning = false
 
     @ObservationIgnored private lazy var saver = SaveScheduler { [weak self] in
         guard let self else { return }
@@ -54,6 +55,12 @@ final class NotesService {
     }
 
     func start() {
+        isRunning = true
+        updateActivity()
+    }
+
+    func stop() {
+        isRunning = false
         updateActivity()
     }
 
@@ -87,7 +94,7 @@ final class NotesService {
 
     private func updateActivity() {
         let firstLine = scratchpad.split(separator: "\n").first.map(String.init)?.trimmingCharacters(in: .whitespaces) ?? ""
-        guard showScratchpadInNotch, !firstLine.isEmpty else {
+        guard isRunning, showScratchpadInNotch, !firstLine.isEmpty else {
             ActivityCenter.shared.setOngoing(nil, for: "notes")
             return
         }

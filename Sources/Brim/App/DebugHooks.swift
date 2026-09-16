@@ -4,7 +4,9 @@ import SwiftUI
 
 /// Debug builds only: drive the notch from the command line.
 ///
-///     scripts/debug.sh open | close | activity | snapshot <folder>
+///     scripts/debug.sh open [module] | close | activity | activity-media |
+///                      activity-timer | clear-activities | rebuild <count> |
+///                      status <file> | snapshot <folder> | selftest <file>
 ///
 /// `snapshot` renders every notch state to PNGs with ImageRenderer, so the
 /// shell can be checked without screen-recording permission.
@@ -26,8 +28,37 @@ enum DebugHooks {
         case "open": ScreenManager.shared.openPrimary()
         case "close": ScreenManager.shared.closeAll()
         case "activity": ActivityCenter.shared.postDemo()
+        case "activity-media":
+            ActivityCenter.shared.setOngoing(LiveActivity(moduleID: "media", symbol: "music.note", content: .playing,
+                                                          tint: .pink), for: "media")
+        case "activity-timer":
+            ActivityCenter.shared.setOngoing(LiveActivity(moduleID: "timers", symbol: TimerKind.focus.symbol,
+                                                          content: .countdown(until: Date().addingTimeInterval(1500)),
+                                                          tint: TimerKind.focus.tint), for: "timers")
+        case "calendar-refresh":
+            CalendarService.shared.refresh()
+        case "clear-activities":
+            for id in ["media", "timers", "claude", "notes", "revenue"] {
+                ActivityCenter.shared.setOngoing(nil, for: id)
+            }
         default:
-            if command.hasPrefix("snapshot:") {
+            if command.hasPrefix("open:") {
+                ScreenManager.shared.debugOpen(moduleID: String(command.dropFirst("open:".count)))
+            } else if command.hasPrefix("rebuild:") {
+                let count = Int(command.dropFirst("rebuild:".count)) ?? 1
+                for _ in 0..<count {
+                    ScreenManager.shared.debugForceRebuild()
+                }
+            } else if command.hasPrefix("status:") {
+                let path = String(command.dropFirst("status:".count))
+                let lines = [
+                    "screens: \(ScreenManager.shared.debugSummary)",
+                    "activity: \(ActivityCenter.shared.current?.moduleID ?? "-")",
+                    "clipboard access: \(ClipboardService.shared.access)",
+                    String(format: "pointer events: %.1f/s", ScreenManager.shared.debugPointerRate()),
+                ]
+                try? (lines.joined(separator: "\n") + "\n").write(toFile: path, atomically: true, encoding: .utf8)
+            } else if command.hasPrefix("snapshot:") {
                 snapshot(to: String(command.dropFirst("snapshot:".count)))
             } else if command.hasPrefix("selftest:") {
                 let path = String(command.dropFirst("selftest:".count))
@@ -75,6 +106,36 @@ enum DebugHooks {
         let weather = WeatherService.shared
         lines.append("weather state: status=\(weather.status) locationDenied=\(weather.locationDenied) hasReport=\(weather.report != nil) manualPlace=\(weather.manualPlace != nil)")
         lines.append("location: \(weather.location.statusDescription)")
+
+        // Phase 5
+        if #available(macOS 15.4, *) {
+            lines.append("pasteboard accessBehavior raw=\(NSPasteboard.general.accessBehavior.rawValue) → brim access \(ClipboardService.shared.access)")
+        }
+        lines += FullScreenDetector.selfTest()
+        let wrapped = StatsService.cpuUsage(from: [UInt32.max - 99, 10, 1_000, 0], to: [100, 110, 1_300, 0])
+        let normal = StatsService.cpuUsage(from: [100, 50, 800, 10], to: [150, 70, 1_000, 10])
+        lines.append("cpu wrap: wrapped=\(wrapped.map { String(format: "%.3f", $0) } ?? "nil") (expect 0.500) normal=\(normal.map { String(format: "%.3f", $0) } ?? "nil") (expect 0.259)")
+        lines.append("clock format: \(Format.clock(0)) \(Format.clock(59.2)) \(Format.clock(3725)) \(Format.clock(.infinity)) \(Format.clock(-5)) \(Format.clock(1e12))")
+        let crashFolder = URL(fileURLWithPath: path).deletingLastPathComponent().appendingPathComponent("crash-test", isDirectory: true)
+        try? FileManager.default.removeItem(at: crashFolder)
+        try? FileManager.default.createDirectory(at: crashFolder, withIntermediateDirectories: true)
+        let markerFile = crashFolder.appendingPathComponent("session.lock")
+        let sessionStart = Date().addingTimeInterval(-600)
+        try? String(sessionStart.timeIntervalSince1970).write(to: markerFile, atomically: true, encoding: .utf8)
+        let oldReport = crashFolder.appendingPathComponent("Brim-2026-01-01-000000.ips")
+        let newReport = crashFolder.appendingPathComponent("Brim-2026-09-16-120000.ips")
+        let otherApp = crashFolder.appendingPathComponent("Safari-2026-09-16-120500.ips")
+        for file in [oldReport, newReport, otherApp] {
+            try? "{}".write(to: file, atomically: true, encoding: .utf8)
+        }
+        try? FileManager.default.setAttributes([.modificationDate: sessionStart.addingTimeInterval(-3600)], ofItemAtPath: oldReport.path)
+        let found = Diagnostics.crashReport(markerURL: markerFile, reportsFolder: crashFolder)
+        try? FileManager.default.removeItem(at: markerFile)
+        let noMarker = Diagnostics.crashReport(markerURL: markerFile, reportsFolder: crashFolder)
+        try? FileManager.default.removeItem(at: crashFolder)
+        lines.append("crash detection: found=\(found?.lastPathComponent ?? "nil") (expect Brim-2026-09-16-120000.ips) withoutMarker=\(noMarker?.lastPathComponent ?? "nil") (expect nil)")
+        lines.append("diagnostics: sharing=\(Diagnostics.shared.isSharingEnabled) lastCrash=\(Diagnostics.shared.lastCrashReport?.lastPathComponent ?? "none") version=\(Diagnostics.versionString)")
+        lines.append("location authorized=\(WeatherService.shared.location.isAuthorized)")
 
         // Phase 3
         lines += await RevenueService.selfTest()

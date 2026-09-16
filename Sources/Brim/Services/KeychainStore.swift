@@ -19,6 +19,18 @@ enum KeychainStore {
         return String(data: data, encoding: .utf8)
     }
 
+    /// Whether a key is stored, without reading the secret (so macOS never asks).
+    static func contains(_ account: String) -> Bool {
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: service,
+            kSecAttrAccount as String: account,
+            kSecReturnAttributes as String: true,
+            kSecMatchLimit as String: kSecMatchLimitOne,
+        ]
+        return SecItemCopyMatching(query as CFDictionary, nil) == errSecSuccess
+    }
+
     @discardableResult
     static func save(_ value: String, for account: String) -> Bool {
         delete(account)

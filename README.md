@@ -17,19 +17,38 @@ Needs macOS 14 or later. Xcode isn't required yet: without Xcode, the script bui
 With a debug build running:
 
 ```bash
-./scripts/debug.sh open        # open and pin the notch
+./scripts/debug.sh open [module]     # open and pin the notch, optionally on a module (e.g. media)
 ./scripts/debug.sh close
-./scripts/debug.sh activity    # show a sample live activity
-./scripts/debug.sh snapshot ~/Desktop/brim-snapshots   # render every state to PNG (sample data)
+./scripts/debug.sh activity          # sample banner; also activity-media, activity-timer, clear-activities
+./scripts/debug.sh snapshot ~/Desktop/brim-snapshots     # render every state to PNG (sample data)
 ./scripts/debug.sh selftest ~/Desktop/brim-selftest.txt  # check the real services, write a report
+./scripts/debug.sh status ~/Desktop/brim-status.txt      # notch state per display, pointer event rate
+./scripts/debug.sh rebuild 30        # rebuild the notch windows, for leak checks
 ```
+
+### Other scripts
+
+| Script | What it does |
+|---|---|
+| `scripts/perf.sh [seconds]` | CPU, energy, wakeups and memory for each notch state, as a Markdown table |
+| `scripts/switch-peak.sh` | Memory peak while switching modules |
+| `scripts/package-beta.sh` | Release build, signature check and zip for testers |
+
+See [docs/PERFORMANCE.md](docs/PERFORMANCE.md), [docs/TESTING.md](docs/TESTING.md) (manual checks and permission audit) and [docs/BETA.md](docs/BETA.md).
 
 ## Using the notch
 
 - Hover to peek, keep hovering to open. Click to open and pin.
 - ⌘1–9 switches modules (after clicking the notch), as does a two-finger sideways swipe.
 - Esc or a click anywhere else closes it.
-- Settings (menu bar icon → Settings…): hover or click to open, hover delay, haptics, which display, module order and visibility, open at login.
+- Brim steps aside while an app is full screen (Settings can turn this off).
+- Settings (menu bar icon → Settings…):
+  - opening: hover or click, hover delay, haptics
+  - display: which display, hide in full screen
+  - modules: order and visibility (hidden modules stop their background work)
+  - features: music beside the notch, shelf expiry, clipboard history
+  - privacy and feedback: opt-in crash reports, Send Feedback…
+  - general: open at login
 
 ## Modules
 
@@ -60,7 +79,9 @@ Apple only lets its own processes use the private MediaRemote framework, so Brim
 
 ### Permissions during development
 
-The app is signed ad hoc, so macOS may ask for Calendar access, or for Keychain access to saved keys, again after a rebuild. A Developer ID signature (Phase 6) fixes that.
+The app is signed ad hoc, so macOS may ask for Calendar access, or for Keychain access to saved keys, again after a rebuild. A Developer ID signature (Phase 6) fixes that. Debug builds also carry `get-task-allow` so `leaks`, `sample` and `vmmap` work; release builds don't.
+
+On macOS 26, reading the clipboard in the background needs permission: the Clipboard module asks once, and history only records while macOS is set to always allow Brim.
 
 ## Layout
 

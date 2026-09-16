@@ -26,7 +26,7 @@ final class AnalyticsService {
     static let keychainAccount = "analytics.datafast"
     private static let base = "https://datafa.st/api/v1/analytics/"
 
-    private(set) var isConnected = KeychainStore.read(AnalyticsService.keychainAccount) != nil
+    private(set) var isConnected = KeychainStore.contains(AnalyticsService.keychainAccount)
     private(set) var overview: TrafficOverview?
     private(set) var liveVisitors: Int?
     private(set) var pages: [TrafficRow] = []

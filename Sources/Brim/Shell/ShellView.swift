@@ -1,3 +1,4 @@
+import QuartzCore
 import SwiftUI
 
 /// The root view inside the notch panel: one black shape whose size and
@@ -198,7 +199,7 @@ private struct LiveActivityBar: View {
                     Image(systemName: activity.symbol)
                         .font(.system(size: 13, weight: .semibold))
                         .foregroundStyle(activity.tint)
-                        .symbolEffect(.bounce, value: activity.id)
+                        .popOnChange(of: activity.id)
                 }
             }
             .matchedGeometryEffect(id: "icon-\(activity.moduleID)", in: namespace)
@@ -240,25 +241,94 @@ private struct LiveActivityBar: View {
     }
 }
 
-/// Four bars that bounce while music plays. Redraws ~12 times a second.
+/// Four bars that bounce while music plays. Core Animation runs them in the
+/// window server, so they cost Brim almost nothing even over hours of music.
 private struct EqualizerBars: View {
     let tint: Color
+    @Environment(\.snapshotMode) private var snapshotMode
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 12)) { context in
-            let time = context.date.timeIntervalSinceReferenceDate
-            HStack(alignment: .center, spacing: 2) {
-                ForEach(0..<4, id: \.self) { index in
-                    let phase = time * (5.1 + Double(index) * 1.7) + Double(index) * 1.3
-                    Capsule()
-                        .fill(tint)
-                        .frame(width: 3, height: 4 + 10 * CGFloat((sin(phase) + 1) / 2))
+        Group {
+            if snapshotMode || Motion.reduceMotion {
+                HStack(spacing: 2) {
+                    ForEach([0.5, 0.9, 0.35, 0.7], id: \.self) { height in
+                        Capsule().fill(tint).frame(width: 3, height: 14 * height)
+                    }
                 }
+            } else {
+                EqualizerLayers(tint: NSColor(tint))
             }
-            .frame(maxHeight: .infinity)
-            .animation(.linear(duration: 1.0 / 12), value: time)
         }
+        .accessibilityElement()
         .accessibilityLabel("Playing")
+    }
+}
+
+private struct EqualizerLayers: NSViewRepresentable {
+    let tint: NSColor
+
+    func makeNSView(context: Context) -> EqualizerView {
+        EqualizerView()
+    }
+
+    func updateNSView(_ view: EqualizerView, context: Context) {
+        view.tint = tint
+    }
+}
+
+final class EqualizerView: NSView {
+    private static let durations: [CFTimeInterval] = [0.42, 0.55, 0.37, 0.49]
+    private static let offsets: [CFTimeInterval] = [0, 0.12, 0.25, 0.06]
+    private var bars: [CALayer] = []
+
+    var tint: NSColor = .white {
+        didSet {
+            guard tint != oldValue else { return }
+            bars.forEach { $0.backgroundColor = tint.cgColor }
+        }
+    }
+
+    override init(frame: NSRect) {
+        super.init(frame: frame)
+        wantsLayer = true
+        for _ in 0..<4 {
+            let bar = CALayer()
+            bar.cornerRadius = 1.5
+            bar.backgroundColor = tint.cgColor
+            layer?.addSublayer(bar)
+            bars.append(bar)
+        }
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) is not used")
+    }
+
+    override func layout() {
+        super.layout()
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        for (index, bar) in bars.enumerated() {
+            bar.bounds = CGRect(x: 0, y: 0, width: 3, height: bounds.height)
+            bar.position = CGPoint(x: CGFloat(index) * 5 + 1.5, y: bounds.midY)
+        }
+        CATransaction.commit()
+        startAnimating()
+    }
+
+    private func startAnimating() {
+        for (index, bar) in bars.enumerated() where bar.animation(forKey: "bounce") == nil {
+            let bounce = CABasicAnimation(keyPath: "transform.scale.y")
+            bounce.fromValue = 0.25
+            bounce.toValue = 1.0
+            bounce.duration = Self.durations[index]
+            bounce.autoreverses = true
+            bounce.repeatCount = .infinity
+            bounce.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+            bounce.beginTime = CACurrentMediaTime() + Self.offsets[index]
+            bar.add(bounce, forKey: "bounce")
+        }
     }
 }
 
