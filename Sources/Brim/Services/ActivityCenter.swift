@@ -11,6 +11,18 @@ enum ActivityContent: Equatable {
     case stopwatch(since: Date)
     /// Animated equalizer bars.
     case playing
+    /// A short bar, 0...1 (volume).
+    case level(Double)
+    /// Lines that take turns, rolling like a ticker.
+    case ticker([String])
+}
+
+/// A ring drawn around the left-hand icon.
+enum ActivityProgress: Equatable {
+    /// Fills from `start` to `end` by itself (a running timer). Core Animation
+    /// runs it, so Brim does no work while it fills.
+    case timed(start: Date, end: Date)
+    case fraction(Double)
 }
 
 /// Something shown beside the notch while it's closed.
@@ -25,44 +37,118 @@ struct LiveActivity: Identifiable, Equatable {
     var earWidth: CGFloat = Layout.earWidth
     /// How long a banner stays. Ongoing activities ignore it.
     var duration: Duration = .seconds(4)
+    var progress: ActivityProgress?
+    /// A soft beat behind the icon: something is working or waiting.
+    var pulse: Pulse?
+
+    enum Pulse: Equatable {
+        case calm, urgent
+    }
 
     static func == (lhs: LiveActivity, rhs: LiveActivity) -> Bool {
         lhs.id == rhs.id && lhs.moduleID == rhs.moduleID && lhs.symbol == rhs.symbol
             && lhs.content == rhs.content && lhs.tint == rhs.tint
             && lhs.image === rhs.image && lhs.earWidth == rhs.earWidth
+            && lhs.progress == rhs.progress && lhs.pulse == rhs.pulse
     }
 }
 
-/// Two kinds of activity:
+/// How Brim's mascot feels, from what's going on.
+enum MascotMood: String, CaseIterable {
+    case idle, working, celebrating, sleeping
+}
+
+/// Three kinds of activity:
+/// - a HUD, shown straight away while you adjust something (volume)
 /// - banners, shown one at a time for a few seconds ("+$49", "Copied")
 /// - ongoing activities, one per module, shown while no banner is up
-///   (a running timer, music playing)
+///   (a running timer, music playing). The rest wait their turn.
 @MainActor
 @Observable
 final class ActivityCenter {
     static let shared = ActivityCenter()
 
     /// Which ongoing activity wins when several are live.
-    private static let priority = ["claude", "timers", "media", "notes", "revenue"]
+    private static let priority = ["claude", "timers", "downloads", "media", "notes", "revenue"]
+    /// Ongoing activities that count as "working" for the mascot.
+    private static let busyModules: Set<String> = ["claude", "timers", "downloads"]
+    private static let sleepAfter: Duration = .seconds(10 * 60)
 
+    private(set) var hud: LiveActivity?
     private(set) var banner: LiveActivity?
     private(set) var ongoing: [String: LiveActivity] = [:]
+    /// Goes up by one for each celebration; views watch it to play one.
+    private(set) var celebrations = 0
+    private(set) var isCelebrating = false
+    private(set) var isDrowsy = false
     @ObservationIgnored private var queue: [LiveActivity] = []
     @ObservationIgnored private var bannerTask: Task<Void, Never>?
+    @ObservationIgnored private var hudTask: Task<Void, Never>?
+    @ObservationIgnored private var celebrationTask: Task<Void, Never>?
+    @ObservationIgnored private var drowsyTask: Task<Void, Never>?
     @ObservationIgnored private var demoIndex = 0
 
+    init() {
+        noteActivity()
+    }
+
     var current: LiveActivity? {
+        if let hud { return hud }
         if let banner { return banner }
-        for moduleID in Self.priority {
-            if let activity = ongoing[moduleID] { return activity }
+        return orderedOngoing.first
+    }
+
+    /// Live things not shown right now.
+    var waitingCount: Int {
+        let live = ongoing.count + queue.count + (banner == nil ? 0 : 1) + (hud == nil ? 0 : 1)
+        return max(0, live - 1)
+    }
+
+    private var orderedOngoing: [LiveActivity] {
+        ongoing.values.sorted { lhs, rhs in
+            let left = Self.priority.firstIndex(of: lhs.moduleID) ?? Self.priority.count
+            let right = Self.priority.firstIndex(of: rhs.moduleID) ?? Self.priority.count
+            return left == right ? lhs.moduleID < rhs.moduleID : left < right
         }
-        return ongoing.values.first
+    }
+
+    var mood: MascotMood {
+        if isCelebrating { return .celebrating }
+        let busy = ongoing.values.contains { activity in
+            guard Self.busyModules.contains(activity.moduleID) else { return false }
+            // A paused timer isn't work.
+            if case .text = activity.content, activity.moduleID == "timers" { return false }
+            return true
+        }
+        if busy { return .working }
+        return isDrowsy ? .sleeping : .idle
     }
 
     func post(_ activity: LiveActivity) {
         queue.append(activity)
+        noteActivity()
         if banner == nil {
             advance()
+        }
+    }
+
+    /// Shows something at once, replacing any HUD already up, and hides it
+    /// shortly after the last update.
+    func showHUD(_ activity: LiveActivity, for duration: Duration = .milliseconds(1300)) {
+        var activity = activity
+        if let hud, hud.moduleID == activity.moduleID {
+            activity.id = hud.id
+        }
+        if hud == nil {
+            withAnimation(Motion.activity) { hud = activity }
+        } else {
+            hud = activity
+        }
+        hudTask?.cancel()
+        hudTask = Task { [weak self] in
+            try? await Task.sleep(for: duration)
+            guard !Task.isCancelled else { return }
+            withAnimation(Motion.activity) { self?.hud = nil }
         }
     }
 
@@ -72,6 +158,7 @@ final class ActivityCenter {
         guard var activity else {
             if ongoing[moduleID] != nil {
                 withAnimation(Motion.activity) { ongoing[moduleID] = nil }
+                noteActivity()
             }
             return
         }
@@ -82,6 +169,37 @@ final class ActivityCenter {
             }
         } else {
             withAnimation(Motion.activity) { ongoing[moduleID] = activity }
+            noteActivity()
+        }
+    }
+
+    /// Confetti, a haptic and (if turned on) a sound, e.g. for a sale.
+    func celebrate() {
+        noteActivity()
+        celebrations += 1
+        withAnimation(Motion.activity) { isCelebrating = true }
+        Haptics.celebrate()
+        if UserDefaults.standard.bool(forKey: SettingsKey.saleSound) {
+            CelebrationSound.play()
+        }
+        celebrationTask?.cancel()
+        celebrationTask = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(4))
+            guard !Task.isCancelled else { return }
+            withAnimation(Motion.activity) { self?.isCelebrating = false }
+        }
+    }
+
+    /// Something happened: the mascot wakes up, and dozes off after a quiet while.
+    private func noteActivity() {
+        if isDrowsy {
+            withAnimation(Motion.activity) { isDrowsy = false }
+        }
+        drowsyTask?.cancel()
+        drowsyTask = Task { [weak self] in
+            try? await Task.sleep(for: Self.sleepAfter)
+            guard !Task.isCancelled, let self else { return }
+            withAnimation(Motion.activity) { self.isDrowsy = true }
         }
     }
 
@@ -107,7 +225,31 @@ final class ActivityCenter {
             LiveActivity(moduleID: "shelf", symbol: "tray.full.fill", content: .text("3 files"), tint: .cyan),
             LiveActivity(moduleID: "clipboard", symbol: "doc.on.clipboard.fill", content: .text("Copied"), tint: Theme.accent),
         ]
-        post(samples[demoIndex % samples.count])
+        let sample = samples[demoIndex % samples.count]
+        post(sample)
+        if sample.moduleID == "revenue" {
+            celebrate()
+        }
         demoIndex += 1
     }
+
+    #if DEBUG
+    func debugSet(celebrating: Bool? = nil, drowsy: Bool? = nil) {
+        if let celebrating { isCelebrating = celebrating }
+        if let drowsy { isDrowsy = drowsy }
+    }
+
+    /// Sets live activities aside (for snapshots) and returns them.
+    func debugStash() -> [String: LiveActivity] {
+        let saved = ongoing
+        ongoing = [:]
+        return saved
+    }
+
+    func debugRestore(_ saved: [String: LiveActivity]) {
+        for (moduleID, activity) in saved where ongoing[moduleID] == nil {
+            ongoing[moduleID] = activity
+        }
+    }
+    #endif
 }

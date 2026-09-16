@@ -15,18 +15,31 @@ private struct HomeView: View {
     private var timers: TimerService { .shared }
     private var weather: WeatherService { .shared }
     private var revenue: RevenueService { .shared }
+    @AppStorage(SettingsKey.showMascot) private var showMascot = true
+    @Environment(\.snapshotDate) private var snapshotDate
 
     var body: some View {
         HStack(alignment: .top, spacing: 14) {
             VStack(alignment: .leading, spacing: 10) {
-                TimelineView(.everyMinute) { context in
-                    VStack(alignment: .leading, spacing: 0) {
-                        Text(context.date, format: .dateTime.hour().minute())
-                            .font(.system(size: 46, weight: .semibold, design: .rounded))
-                            .monospacedDigit()
-                        Text(context.date, format: .dateTime.weekday(.wide).month(.wide).day())
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundStyle(Theme.secondaryInk)
+                HStack(alignment: .top, spacing: 0) {
+                    TimelineView(.everyMinute) { context in
+                        let date = snapshotDate ?? context.date
+                        VStack(alignment: .leading, spacing: 0) {
+                            Text(date, format: .dateTime.hour().minute())
+                                .font(.system(size: 46, weight: .semibold, design: .rounded))
+                                .monospacedDigit()
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.6)
+                            Text(date, format: .dateTime.weekday(.wide).month(.wide).day())
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundStyle(Theme.secondaryInk)
+                        }
+                    }
+                    Spacer(minLength: 4)
+                    if showMascot {
+                        MascotBadge(mood: ActivityCenter.shared.mood, size: 48)
+                            .padding(.top, 6)
+                            .transition(.scale.combined(with: .opacity))
                     }
                 }
                 if let report = weather.report {

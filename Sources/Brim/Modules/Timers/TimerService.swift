@@ -198,10 +198,14 @@ final class TimerService {
         if let kind {
             if let endDate {
                 center.setOngoing(LiveActivity(moduleID: "timers", symbol: kind.symbol,
-                                               content: .countdown(until: endDate), tint: kind.tint), for: "timers")
+                                               content: .countdown(until: endDate), tint: kind.tint,
+                                               progress: .timed(start: endDate.addingTimeInterval(-total), end: endDate)),
+                                  for: "timers")
             } else {
                 center.setOngoing(LiveActivity(moduleID: "timers", symbol: "pause.fill",
-                                               content: .text(Format.clock(pausedRemaining ?? 0)), tint: kind.tint), for: "timers")
+                                               content: .text(Format.clock(pausedRemaining ?? 0)), tint: kind.tint,
+                                               progress: .fraction(progress(at: .now))),
+                                  for: "timers")
             }
         } else if let stopwatchStarted {
             center.setOngoing(LiveActivity(moduleID: "timers", symbol: "stopwatch.fill",

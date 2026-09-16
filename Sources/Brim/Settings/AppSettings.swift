@@ -24,6 +24,13 @@ enum SettingsKey {
     static let mediaActivity = "mediaActivity"
     static let shelfExpiryHours = "shelfExpiryHours"
     static let hideInFullScreen = "hideInFullScreen"
+    static let scrollForVolume = "scrollForVolume"
+    static let showMascot = "showMascot"
+    static let celebrateSales = "celebrateSales"
+    static let saleSound = "saleSound"
+    static let realAudioLevels = "realAudioLevels"
+    static let downloadProgress = "downloadProgress"
+    static let ledTitle = "ledTitle"
 }
 
 enum DisplayChoice {
@@ -52,6 +59,13 @@ enum AppSettings {
             SettingsKey.mediaActivity: true,
             SettingsKey.shelfExpiryHours: 24,
             SettingsKey.hideInFullScreen: true,
+            SettingsKey.scrollForVolume: true,
+            SettingsKey.showMascot: true,
+            SettingsKey.celebrateSales: true,
+            SettingsKey.saleSound: false,
+            SettingsKey.realAudioLevels: false,
+            SettingsKey.downloadProgress: false,
+            SettingsKey.ledTitle: true,
             Diagnostics.shareKey: false,
         ])
     }
@@ -90,6 +104,10 @@ enum AppSettings {
 
     static var hideInFullScreen: Bool {
         UserDefaults.standard.bool(forKey: SettingsKey.hideInFullScreen)
+    }
+
+    static var scrollForVolume: Bool {
+        UserDefaults.standard.bool(forKey: SettingsKey.scrollForVolume)
     }
 
     /// 0 means keep shelf items until removed.

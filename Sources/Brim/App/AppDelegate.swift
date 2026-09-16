@@ -18,6 +18,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         signal(SIGPIPE, SIG_IGN)
         Diagnostics.shared.sessionStarted()
         ModuleRegistry.syncRunning()
+        DownloadsService.shared.settingsChanged()
         ScreenManager.shared.start()
         #if DEBUG
         DebugHooks.install()

@@ -13,6 +13,13 @@ struct SettingsView: View {
     @AppStorage(SettingsKey.shelfExpiryHours) private var shelfExpiryHours = 24
     @AppStorage(SettingsKey.hideInFullScreen) private var hideInFullScreen = true
     @AppStorage(Diagnostics.shareKey) private var shareDiagnostics = false
+    @AppStorage(SettingsKey.scrollForVolume) private var scrollForVolume = true
+    @AppStorage(SettingsKey.showMascot) private var showMascot = true
+    @AppStorage(SettingsKey.celebrateSales) private var celebrateSales = true
+    @AppStorage(SettingsKey.saleSound) private var saleSound = false
+    @AppStorage(SettingsKey.realAudioLevels) private var realAudioLevels = false
+    @AppStorage(SettingsKey.downloadProgress) private var downloadProgress = false
+    @AppStorage(SettingsKey.ledTitle) private var ledTitle = true
     @State private var confirmClearClipboard = false
     @State private var openAtLogin = SMAppService.mainApp.status == .enabled
     @State private var loginMessage: String?
@@ -35,6 +42,49 @@ struct SettingsView: View {
                 }
 
                 Toggle("Haptic feedback", isOn: $haptics)
+            }
+
+            Section {
+                ThemePicker()
+                if ThemeStore.shared.selectedID == Palette.customID {
+                    CustomThemeEditor()
+                }
+                Toggle("Show Brim's mascot on Home", isOn: $showMascot)
+                Toggle("Show the track on a dot-matrix display", isOn: $ledTitle)
+            } header: {
+                Text("Appearance")
+            } footer: {
+                Text("The closed notch always stays black, so it blends into the camera housing.")
+                    .foregroundStyle(.secondary)
+            }
+
+            Section {
+                Toggle("Show music beside the notch while it plays", isOn: $mediaActivity)
+                    .onChange(of: mediaActivity) { _, _ in MediaService.shared.settingsChanged() }
+                Toggle("Move the music bars with the real sound", isOn: $realAudioLevels)
+                    .onChange(of: realAudioLevels) { _, _ in AudioLevels.shared.settingsChanged() }
+                if realAudioLevels {
+                    AudioLevelsStatus()
+                }
+                Toggle("Show download progress", isOn: $downloadProgress)
+                    .onChange(of: downloadProgress) { _, _ in DownloadsService.shared.settingsChanged() }
+                Toggle("Scroll on the closed notch to change the volume", isOn: $scrollForVolume)
+            } header: {
+                Text("Beside the notch")
+            } footer: {
+                Text("Real sound needs permission to record system audio; Brim only measures how loud it is and keeps nothing. Download progress works with Safari, Chrome and other apps that report it, and macOS may ask for access to your Downloads folder.")
+                    .foregroundStyle(.secondary)
+            }
+
+            Section("Sales") {
+                Toggle("Celebrate each sale with confetti", isOn: $celebrateSales)
+                Toggle("Play a cash-register sound", isOn: $saleSound)
+                LabeledContent("Try it") {
+                    Button("Celebrate") {
+                        ActivityCenter.shared.celebrate()
+                        ScreenManager.shared.openPrimaryForPreview()
+                    }
+                }
             }
 
             Section("Display") {
@@ -74,8 +124,6 @@ struct SettingsView: View {
             }
 
             Section("Features") {
-                Toggle("Show music beside the notch while it plays", isOn: $mediaActivity)
-                    .onChange(of: mediaActivity) { _, _ in MediaService.shared.settingsChanged() }
                 Picker("Keep shelf items for", selection: $shelfExpiryHours) {
                     Text("1 hour").tag(1)
                     Text("1 day").tag(24)
@@ -184,6 +232,146 @@ struct SettingsView: View {
         } catch {
             loginMessage = "Couldn't change this: \(error.localizedDescription)"
             openAtLogin = service.status == .enabled
+        }
+    }
+}
+
+// MARK: - Themes
+
+private struct ThemePicker: View {
+    private var store: ThemeStore { .shared }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 10) {
+                ForEach(store.choices) { palette in
+                    ThemeCard(palette: palette, isSelected: palette.id == store.selectedID) {
+                        store.select(palette.id)
+                    }
+                }
+            }
+            if store.selectedID != Palette.customID {
+                Button("Customise This Theme…") { store.customizeCurrent() }
+                    .buttonStyle(.link)
+            }
+        }
+        .padding(.vertical, 4)
+    }
+}
+
+private struct ThemeCard: View {
+    let palette: Palette
+    let isSelected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 6) {
+                ZStack(alignment: .top) {
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .fill(Color(white: 0.55))
+                    // A tiny open notch.
+                    UnevenRoundedRectangle(bottomLeadingRadius: 10, bottomTrailingRadius: 10, style: .continuous)
+                        .fill(palette.material == .glass
+                              ? AnyShapeStyle(LinearGradient(colors: [.black, palette.surface.color.opacity(0.75)],
+                                                             startPoint: .top, endPoint: .bottom))
+                              : AnyShapeStyle(palette.surface.color))
+                        .overlay(alignment: .topLeading) {
+                            if let glow = palette.glow ?? Optional(palette.accent), palette.glowStrength > 0 {
+                                RadialGradient(colors: [glow.color.opacity(palette.glowStrength * 1.4), .clear],
+                                               center: .topLeading, startRadius: 2, endRadius: 60)
+                            }
+                        }
+                        .overlay(alignment: .bottomLeading) {
+                            VStack(alignment: .leading, spacing: 3) {
+                                Capsule().fill(palette.ink.color.opacity(0.9)).frame(width: 30, height: 4)
+                                Capsule().fill(palette.ink.color.opacity(0.4)).frame(width: 20, height: 3)
+                                Capsule().fill(palette.accent.color).frame(width: 24, height: 7)
+                            }
+                            .padding(7)
+                        }
+                        .clipShape(UnevenRoundedRectangle(bottomLeadingRadius: 10, bottomTrailingRadius: 10, style: .continuous))
+                        .padding(.horizontal, 8)
+                }
+                .frame(width: 92, height: 60)
+                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .strokeBorder(isSelected ? Color.accentColor : Color.primary.opacity(0.1),
+                                      lineWidth: isSelected ? 2.5 : 1)
+                )
+                Text(palette.name)
+                    .font(.caption)
+                    .foregroundStyle(isSelected ? .primary : .secondary)
+            }
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("\(palette.name) theme")
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
+    }
+}
+
+private struct CustomThemeEditor: View {
+    private var store: ThemeStore { .shared }
+
+    var body: some View {
+        ColorPicker("Background", selection: color(\.surface), supportsOpacity: false)
+        ColorPicker("Text", selection: color(\.ink), supportsOpacity: false)
+        ColorPicker("Accent", selection: color(\.accent), supportsOpacity: false)
+        Picker("Material", selection: Binding(
+            get: { store.custom.material },
+            set: { material in store.updateCustom { $0.material = material } }
+        )) {
+            Text("Solid").tag(SurfaceMaterial.solid)
+            Text("Glass").tag(SurfaceMaterial.glass)
+        }
+        .pickerStyle(.segmented)
+        Toggle("Glow in each module's colour", isOn: Binding(
+            get: { store.custom.glow == nil },
+            set: { follows in store.updateCustom { $0.glow = follows ? nil : $0.accent } }
+        ))
+        if store.custom.glow != nil {
+            ColorPicker("Glow", selection: Binding(
+                get: { store.custom.glow?.color ?? .white },
+                set: { color in store.updateCustom { $0.glow = RGBA(color) } }
+            ), supportsOpacity: false)
+        }
+        LabeledContent("Glow strength") {
+            Slider(value: Binding(
+                get: { store.custom.glowStrength },
+                set: { value in store.updateCustom { $0.glowStrength = value } }
+            ), in: 0...0.7)
+        }
+    }
+
+    private func color(_ keyPath: WritableKeyPath<Palette, RGBA>) -> Binding<Color> {
+        Binding(
+            get: { store.custom[keyPath: keyPath].color },
+            set: { color in store.updateCustom { $0[keyPath: keyPath] = RGBA(color) } }
+        )
+    }
+}
+
+private struct AudioLevelsStatus: View {
+    private var levels: AudioLevels { .shared }
+
+    var body: some View {
+        switch levels.status {
+        case .off, .listening:
+            Text("The bars follow the music while they're showing. macOS asks for permission the first time.")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+        case .silent:
+            LabeledContent {
+                Button("Open Settings") { PrivacyPane.audioCapture.open() }
+            } label: {
+                Text("Brim isn't hearing any sound. If music is playing, allow Brim under Privacy & Security › Screen & System Audio Recording.")
+                    .font(.callout)
+            }
+        case .failed(let message):
+            Text("Real sound isn't available: \(message) The bars use their own animation.")
+                .font(.callout)
+                .foregroundStyle(.secondary)
         }
     }
 }

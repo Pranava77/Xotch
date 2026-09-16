@@ -28,6 +28,7 @@ Still to do for a beta channel: automatic updates. Adding Sparkle needs the Spar
 - **Every day:** Home, Now Playing (Music, Spotify, a browser), Calendar, Timers.
 - **Clipboard:** copy things and search them later. macOS asks once whether Brim may read the clipboard.
 - **Shelf:** drag a file towards the notch, drop it, then drag it out somewhere else.
+- **Make it yours:** try the themes in Settings › Appearance, ⌘K in the open notch, scrolling on the closed notch for volume, and flicking a file off the Shelf.
 - **Different setups:** full-screen apps, an external display, sleep and wake.
 - **Optional:** connect Stripe, Polar or Dodo Payments with a read-only key, DataFast with a website key, and the Claude Code hook.
 

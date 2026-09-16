@@ -166,10 +166,12 @@ final class ClaudeLiveService {
         let center = ActivityCenter.shared
         if sessions.contains(where: { if case .waiting = $0.state { true } else { false } }) {
             center.setOngoing(LiveActivity(moduleID: "claude", symbol: "hand.raised.fill",
-                                           content: .text("Needs you"), tint: Theme.accent, earWidth: 110), for: "claude")
+                                           content: .text("Needs you"), tint: Theme.accent, earWidth: 110,
+                                           pulse: .urgent), for: "claude")
         } else if let working = sessions.first(where: { if case .working = $0.state { true } else { false } }) {
             center.setOngoing(LiveActivity(moduleID: "claude", symbol: "sparkle",
-                                           content: .text(working.stateLabel), tint: Self.tint, earWidth: 110), for: "claude")
+                                           content: .text(working.stateLabel), tint: Self.tint, earWidth: 110,
+                                           pulse: .calm), for: "claude")
         } else {
             center.setOngoing(nil, for: "claude")
         }

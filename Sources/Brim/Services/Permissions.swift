@@ -5,6 +5,7 @@ enum PrivacyPane: String {
     case calendars = "Privacy_Calendars"
     case reminders = "Privacy_Reminders"
     case location = "Privacy_LocationServices"
+    case audioCapture = "Privacy_AudioCapture"
 
     func open() {
         guard let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?\(rawValue)") else { return }

@@ -166,6 +166,9 @@ final class RevenueService {
         ActivityCenter.shared.post(LiveActivity(moduleID: "revenue", symbol: "dollarsign.circle.fill",
                                                 content: .text("+" + Money.format(sale.amount, currency: sale.currency)),
                                                 tint: Theme.positive, earWidth: 110, duration: .seconds(5)))
+        if UserDefaults.standard.bool(forKey: SettingsKey.celebrateSales) {
+            ActivityCenter.shared.celebrate()
+        }
     }
 
     func settingsChanged() {
@@ -179,14 +182,18 @@ final class RevenueService {
         }
         ActivityCenter.shared.setOngoing(
             LiveActivity(moduleID: "revenue", symbol: "chart.line.uptrend.xyaxis",
-                         content: .text(Money.format(top.amount, currency: top.currency, compact: true)),
+                         content: .ticker([
+                             Money.format(top.amount, currency: top.currency, compact: true),
+                             sales.count == 1 ? "1 sale" : "\(sales.count) sales",
+                         ]),
                          tint: Theme.positive, earWidth: 100),
             for: "revenue"
         )
     }
 
     #if DEBUG
-    func withSample(_ body: () -> Void) {
+    /// `showingErrors` adds an offline notice, to check how errors look.
+    func withSample(showingErrors: Bool = true, _ body: () -> Void) {
         let saved = (connected, sales, errors, lastUpdated)
         let now = Date()
         connected = [.stripe, .polar]
@@ -196,7 +203,7 @@ final class RevenueService {
             Sale(id: "3", provider: .stripe, amount: 149, currency: "USD", date: now.addingTimeInterval(-7200), customer: "Northwind", product: "Team plan"),
             Sale(id: "4", provider: .stripe, amount: 9.5, currency: "EUR", date: now.addingTimeInterval(-9000), customer: nil, product: "Tip"),
         ]
-        errors = [.polar: .offline]
+        errors = showingErrors ? [.polar: .offline] : [:]
         lastUpdated = now.addingTimeInterval(-60)
         body()
         (connected, sales, errors, lastUpdated) = saved

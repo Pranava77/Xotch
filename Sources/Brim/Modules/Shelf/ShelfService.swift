@@ -143,14 +143,56 @@ final class ShelfService {
     #if DEBUG
     func withSample(_ body: () -> Void) {
         let saved = (items, thumbnails)
-        let paths = ["/System/Applications/Music.app", "/System/Library/CoreServices/Finder.app", "/Applications/Safari.app"]
-        items = paths.compactMap { path in
-            let url = URL(fileURLWithPath: path)
-            guard let bookmark = try? url.bookmarkData() else { return nil }
-            return ShelfItem(bookmark: bookmark, name: url.lastPathComponent, added: Date())
+        items = []
+        for url in Self.sampleFiles() {
+            guard let bookmark = try? url.bookmarkData() else { continue }
+            let item = ShelfItem(bookmark: bookmark, name: url.lastPathComponent, added: Date())
+            items.append(item)
+            thumbnails[item.id] = url.pathExtension == "png"
+                ? NSImage(contentsOf: url)
+                : NSWorkspace.shared.icon(forFile: url.path)
         }
         body()
         (items, thumbnails) = saved
+    }
+
+    /// Made-up files in a temporary folder, so samples never show real ones.
+    private static func sampleFiles() -> [URL] {
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("BrimSamples", isDirectory: true)
+        try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        let pdf = folder.appendingPathComponent("Launch plan.pdf")
+        let png = folder.appendingPathComponent("Hero shot.png")
+        let text = folder.appendingPathComponent("Changelog.md")
+        if !FileManager.default.fileExists(atPath: pdf.path) {
+            var box = CGRect(x: 0, y: 0, width: 612, height: 792)
+            if let context = CGContext(pdf as CFURL, mediaBox: &box, nil) {
+                context.beginPDFPage(nil)
+                context.setFillColor(CGColor(red: 1, green: 0.62, blue: 0.04, alpha: 1))
+                context.fill(CGRect(x: 60, y: 640, width: 300, height: 40))
+                context.setFillColor(CGColor(gray: 0.8, alpha: 1))
+                for line in 0..<14 {
+                    context.fill(CGRect(x: 60, y: 580 - CGFloat(line) * 28, width: CGFloat(420 - line % 3 * 60), height: 10))
+                }
+                context.endPDFPage()
+                context.closePDF()
+            }
+        }
+        if !FileManager.default.fileExists(atPath: png.path) {
+            let image = NSImage(size: NSSize(width: 320, height: 200), flipped: false) { rect in
+                NSGradient(colors: [NSColor(srgbRed: 0.35, green: 0.2, blue: 0.75, alpha: 1),
+                                    NSColor(srgbRed: 1, green: 0.5, blue: 0.35, alpha: 1)])?.draw(in: rect, angle: 30)
+                NSColor.black.setFill()
+                NSBezierPath(roundedRect: NSRect(x: 90, y: 150, width: 140, height: 50), xRadius: 16, yRadius: 16).fill()
+                return true
+            }
+            if let tiff = image.tiffRepresentation, let data = NSBitmapImageRep(data: tiff)?.representation(using: .png, properties: [:]) {
+                try? data.write(to: png)
+            }
+        }
+        if !FileManager.default.fileExists(atPath: text.path) {
+            try? "# Changelog\n\n## 0.2.0\n- Themes\n".write(to: text, atomically: true, encoding: .utf8)
+        }
+        return [pdf, png, text]
     }
     #endif
 }

@@ -229,13 +229,40 @@ final class MediaService {
     }
 
     #if DEBUG
+    /// An abstract cover: a low sun over layered hills.
+    private static let sampleArtwork = NSImage(size: NSSize(width: 300, height: 300), flipped: false) { rect in
+        let sky = NSGradient(colors: [NSColor(srgbRed: 0.98, green: 0.45, blue: 0.42, alpha: 1),
+                                      NSColor(srgbRed: 0.47, green: 0.25, blue: 0.78, alpha: 1)])
+        sky?.draw(in: rect, angle: -90)
+        NSColor(srgbRed: 1, green: 0.84, blue: 0.55, alpha: 1).setFill()
+        NSBezierPath(ovalIn: NSRect(x: 95, y: 110, width: 110, height: 110)).fill()
+        let hills: [(CGFloat, NSColor)] = [
+            (150, NSColor(srgbRed: 0.36, green: 0.18, blue: 0.55, alpha: 1)),
+            (105, NSColor(srgbRed: 0.24, green: 0.12, blue: 0.42, alpha: 1)),
+            (60, NSColor(srgbRed: 0.12, green: 0.07, blue: 0.26, alpha: 1)),
+        ]
+        for (index, (height, color)) in hills.enumerated() {
+            let path = NSBezierPath()
+            path.move(to: NSPoint(x: 0, y: 0))
+            path.line(to: NSPoint(x: 0, y: height))
+            path.curve(to: NSPoint(x: 300, y: height - 20 + CGFloat(index) * 12),
+                       controlPoint1: NSPoint(x: 90, y: height + 45),
+                       controlPoint2: NSPoint(x: 200, y: height - 50))
+            path.line(to: NSPoint(x: 300, y: 0))
+            path.close()
+            color.setFill()
+            path.fill()
+        }
+        return true
+    }
+
     func withSample(_ body: () -> Void) {
         let saved = (nowPlaying, artwork, tint)
         nowPlaying = NowPlaying(title: "Midnight City", artist: "M83", album: "Hurry Up, We're Dreaming",
                                 duration: 243, elapsed: 97, timestamp: nil, rate: 1, isPlaying: true,
                                 bundleID: "com.apple.Music")
-        artwork = nil
-        tint = Color(red: 0.62, green: 0.55, blue: 1)
+        artwork = Self.sampleArtwork
+        tint = Self.sampleArtwork.vividColor ?? Color(red: 0.62, green: 0.55, blue: 1)
         body()
         (nowPlaying, artwork, tint) = saved
     }

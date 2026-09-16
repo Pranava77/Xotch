@@ -26,6 +26,8 @@
 	<string>14.0</string>
 	<key>LSUIElement</key>
 	<true/>
+	<key>NSAudioCaptureUsageDescription</key>
+	<string>With "Real audio levels" on, Brim reads how loud the music is to move the bars beside the notch. Nothing is recorded or kept.</string>
 	<key>NSCalendarsFullAccessUsageDescription</key>
 	<string>Brim shows your upcoming events in the notch.</string>
 	<key>NSCalendarsUsageDescription</key>

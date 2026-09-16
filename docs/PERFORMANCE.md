@@ -2,31 +2,48 @@
 
 Budget: **under 0.5% CPU and under 80 MB of memory while idle**, with nothing that keeps working while the notch is closed.
 
-Measured on a 14" MacBook Pro (Mac17,9, Apple M5 Pro), macOS 26.6.2, debug build 0.2.0 (2), with every module shown and Now Playing connected to a paused Chrome tab. No payment or analytics keys were connected.
+Measured on a 14" MacBook Pro (Mac17,9, Apple M5 Pro), macOS 26.6.2, debug build 0.2.0 (2), with every module shown, the Smoke Glass theme, and Now Playing connected to a paused Chrome tab. No payment or analytics keys were connected.
 
 ## Results
 
-`scripts/perf.sh 12` (each state averaged over about 12 seconds, after a 3-second settle):
+`scripts/perf.sh 10` (each state averaged over about 10 seconds, after a 3-second settle), after Phase 4:
 
 | State | CPU | Energy impact | Idle wakeups | Memory |
 |---|---|---|---|---|
-| Closed, nothing live | 0.00% | 0.00 | 3.0/s | 24 MB |
-| Open on Home | 0.00% | 0.00 | 3.0/s | 29 MB |
-| Open on Now Playing | 0.08% | 0.08 | 3.5/s | 33 MB |
-| Open on Calendar | 0.07% | 0.08 | 3.8/s | 33 MB |
-| Open on Clipboard | 0.00% | 0.00 | 4.0/s | 34 MB |
-| Open on System | 0.53% | 0.53 | 4.0/s | 36 MB |
-| Open on Weather | 0.00% | 0.00 | 4.0/s | 36 MB |
-| Open on Revenue | 0.00% | 0.00 | 4.0/s | 36 MB |
-| Open on Analytics | 0.00% | 0.00 | 4.0/s | 37 MB |
-| Open on Claude Code | 0.00% | 0.00 | 4.0/s | 41 MB |
-| Open on Timers | 0.08% | 0.08 | 4.0/s | 42 MB |
-| Closed, music playing (equalizer) | 0.00% | 0.00 | 4.0/s | 41 MB |
-| Closed, timer counting down | 0.52% | 0.52 | 4.0/s | 42 MB |
+| Closed, nothing live | 0.00% | 0.00 | 0.0/s | 18 MB |
+| Open on Home (mascot) | 0.00% | 0.00 | 0.0/s | 32 MB |
+| Open on Now Playing (glow, scrolling LED title) | 0.10% | 0.10 | 0.0/s | 38 MB |
+| Open on Calendar | 0.00% | 0.00 | 0.5/s | 36 MB |
+| Open on Clipboard | 0.00% | 0.00 | 0.5/s | 37 MB |
+| Open on Shelf | 0.00% | 0.00 | 0.5/s | 37 MB |
+| Open on System | 0.60% | 0.60 | 0.5/s | 38 MB |
+| Open on Weather | 0.00% | 0.00 | 0.5/s | 38 MB |
+| Open on Revenue | 0.00% | 0.00 | 0.5/s | 38 MB |
+| Open on Analytics | 0.00% | 0.00 | 0.5/s | 39 MB |
+| Open on Claude Code | 0.00% | 0.00 | 0.5/s | 44 MB |
+| Open on Timers | 0.10% | 0.10 | 0.5/s | 44 MB |
+| Closed, music bars (built-in animation) | 0.00% | 0.00 | 0.7/s | 41 MB |
+| Closed, music bars following real sound (tap on, nothing playing) | 0.17% | 0.17 | — | 41 MB |
+| Closed, timer counting down (ring) | 0.44% | 0.44 | 1.0/s | 42 MB |
+| Closed, Claude working (pulse) | 0.00% | 0.00 | 1.0/s | 42 MB |
+| Closed, download progress | 0.00% | 0.00 | 1.0/s | 47 MB |
+| Open, command palette | 0.10% | 0.10 | 1.0/s | 54 MB |
 
 The Media helper process (`perl` running `MediaRemoteBridge`) uses 0% CPU and about 4 MB.
 
-The first time each module opens after launch costs a short burst of CPU (loading its data, a Claude log scan of about 0.9 s). The numbers above are after that settles. Moving the pointer wakes Brim for every move, because it watches for the pointer reaching the notch; each event is a rectangle check.
+The music bars cost nothing with their built-in animation. With Settings › "Move the music bars with the real sound" on, Brim reads the audio tap and updates the bars 20 times a second while they're showing, and stops the tap when they're hidden. Measured back to back: 0.17% with the bars up, 0.00% with them hidden. The analysis runs on every other window of audio whatever is playing; with music, each update also moves four layers. That case hasn't been measured yet, because it needs music playing and the permission granted.
+
+Measurements are noisy while the Mac is in use: one run with Settings open and the pointer moving read 12–20% for the same state, and 0.17% again once things were quiet.
+
+The first time each module opens after launch costs a short burst of CPU (loading its data, a Claude log scan of about 0.9 s, compiling the Metal shaders in about 0.1–0.25 s on a background thread). The numbers above are after that settles. Moving the pointer wakes Brim for every move, because it watches for the pointer reaching the notch; each event is a rectangle check. Wakeup counts in the table go up whenever the Mac is being used during the run.
+
+## What Phase 4 changed
+
+| Problem | First version | Now | Fix |
+|---|---|---|---|
+| Artwork glow and LED title | 4.3% CPU and 138 MB with Now Playing open | 0.10% and 38 MB | Metal draws each effect once into an image; Core Animation cross-fades the glow and moves the LED strip a whole column at a time. The LED sign never needed more than 14 steps a second. |
+| Drop ripple | A Metal view that stayed in the open notch | Only exists for the one second it plays | `RippleOverlay` adds its Metal view per ripple. Shaders compile as soon as a file drag starts, so the first ripple isn't missed. |
+| Timer ring, Claude pulse, mascot, confetti | — | 0% | Core Animation layers and a `CAEmitterLayer`, animated by the window server |
 
 ## What Phase 5 changed
 
