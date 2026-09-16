@@ -6,6 +6,7 @@
 ./scripts/build-app.sh debug --run
 ./scripts/debug.sh selftest ~/Desktop/brim-selftest.txt
 ./scripts/debug.sh snapshot ~/Desktop/brim-snapshots
+./scripts/debug.sh effects ~/Desktop/brim-effects
 ```
 
 The self-test checks:
@@ -18,10 +19,20 @@ The self-test checks:
   - CPU counter wrap-around
   - clock formatting with extreme values
   - crash-report detection
+- **Phase 4 logic:**
+  - command palette: duration parsing ("10m", "90s", "1h"), fuzzy matching, results for sample queries
+  - swipe stretch at the first and last module
+  - the dot-matrix font, printed as text
+  - Metal shaders compile, and how long it took
+  - the audio analyser against 80 Hz, 2.5 kHz and 7 kHz tones and silence
+  - the sale sound, output volume (read only), themes, mascot moods, the timer ring
+  - download progress, using a fake download in a scratch folder
 
-It records states and counts only, never clipboard contents, notes or track titles.
+It records states and counts only, never clipboard contents, notes or track titles. The palette checks run on sample data, because the palette searches the clipboard.
 
-`snapshot` renders every module and notch state with sample data.
+`snapshot` renders every module and notch state with sample data, each theme, the palette, the swipe stretch, the mascot's moods and each kind of live activity. Your own live activities are set aside while it runs.
+
+`effects` draws the Metal effects (ripple, glow, LED display) and the Core Animation pieces (mascot, ring, glow and LED views) to PNGs. Snapshots can't show these, because ImageRenderer doesn't draw Metal or AppKit views.
 
 ## Manual checks
 
@@ -57,10 +68,30 @@ These need hardware or situations a script can't create. Tick them before a beta
 - [ ] Each prompt appears only from its own module, as listed in the audit below.
 - [ ] Denying each permission shows a clear message in that module with a button to System Settings.
 
+### Signature UI
+
+- [ ] Each theme in Settings › Appearance: the open notch changes at once, the closed notch stays black.
+- [ ] Smoke Glass on macOS 26 shows Liquid Glass; on macOS 14–15 (or with `defaults write com.pranava.brim forceBlurFallback -bool YES`) a blur. Text stays readable over a white window and over a dark one.
+- [ ] Customise a theme, quit Brim, reopen: the custom colours are kept.
+- [ ] Drop a file on the notch: a ripple spreads from where it landed.
+- [ ] Now Playing: the title scrolls on the dot-matrix display a column at a time; the artwork glows in its colours and the glow shifts while music plays.
+- [ ] Shelf: flick a file upwards and it flies off; a short or slow pull springs back. Dragging the same file down to the desktop still copies it. Double-click opens, Option-click removes, right-click shows the menu.
+- [ ] On the open notch, swipe past the last module: the content stretches and springs back with one haptic tick.
+- [ ] On the closed notch, scroll with a trackpad and with a mouse wheel: the volume changes, the bar shows beside the notch, and the notch doesn't open while you scroll. With an output that has no volume control (some HDMI), the notch says "Fixed".
+- [ ] ⌘K: type "cal" and press Return; type "7 min" and press Return; ↑ and ↓ move the selection; Esc closes only the palette; a second Esc closes the notch.
+- [ ] Type part of something you copied: "Copy …" appears and copies it.
+- [ ] Start a timer: the ring around the icon fills over the whole timer; pause it and the ring stops.
+- [ ] Claude Code working: a soft pulse behind the sparkle; waiting for you: a faster pulse.
+- [ ] Music and a timer at once: the timer shows, with one dot for the music waiting.
+- [ ] Settings › Sales › Celebrate: confetti falls from the notch, the trackpad taps twice, and the sound plays only when it's on.
+- [ ] Home: the mascot thinks while a timer runs, jumps at a sale, and falls asleep after 10 quiet minutes.
+- [ ] Turn on real sound for the music bars: macOS asks to record system audio. Allow it and the bars follow the music; deny it and they bounce as before, and Settings explains how to allow it.
+- [ ] Turn on download progress, then download a large file in Safari and in Chrome: the ring and percentage show, then "Done".
+
 ### Accessibility
 
-- [ ] Reduce Motion on: the notch fades instead of springing, and the equalizer bars are still.
-- [ ] VoiceOver reads the dock buttons, playback controls, reminders and the pin button.
+- [ ] Reduce Motion on: the notch fades instead of springing; the equalizer bars, mascot, glow and LED title are still; no confetti or ripple; a flicked shelf item disappears without flying.
+- [ ] VoiceOver reads the dock buttons, playback controls, reminders, the pin and ⌘K buttons, the palette rows, the LED title (as plain text) and the mascot's mood. Shelf items offer Open, Show in Finder and Remove actions.
 
 ## Permission audit
 
@@ -75,6 +106,8 @@ Every prompt, and what triggers it. Launching Brim triggers none.
 | Keychain (saved keys) | Only when a connected service refreshes. Checking whether a key exists never prompts | `KeychainStore.contains` |
 | Desktop and Documents folders | Only when the Shelf is shown with files from those folders. At launch, expiry checks dates only | `ShelfService.removeMissing` |
 | `~/.claude/settings.json` (not a macOS permission) | Only when you press "Add hook"; a backup is saved first | `ClaudeHookInstaller.install` |
+| System audio recording | Only with Settings › "Move the music bars with the real sound" on, the first time the bars show | `AudioTap.start` |
+| Downloads folder (may be asked) | Only with Settings › "Show download progress" on | `DownloadsService.settingsChanged` |
 | Accessibility, Screen Recording, Input Monitoring | Never | — |
 
 Hidden modules (Settings › Modules) stop their background work: the Now Playing helper exits, the clipboard watcher stops, and Revenue stops checking.

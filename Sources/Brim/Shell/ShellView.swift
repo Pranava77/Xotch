@@ -9,6 +9,7 @@ struct ShellView: View {
 
     @AppStorage(SettingsKey.moduleOrder) private var moduleOrder = ""
     @AppStorage(SettingsKey.hiddenModules) private var hiddenModules = ""
+    @Environment(\.snapshotMode) private var snapshotMode
     @Namespace private var namespace
     @State private var isDropTarget = false
 
@@ -18,22 +19,23 @@ struct ShellView: View {
         let width = size.width + model.shoulder * 2
         let modules = ModuleRegistry.visible(order: moduleOrder, hidden: hiddenModules)
         let selected = modules.first { $0.id == model.selectedModuleID } ?? modules[0]
-        let tint = model.phase == .open ? selected.tint : nil
+        let palette = Theme.palette
+        let glow = model.phase == .open && palette.glowStrength > 0 ? (selected.tint ?? palette.glow?.color) : nil
 
         ZStack(alignment: .top) {
-            shape
-                .fill(Theme.notch)
+            NotchSurface(shape: shape, isOpen: model.phase == .open)
                 .shadow(color: .black.opacity(model.phase == .open ? 0.45 : 0), radius: 22, y: 10)
 
             ZStack(alignment: .top) {
-                if let tint {
-                    RadialGradient(colors: [tint.opacity(0.32), tint.opacity(0)],
+                if let glow {
+                    RadialGradient(colors: [glow.opacity(palette.glowStrength), glow.opacity(0)],
                                    center: .topLeading, startRadius: 10, endRadius: 520)
                         .transition(.opacity)
                 }
                 if model.showsActivity, let activity = model.activities.current {
                     LiveActivityBar(activity: activity,
                                     notchSize: model.closedSize,
+                                    waiting: model.activities.waitingCount,
                                     namespace: namespace)
                         .transition(.blurFade)
                 }
@@ -42,6 +44,10 @@ struct ShellView: View {
                                 actions: actions, namespace: namespace)
                         .frame(width: Layout.openSize.width, height: Layout.openSize.height, alignment: .top)
                         .transition(.blurScale)
+                }
+                if model.phase == .open {
+                    RippleOverlay(trigger: model.dropCount, origin: model.dropPoint, tint: palette.accent)
+                        .frame(width: Layout.openSize.width, height: Layout.openSize.height)
                 }
                 if isDropTarget {
                     shape
@@ -52,13 +58,26 @@ struct ShellView: View {
             .padding(.horizontal, model.shoulder)
             .frame(width: width, height: size.height, alignment: .top)
             .clipShape(shape)
-            .animation(Motion.switchModule, value: tint)
+            .animation(Motion.switchModule, value: glow)
         }
         .frame(width: width, height: size.height)
         .contentShape(shape)
         .onTapGesture { actions.tapped() }
-        .modifier(ShelfDropTarget(onDrop: { actions.select(moduleID: "shelf") }, isTargeted: $isDropTarget))
+        .modifier(ShelfDropTarget(onDrop: { location in
+            // The drop point is in this view; the ripple is drawn inside the shoulders.
+            model.dropPoint = CGPoint(x: location.x - model.shoulder, y: location.y)
+            model.dropCount += 1
+            actions.select(moduleID: "shelf")
+        }, isTargeted: $isDropTarget))
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .overlay {
+            if !snapshotMode {
+                CelebrationBurst(trigger: model.activities.celebrations,
+                                 originFromTop: size.height - 4,
+                                 width: size.width)
+                    .allowsHitTesting(false)
+            }
+        }
         .ignoresSafeArea()
     }
 }
@@ -84,6 +103,7 @@ private struct OpenContent: View {
             }
             // minHeight 0: a tall module is clipped instead of pushing the dock away.
             .frame(maxWidth: .infinity, minHeight: 0, maxHeight: .infinity, alignment: .topLeading)
+            .offset(x: model.rubberBand)
             .padding(.horizontal, 22)
             .padding(.top, 10)
             .padding(.bottom, 8)
@@ -96,9 +116,23 @@ private struct OpenContent: View {
                 .padding(.bottom, 6)
         }
         .foregroundStyle(Theme.ink)
+        .overlay(alignment: .top) {
+            if model.palette.isOpen {
+                ZStack(alignment: .top) {
+                    Theme.surface.opacity(0.55)
+                        .contentShape(Rectangle())
+                        .onTapGesture { actions.closePalette() }
+                        .transition(.opacity)
+                    CommandPaletteView(model: model, actions: actions)
+                        .padding(.top, model.closedSize.height + 4)
+                        .transition(.scale(scale: 0.96, anchor: .top).combined(with: .opacity))
+                }
+                .foregroundStyle(Theme.ink)
+            }
+        }
     }
 
-    /// Title left of the camera housing, pin on the right.
+    /// Title left of the camera housing; palette and pin on the right.
     private var topRow: some View {
         HStack(spacing: 0) {
             Text(selected.title)
@@ -109,13 +143,36 @@ private struct OpenContent: View {
             Color.clear
                 .frame(width: model.closedSize.width)
 
-            HStack {
+            HStack(spacing: 2) {
                 Spacer(minLength: 0)
+                PaletteButton { actions.togglePalette() }
                 PinButton(isPinned: model.isPinned) { actions.togglePin() }
             }
             .frame(maxWidth: .infinity)
         }
         .padding(.horizontal, 22)
+    }
+}
+
+private struct PaletteButton: View {
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 1) {
+                Image(systemName: "command")
+                Text("K")
+            }
+            .font(.system(size: 10, weight: .semibold, design: .rounded))
+            .foregroundStyle(Theme.tertiaryInk)
+            .padding(.horizontal, 6)
+            .frame(height: 20)
+            .background(RoundedRectangle(cornerRadius: 6).strokeBorder(Theme.hairline))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .help("Command palette  ⌘K")
+        .accessibilityLabel("Command palette")
     }
 }
 
@@ -184,27 +241,15 @@ private struct PinButton: View {
 private struct LiveActivityBar: View {
     let activity: LiveActivity
     let notchSize: CGSize
+    let waiting: Int
     let namespace: Namespace.ID
 
     var body: some View {
         HStack(spacing: 0) {
-            Group {
-                if let image = activity.image {
-                    Image(nsImage: image)
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                        .frame(width: 22, height: 22)
-                        .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
-                } else {
-                    Image(systemName: activity.symbol)
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(activity.tint)
-                        .popOnChange(of: activity.id)
-                }
-            }
-            .matchedGeometryEffect(id: "icon-\(activity.moduleID)", in: namespace)
-            .padding(.leading, 12)
-            .frame(width: activity.earWidth, alignment: .leading)
+            leading
+                .matchedGeometryEffect(id: "icon-\(activity.moduleID)", in: namespace)
+                .padding(.leading, 12)
+                .frame(width: activity.earWidth, alignment: .leading)
 
             Color.clear
                 .frame(width: notchSize.width)
@@ -216,9 +261,42 @@ private struct LiveActivityBar: View {
                 .lineLimit(1)
                 .padding(.trailing, 12)
                 .frame(width: activity.earWidth, alignment: .trailing)
+                .overlay(alignment: .trailing) {
+                    if waiting > 0 {
+                        WaitingDots(count: waiting)
+                            .padding(.trailing, 4)
+                            .transition(.opacity)
+                    }
+                }
         }
         .frame(height: notchSize.height)
         .accessibilityElement(children: .combine)
+    }
+
+    @ViewBuilder private var leading: some View {
+        if let image = activity.image {
+            Image(nsImage: image)
+                .resizable()
+                .aspectRatio(contentMode: .fill)
+                .frame(width: 22, height: 22)
+                .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+        } else {
+            ZStack {
+                if let pulse = activity.pulse {
+                    PulseHalo(pulse: pulse, tint: activity.tint)
+                        .frame(width: 26, height: 26)
+                }
+                if let progress = activity.progress {
+                    ProgressRing(progress: progress, tint: activity.tint)
+                        .frame(width: 23, height: 23)
+                }
+                Image(systemName: activity.symbol)
+                    .font(.system(size: activity.progress == nil ? 13 : 10, weight: .semibold))
+                    .foregroundStyle(activity.tint)
+                    .popOnChange(of: activity.id)
+            }
+            .frame(width: 26, height: 26)
+        }
     }
 
     @ViewBuilder private var trailing: some View {
@@ -237,6 +315,11 @@ private struct LiveActivityBar: View {
         case .playing:
             EqualizerBars(tint: activity.tint)
                 .frame(width: 20, height: 14)
+        case .level(let value):
+            LevelBar(value: value, tint: activity.tint)
+                .frame(width: max(activity.earWidth - 30, 30))
+        case .ticker(let lines):
+            TickerText(lines: lines)
         }
     }
 }
@@ -276,10 +359,15 @@ private struct EqualizerLayers: NSViewRepresentable {
     }
 }
 
+/// Bars that follow the music when real audio levels are on (see AudioLevels),
+/// and bounce by themselves otherwise.
 final class EqualizerView: NSView {
     private static let durations: [CFTimeInterval] = [0.42, 0.55, 0.37, 0.49]
     private static let offsets: [CFTimeInterval] = [0, 0.12, 0.25, 0.06]
     private var bars: [CALayer] = []
+    private var levelTimer: Timer?
+    private var isFollowingLevels = false
+    private var isAcquired = false
 
     var tint: NSColor = .white {
         didSet {
@@ -314,10 +402,53 @@ final class EqualizerView: NSView {
             bar.position = CGPoint(x: CGFloat(index) * 5 + 1.5, y: bounds.midY)
         }
         CATransaction.commit()
-        startAnimating()
+        if !isFollowingLevels {
+            startBouncing()
+        }
     }
 
-    private func startAnimating() {
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        levelTimer?.invalidate()
+        levelTimer = nil
+        if isAcquired {
+            AudioLevels.shared.release()
+            isAcquired = false
+        }
+        guard window != nil, AudioLevels.shared.isEnabled else { return }
+        AudioLevels.shared.acquire()
+        isAcquired = true
+        // 20 updates a second, only while the bars are on screen.
+        let timer = Timer(timeInterval: 0.05, repeats: true) { @Sendable [weak self] _ in
+            MainActor.assumeIsolated { self?.followLevels() }
+        }
+        timer.tolerance = 0.01
+        RunLoop.main.add(timer, forMode: .common)
+        levelTimer = timer
+    }
+
+    private func followLevels() {
+        guard let levels = AudioLevels.shared.current() else {
+            if isFollowingLevels {
+                isFollowingLevels = false
+                startBouncing()
+            }
+            return
+        }
+        if !isFollowingLevels {
+            isFollowingLevels = true
+            bars.forEach { $0.removeAnimation(forKey: "bounce") }
+        }
+        CATransaction.begin()
+        CATransaction.setAnimationDuration(0.07)
+        for (bar, level) in zip(bars, levels) {
+            let scale = 0.18 + 0.82 * CGFloat(level)
+            bar.transform = CATransform3DMakeScale(1, scale, 1)
+        }
+        CATransaction.commit()
+    }
+
+    private func startBouncing() {
         for (index, bar) in bars.enumerated() where bar.animation(forKey: "bounce") == nil {
             let bounce = CABasicAnimation(keyPath: "transform.scale.y")
             bounce.fromValue = 0.25

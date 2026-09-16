@@ -18,6 +18,8 @@ extension EnvironmentValues {
 /// A scroll view without indicators.
 struct NotchScroll<Content: View>: View {
     var axis: Axis.Set = .vertical
+    /// Lets content draw outside the scroll area, e.g. a tile being flicked away.
+    var clipsContent = true
     @ViewBuilder var content: Content
     @Environment(\.snapshotMode) private var snapshotMode
 
@@ -29,6 +31,7 @@ struct NotchScroll<Content: View>: View {
                 .clipped()
         } else {
             ScrollView(axis, showsIndicators: false) { content }
+                .scrollClipDisabled(!clipsContent)
         }
     }
 }
@@ -211,7 +214,8 @@ struct NotchSwitchStyle: ToggleStyle {
 
 /// Makes the notch a drop target for files, which then land on the shelf.
 struct ShelfDropTarget: ViewModifier {
-    let onDrop: () -> Void
+    /// Called with the drop point, in the modified view's coordinates.
+    let onDrop: (CGPoint) -> Void
     @Binding var isTargeted: Bool
     @Environment(\.snapshotMode) private var snapshotMode
 
@@ -219,11 +223,11 @@ struct ShelfDropTarget: ViewModifier {
         if snapshotMode {
             content
         } else {
-            content.dropDestination(for: URL.self) { urls, _ in
+            content.dropDestination(for: URL.self) { urls, location in
                 let files = urls.filter(\.isFileURL)
                 guard !files.isEmpty else { return false }
                 ShelfService.shared.add(files)
-                onDrop()
+                onDrop(location)
                 return true
             } isTargeted: { targeted in
                 withAnimation(Motion.press) { isTargeted = targeted }

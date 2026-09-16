@@ -166,6 +166,9 @@ final class RevenueService {
         ActivityCenter.shared.post(LiveActivity(moduleID: "revenue", symbol: "dollarsign.circle.fill",
                                                 content: .text("+" + Money.format(sale.amount, currency: sale.currency)),
                                                 tint: Theme.positive, earWidth: 110, duration: .seconds(5)))
+        if UserDefaults.standard.bool(forKey: SettingsKey.celebrateSales) {
+            ActivityCenter.shared.celebrate()
+        }
     }
 
     func settingsChanged() {
@@ -179,7 +182,10 @@ final class RevenueService {
         }
         ActivityCenter.shared.setOngoing(
             LiveActivity(moduleID: "revenue", symbol: "chart.line.uptrend.xyaxis",
-                         content: .text(Money.format(top.amount, currency: top.currency, compact: true)),
+                         content: .ticker([
+                             Money.format(top.amount, currency: top.currency, compact: true),
+                             sales.count == 1 ? "1 sale" : "\(sales.count) sales",
+                         ]),
                          tint: Theme.positive, earWidth: 100),
             for: "revenue"
         )

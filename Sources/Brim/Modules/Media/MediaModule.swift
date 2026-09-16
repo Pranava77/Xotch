@@ -17,23 +17,45 @@ final class MediaModule: NotchModule {
 
 private struct MediaView: View {
     private var media: MediaService { .shared }
+    @AppStorage(SettingsKey.ledTitle) private var ledTitle = true
 
     var body: some View {
         if let playing = media.nowPlaying {
             HStack(spacing: 22) {
-                Artwork(image: media.artwork, tint: media.tint, size: 132)
+                let tint = RGBA(media.tint)
+                Artwork(image: media.artwork, tint: media.tint, size: 132, glows: true)
+                    .background {
+                        ArtworkGlow(colors: (tint, tint.rotatingHue(by: 0.09)), isPlaying: playing.isPlaying,
+                                    padding: 24, cornerRadius: 132 * 0.16)
+                            .frame(width: 132 + 48, height: 132 + 48)
+                    }
+                    .padding(.leading, 2)
                     .onTapGesture { media.openSourceApp() }
                     .help("Open \(playing.appName ?? "the app")")
 
                 VStack(alignment: .leading, spacing: 0) {
-                    Text(playing.title)
-                        .font(.system(size: 19, weight: .semibold))
-                        .lineLimit(1)
-                    Text([playing.artist, playing.album].filter { !$0.isEmpty }.joined(separator: " — "))
-                        .font(.system(size: 13))
-                        .foregroundStyle(Theme.secondaryInk)
-                        .lineLimit(1)
-                        .padding(.top, 3)
+                    if ledTitle {
+                        LEDText(text: [playing.title, playing.artist].filter { !$0.isEmpty }.joined(separator: " — "),
+                                color: tint)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 6)
+                            .background(Color.black.opacity(0.4), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                            .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).strokeBorder(Theme.hairline))
+                        Text(playing.album.isEmpty ? playing.artist : playing.album)
+                            .font(.system(size: 12))
+                            .foregroundStyle(Theme.secondaryInk)
+                            .lineLimit(1)
+                            .padding(.top, 6)
+                    } else {
+                        Text(playing.title)
+                            .font(.system(size: 19, weight: .semibold))
+                            .lineLimit(1)
+                        Text([playing.artist, playing.album].filter { !$0.isEmpty }.joined(separator: " — "))
+                            .font(.system(size: 13))
+                            .foregroundStyle(Theme.secondaryInk)
+                            .lineLimit(1)
+                            .padding(.top, 3)
+                    }
                     if let appName = playing.appName {
                         Label(appName, systemImage: "play.rectangle")
                             .font(.system(size: 11, weight: .medium))
@@ -86,6 +108,8 @@ struct Artwork: View {
     let image: NSImage?
     let tint: Color
     let size: CGFloat
+    /// A glow is drawn behind it, so skip the coloured shadow.
+    var glows = false
 
     var body: some View {
         ZStack {
@@ -102,7 +126,7 @@ struct Artwork: View {
         }
         .frame(width: size, height: size)
         .clipShape(RoundedRectangle(cornerRadius: size * 0.16, style: .continuous))
-        .shadow(color: tint.opacity(0.45), radius: size * 0.16, y: size * 0.04)
+        .shadow(color: glows ? .black.opacity(0.35) : tint.opacity(0.45), radius: size * 0.16, y: size * 0.04)
     }
 }
 

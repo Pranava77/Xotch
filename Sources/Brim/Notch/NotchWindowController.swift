@@ -4,9 +4,14 @@ import SwiftUI
 /// What the SwiftUI shell can ask its window controller to do.
 @MainActor
 protocol NotchActions: AnyObject {
+    var isPinned: Bool { get }
     func tapped()
     func togglePin()
     func select(moduleID: String)
+    func closeNotch()
+    func togglePalette()
+    func closePalette()
+    func run(_ command: PaletteCommand)
 }
 
 /// Owns the notch panel on one screen and drives its state machine:
@@ -24,6 +29,9 @@ final class NotchWindowController: NotchActions {
     private var closeTask: Task<Void, Never>?
     private var swipeDistance: CGFloat = 0
     private var swipeHandled = false
+    private var edgeHapticPlayed = false
+    /// Scrolled to change the volume during this hover, so don't open by hovering.
+    private var adjustedVolumeThisHover = false
     private var keyObserver: NSObjectProtocol?
     /// Stepped aside because a full-screen app fills this display.
     private(set) var isHiddenForFullScreen = false
@@ -91,6 +99,7 @@ final class NotchWindowController: NotchActions {
             hoverBegan()
         } else {
             suppressHover = false
+            adjustedVolumeThisHover = false
             hoverEnded()
         }
     }
@@ -103,6 +112,8 @@ final class NotchWindowController: NotchActions {
     /// A file drag from another app is moving; open the shelf when it nears the notch.
     func fileDragMoved(to location: NSPoint) {
         guard !isHiddenForFullScreen, model.phase != .open, isInDragZone(location) else { return }
+        // So the drop ripple is ready by the time the file lands.
+        ShaderKit.shared.prepare()
         openedForDrag = true
         model.selectedModuleID = "shelf"
         setPhase(.open)
@@ -152,7 +163,8 @@ final class NotchWindowController: NotchActions {
             self.setPhase(.peek)
             guard AppSettings.openBehavior == .hover else { return }
             try? await Task.sleep(for: .milliseconds(260))
-            guard !Task.isCancelled, self.isHovering, self.model.phase == .peek else { return }
+            guard !Task.isCancelled, self.isHovering, self.model.phase == .peek,
+                  !self.adjustedVolumeThisHover else { return }
             self.setPhase(.open)
         }
     }
@@ -187,6 +199,7 @@ final class NotchWindowController: NotchActions {
         openTask?.cancel()
         closeTask?.cancel()
         openedForDrag = false
+        model.palette.isOpen = false
         model.isPinned = false
         suppressHover = isHovering
         setPhase(.closed)
@@ -214,6 +227,12 @@ final class NotchWindowController: NotchActions {
     }
 
     // MARK: - NotchActions
+
+    var isPinned: Bool { model.isPinned }
+
+    func closeNotch() {
+        close()
+    }
 
     func tapped() {
         switch model.phase {
@@ -248,14 +267,38 @@ final class NotchWindowController: NotchActions {
 
     // MARK: - Keyboard and trackpad
 
-    /// ⌘1–9 picks a module, Esc closes. Returns true when the key was used.
+    /// ⌘K opens the command palette, ⌘1–9 picks a module, Esc closes.
+    /// Returns true when the key was used.
     func handleKey(_ event: NSEvent) -> Bool {
         guard event.window === panel, model.phase == .open else { return false }
+        let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+        if flags == .command, event.charactersIgnoringModifiers?.lowercased() == "k" {
+            togglePalette()
+            return true
+        }
+        if model.palette.isOpen {
+            switch event.keyCode {
+            case 53:
+                closePalette()
+                return true
+            case 125:
+                model.palette.move(by: 1, count: CommandCatalog.commands(for: model.palette.query, actions: self).count)
+                return true
+            case 126:
+                model.palette.move(by: -1, count: CommandCatalog.commands(for: model.palette.query, actions: self).count)
+                return true
+            case 36, 76:
+                runPaletteSelection()
+                return true
+            default:
+                break
+            }
+        }
         if event.keyCode == 53 {
             close()
             return true
         }
-        if event.modifierFlags.intersection(.deviceIndependentFlagsMask) == .command,
+        if flags == .command,
            let characters = event.charactersIgnoringModifiers,
            let number = Int(characters), (1...9).contains(number) {
             let modules = ModuleRegistry.visibleNow
@@ -267,24 +310,57 @@ final class NotchWindowController: NotchActions {
         return false
     }
 
-    /// A two-finger horizontal swipe moves one module per gesture.
+    /// On the open notch, a two-finger horizontal swipe moves one module per
+    /// gesture, and stretches at the first and last module. On the closed notch,
+    /// scrolling changes the volume.
     func handleScroll(_ event: NSEvent) {
-        guard event.window === panel, model.phase == .open,
-              event.hasPreciseScrollingDeltas, event.momentumPhase.isEmpty else { return }
+        guard event.window === panel else { return }
+        guard model.phase == .open else {
+            adjustVolume(with: event)
+            return
+        }
+        guard event.hasPreciseScrollingDeltas, event.momentumPhase.isEmpty else { return }
         switch event.phase {
         case .began:
             swipeDistance = 0
             swipeHandled = false
+            edgeHapticPlayed = false
         case .changed:
             guard !swipeHandled, abs(event.scrollingDeltaX) > abs(event.scrollingDeltaY) * 1.5 else { return }
             swipeDistance += event.scrollingDeltaX
-            if abs(swipeDistance) > 44 {
-                swipeHandled = true
-                step(swipeDistance < 0 ? 1 : -1)
+            let offset = swipeDistance < 0 ? 1 : -1
+            if canStep(offset) {
+                if abs(swipeDistance) > 44 {
+                    swipeHandled = true
+                    step(offset)
+                }
+            } else {
+                model.rubberBand = Self.rubberBand(for: swipeDistance)
+                if abs(swipeDistance) > 44, !edgeHapticPlayed {
+                    edgeHapticPlayed = true
+                    Haptics.tick()
+                }
+            }
+        case .ended, .cancelled:
+            if model.rubberBand != 0 {
+                withAnimation(.spring(duration: 0.45, bounce: 0.4)) { model.rubberBand = 0 }
             }
         default:
             break
         }
+    }
+
+    /// Follows the fingers at first, then resists more and more (at most 56 points).
+    nonisolated static func rubberBand(for distance: CGFloat) -> CGFloat {
+        let limit: CGFloat = 56
+        let stretched = limit * (1 - 1 / (abs(distance) / 110 + 1))
+        return distance < 0 ? -stretched : stretched
+    }
+
+    private func canStep(_ offset: Int) -> Bool {
+        let modules = ModuleRegistry.visibleNow
+        let index = modules.firstIndex { $0.id == model.selectedModuleID } ?? 0
+        return modules.indices.contains(index + offset)
     }
 
     private func step(_ offset: Int) {
@@ -293,5 +369,71 @@ final class NotchWindowController: NotchActions {
         let next = index + offset
         guard modules.indices.contains(next) else { return }
         select(moduleID: modules[next].id)
+    }
+
+    // MARK: - Volume
+
+    private func adjustVolume(with event: NSEvent) {
+        guard AppSettings.scrollForVolume, !isHiddenForFullScreen,
+              hotRect.contains(NSEvent.mouseLocation), event.momentumPhase.isEmpty else { return }
+        let delta = event.isDirectionInvertedFromDevice ? -event.scrollingDeltaY : event.scrollingDeltaY
+        guard delta != 0 else { return }
+        // Adjusting the volume shouldn't open the notch.
+        openTask?.cancel()
+        adjustedVolumeThisHover = true
+        guard let current = SystemVolume.volume, SystemVolume.canSetVolume else {
+            ActivityCenter.shared.showHUD(LiveActivity(moduleID: "volume", symbol: "speaker.slash",
+                                                       content: .text("Fixed"), tint: Theme.ink, earWidth: 90))
+            return
+        }
+        let change = event.hasPreciseScrollingDeltas ? Double(delta) * 0.005 : (delta > 0 ? 1 : -1) / 16
+        let next = min(max(current + change, 0), 1)
+        if next != current {
+            SystemVolume.setVolume(next)
+            if next == 0 || next == 1 {
+                Haptics.tick()
+            }
+        }
+        ActivityCenter.shared.showHUD(LiveActivity(
+            moduleID: "volume",
+            symbol: SystemVolume.symbol(for: next, muted: SystemVolume.isMuted),
+            content: .level(next), tint: Theme.ink, earWidth: 96
+        ))
+    }
+
+    // MARK: - Command palette
+
+    func togglePalette() {
+        model.palette.isOpen ? closePalette() : openPalette()
+    }
+
+    /// `focus` makes the panel key so you can type; the debug tools skip it.
+    func openPalette(focus: Bool = true) {
+        if model.phase != .open {
+            open(pinned: true, focus: focus)
+        }
+        model.isPinned = true
+        if focus {
+            panel.makeKey()
+        }
+        model.palette.query = ""
+        model.palette.selection = 0
+        withAnimation(Motion.switchModule) { model.palette.isOpen = true }
+        Haptics.tick()
+    }
+
+    func closePalette() {
+        withAnimation(Motion.switchModule) { model.palette.isOpen = false }
+    }
+
+    func runPaletteSelection() {
+        let commands = CommandCatalog.commands(for: model.palette.query, actions: self)
+        guard commands.indices.contains(model.palette.selection) else { return }
+        run(commands[model.palette.selection])
+    }
+
+    func run(_ command: PaletteCommand) {
+        closePalette()
+        command.run()
     }
 }

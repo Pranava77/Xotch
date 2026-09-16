@@ -59,6 +59,11 @@ final class ScreenManager {
         primary?.open(pinned: true)
     }
 
+    /// Opens the notch without taking focus, e.g. to preview an effect from Settings.
+    func openPrimaryForPreview() {
+        primary?.open(pinned: false, focus: false)
+    }
+
     func closeAll() {
         controllers.values.forEach { $0.close() }
     }
@@ -77,6 +82,8 @@ final class ScreenManager {
 
     private func settingsChanged() {
         ModuleRegistry.syncRunning()
+        DownloadsService.shared.settingsChanged()
+        AudioLevels.shared.settingsChanged()
         let hide = AppSettings.hideInFullScreen
         if hide != hideInFullScreen {
             hideInFullScreen = hide
@@ -273,6 +280,20 @@ final class ScreenManager {
         controllers.values.forEach { $0.tearDown() }
         controllers = [:]
         rebuild()
+    }
+
+    func debugPalette() {
+        primary?.openPalette(focus: false)
+    }
+
+    /// Plays the drop ripple in the middle of the open notch.
+    func debugRipple() {
+        guard let primary else { return }
+        if primary.model.phase != .open {
+            primary.open(pinned: true, focus: false)
+        }
+        primary.model.dropPoint = CGPoint(x: Layout.openSize.width / 2, y: Layout.openSize.height / 2)
+        primary.model.dropCount += 1
     }
 
     func debugOpen(moduleID: String) {

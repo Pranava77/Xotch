@@ -27,7 +27,7 @@ debug close
 debug clear-activities
 sleep 3
 measure "Closed, nothing live"
-for module in home media calendar clipboard stats weather revenue analytics claude timers; do
+for module in home media calendar clipboard shelf stats weather revenue analytics claude timers; do
   debug open "$module"
   sleep 3
   measure "Open on $module"
@@ -40,5 +40,17 @@ measure "Closed, music playing (equalizer)"
 debug clear-activities
 debug activity-timer
 sleep 2
-measure "Closed, timer counting down"
+measure "Closed, timer counting down (ring)"
 debug clear-activities
+debug activity-claude
+sleep 2
+measure "Closed, Claude working (pulse)"
+debug clear-activities
+debug activity-download
+sleep 2
+measure "Closed, download progress"
+debug clear-activities
+debug palette
+sleep 3
+measure "Open, command palette"
+debug close

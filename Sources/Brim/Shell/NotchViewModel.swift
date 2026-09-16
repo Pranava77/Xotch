@@ -15,6 +15,12 @@ final class NotchViewModel {
     var selectedModuleID: String
     /// Which side the next module slides in from.
     var switchEdge: Edge = .trailing
+    /// Sideways stretch while swiping past the first or last module.
+    var rubberBand: CGFloat = 0
+    /// Goes up by one for each drop on the notch; the ripple plays from `dropPoint`.
+    var dropCount = 0
+    var dropPoint: CGPoint = .zero
+    let palette = CommandPaletteState()
 
     let geometry: NotchGeometry
     let activities = ActivityCenter.shared

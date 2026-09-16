@@ -1,17 +1,23 @@
 import AppKit
 import SwiftUI
 
+/// Colours for views. Most come from the current theme (see Palette.swift).
 enum Theme {
+    static var palette: Palette { ThemeStore.shared.palette }
+    /// The closed notch always matches the hardware.
     static let notch = Color.black
-    static let ink = Color.white
-    static let secondaryInk = Color.white.opacity(0.58)
-    static let tertiaryInk = Color.white.opacity(0.34)
-    static let fill = Color.white.opacity(0.07)
-    static let raisedFill = Color.white.opacity(0.11)
-    static let selection = Color.white.opacity(0.15)
-    static let hairline = Color.white.opacity(0.09)
-    /// The orange of macOS's microphone-in-use dot (#FF9F0A).
-    static let accent = Color(red: 1.0, green: 0.624, blue: 0.039)
+    /// Background of the open notch.
+    static var surface: Color { palette.surface.color }
+    static var ink: Color { palette.ink.color }
+    static var secondaryInk: Color { ink.opacity(0.58) }
+    static var tertiaryInk: Color { ink.opacity(0.34) }
+    static var fill: Color { ink.opacity(0.07) }
+    static var raisedFill: Color { ink.opacity(0.11) }
+    static var selection: Color { ink.opacity(0.15) }
+    static var hairline: Color { ink.opacity(0.09) }
+    /// Midnight's accent is the orange of macOS's microphone-in-use dot (#FF9F0A).
+    static var accent: Color { palette.accent.color }
+    static var onAccent: Color { palette.onAccent }
     static let positive = Color(red: 0.2, green: 0.84, blue: 0.47)
     static let negative = Color(red: 1.0, green: 0.36, blue: 0.33)
 }
@@ -51,7 +57,7 @@ struct PillButtonStyle: ButtonStyle {
             .padding(.horizontal, 12)
             .padding(.vertical, 6)
             .background(prominent ? tint : Theme.raisedFill, in: Capsule())
-            .foregroundStyle(prominent ? Color.black : Theme.ink)
+            .foregroundStyle(prominent ? RGBA(tint).onColor : Theme.ink)
             .opacity(configuration.isPressed ? 0.75 : 1)
             .scaleEffect(configuration.isPressed ? 0.96 : 1)
             .animation(Motion.press, value: configuration.isPressed)
@@ -77,7 +83,7 @@ struct IconButtonStyle: ButtonStyle {
         var body: some View {
             configuration.label
                 .font(.system(size: size * 0.46, weight: .semibold))
-                .foregroundStyle(prominent ? Color.black : Theme.ink)
+                .foregroundStyle(prominent ? Theme.surface : Theme.ink)
                 .frame(width: size, height: size)
                 .background(Circle().fill(prominent ? Theme.ink : (hovering ? Theme.selection : Theme.fill)))
                 .opacity(isEnabled ? (configuration.isPressed ? 0.7 : 1) : 0.35)
