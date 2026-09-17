@@ -2,10 +2,8 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<!-- Hardened runtime needs these for the Calendar/Reminders and Weather modules. -->
+	<!-- Hardened runtime needs this for the Calendar/Reminders module. -->
 	<key>com.apple.security.personal-information.calendars</key>
-	<true/>
-	<key>com.apple.security.personal-information.location</key>
 	<true/>
 </dict>
 </plist>

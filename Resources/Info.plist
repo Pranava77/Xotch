@@ -34,10 +34,6 @@
 	<string>Brim shows your upcoming events in the notch.</string>
 	<key>NSHighResolutionCapable</key>
 	<true/>
-	<key>NSLocationUsageDescription</key>
-	<string>Brim uses your approximate location for the weather forecast.</string>
-	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Brim uses your approximate location for the weather forecast.</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
 	<key>NSRemindersFullAccessUsageDescription</key>

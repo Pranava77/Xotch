@@ -60,7 +60,7 @@ See [PERFORMANCE.md](PERFORMANCE.md), [TESTING.md](TESTING.md) (manual checks an
 
 Everything is stored in `~/Library/Application Support/Brim`. Brim makes no network requests.
 
-The Revenue, Analytics and Weather modules were removed. On first launch after that change, `Services/LegacyCleanup.swift` deletes what they left behind: their Keychain items, cached files and settings, and their IDs in the saved module order. `Services/LocationProvider.swift` stays for the upcoming Astrology module.
+The Revenue, Analytics and Weather modules were removed. On first launch after that change, `Services/LegacyCleanup.swift` deletes what they left behind: their Keychain items, cached files and settings, and their IDs in the saved module order.
 
 ## Signature UI
 

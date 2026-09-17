@@ -4,7 +4,6 @@ import AppKit
 enum PrivacyPane: String {
     case calendars = "Privacy_Calendars"
     case reminders = "Privacy_Reminders"
-    case location = "Privacy_LocationServices"
     case audioCapture = "Privacy_AudioCapture"
 
     func open() {
