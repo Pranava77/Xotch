@@ -19,6 +19,13 @@ struct SettingsView: View {
     @AppStorage(SettingsKey.realAudioLevels) private var realAudioLevels = false
     @AppStorage(SettingsKey.downloadProgress) private var downloadProgress = false
     @AppStorage(SettingsKey.ledTitle) private var ledTitle = true
+    @AppStorage(SettingsKey.captureFolder) private var captureFolder = ""
+    @AppStorage(SettingsKey.captureCopies) private var captureCopies = true
+    @AppStorage(SettingsKey.captureIncludesMac) private var captureIncludesMac = true
+    @AppStorage(SettingsKey.captureKeepDays) private var captureKeepDays = 7
+    @AppStorage(SettingsKey.captureSystemAudio) private var captureSystemAudio = true
+    @AppStorage(SettingsKey.captureMicrophone) private var captureMicrophone = false
+    @AppStorage(SettingsKey.captureShowsClicks) private var captureShowsClicks = false
     @State private var confirmClearClipboard = false
     @State private var openAtLogin = SMAppService.mainApp.status == .enabled
     @State private var loginMessage: String?
@@ -137,6 +144,36 @@ struct SettingsView: View {
             }
 
             Section {
+                LabeledContent("Save to") {
+                    HStack {
+                        Text(captureFolderName)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                        Button("Choose…") { chooseCaptureFolder() }
+                        if !captureFolder.isEmpty {
+                            Button("Use Pictures › Brim") { captureFolder = "" }
+                        }
+                    }
+                }
+                Toggle("Copy screenshots to the clipboard", isOn: $captureCopies)
+                Toggle("List screenshots taken with ⌘⇧3, ⌘⇧4 and ⌘⇧5", isOn: $captureIncludesMac)
+                Picker("Keep captures in the list for", selection: $captureKeepDays) {
+                    Text("1 day").tag(1)
+                    Text("1 week").tag(7)
+                    Text("Always").tag(0)
+                }
+                Toggle("Record system audio", isOn: $captureSystemAudio)
+                Toggle("Record from the microphone", isOn: $captureMicrophone)
+                Toggle("Show clicks in recordings", isOn: $captureShowsClicks)
+            } header: {
+                Text("Capture")
+            } footer: {
+                Text("macOS asks for Screen Recording permission the first time you capture, and for the microphone only if you record with it. Listing ⌘⇧3 and ⌘⇧4 screenshots may need access to the folder macOS saves them in, which is Desktop unless you've changed it. Recording needs macOS 15.")
+                    .foregroundStyle(.secondary)
+            }
+
+            Section {
                 Toggle("Keep crash reports I can choose to send", isOn: $shareDiagnostics)
                     .onChange(of: shareDiagnostics) { _, _ in Diagnostics.shared.settingsChanged() }
                 if shareDiagnostics, Diagnostics.shared.lastCrashReport != nil {
@@ -205,6 +242,27 @@ struct SettingsView: View {
         guard ids.indices.contains(target) else { return }
         ids.swapAt(index, target)
         moduleOrder = ids.joined(separator: ",")
+    }
+
+    // MARK: - Capture folder
+
+    private var captureFolderName: String {
+        let url = captureFolder.isEmpty ? CaptureService.defaultFolder : URL(fileURLWithPath: captureFolder)
+        return FileManager.default.displayName(atPath: url.deletingLastPathComponent().path) + " › "
+            + FileManager.default.displayName(atPath: url.path)
+    }
+
+    private func chooseCaptureFolder() {
+        let panel = NSOpenPanel()
+        panel.canChooseDirectories = true
+        panel.canChooseFiles = false
+        panel.canCreateDirectories = true
+        panel.allowsMultipleSelection = false
+        panel.prompt = "Save Here"
+        panel.message = "Choose where Brim saves screenshots and recordings."
+        panel.directoryURL = captureFolder.isEmpty ? CaptureService.defaultFolder : URL(fileURLWithPath: captureFolder)
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        captureFolder = url.path
     }
 
     // MARK: - Login item

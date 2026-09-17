@@ -237,6 +237,10 @@ final class NotchWindowController: NotchActions {
     func tapped() {
         switch model.phase {
         case .closed, .peek:
+            if isOnRecordingEar(NSEvent.mouseLocation) {
+                CaptureService.shared.stopRecording()
+                return
+            }
             open(pinned: true)
         case .open where !model.isPinned:
             model.isPinned = true
@@ -244,6 +248,14 @@ final class NotchWindowController: NotchActions {
         case .open:
             break
         }
+    }
+
+    /// A click beside the camera while a recording's time shows there stops it.
+    private func isOnRecordingEar(_ location: NSPoint) -> Bool {
+        let activities = model.activities
+        guard model.showsActivity, CaptureService.shared.isRecording,
+              let current = activities.current, current.id == activities.ongoing["capture"]?.id else { return false }
+        return abs(location.x - model.screenRect.midX) > model.closedSize.width / 2
     }
 
     func togglePin() {

@@ -62,79 +62,29 @@ private struct ShelfView: View {
 
 private struct ShelfTile: View {
     let item: ShelfItem
-    @State private var hovering = false
-    @State private var flick = CGSize.zero
-    @State private var thrown = false
-    @Environment(\.snapshotMode) private var snapshotMode
     private var shelf: ShelfService { .shared }
 
     var body: some View {
-        VStack(spacing: 6) {
-            Group {
-                if let image = shelf.thumbnails[item.id] {
-                    Image(nsImage: image)
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                } else {
-                    Image(systemName: "doc").font(.system(size: 30)).foregroundStyle(Theme.secondaryInk)
+        FileTile(name: item.name, handlers: shelf.tileHandlers(for: item)) {
+            VStack(spacing: 6) {
+                Group {
+                    if let image = shelf.thumbnails[item.id] {
+                        Image(nsImage: image)
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                    } else {
+                        Image(systemName: "doc").font(.system(size: 30)).foregroundStyle(Theme.secondaryInk)
+                    }
                 }
-            }
-            .frame(width: 76, height: 76)
+                .frame(width: 76, height: 76)
 
-            Text(item.name)
-                .font(.system(size: 11, weight: .medium))
-                .lineLimit(2)
-                .multilineTextAlignment(.center)
-                .frame(width: 92, height: 28, alignment: .top)
-        }
-        .padding(8)
-        .background(RoundedRectangle(cornerRadius: 12).fill(hovering || flick != .zero ? Theme.fill : .clear))
-        .contentShape(RoundedRectangle(cornerRadius: 12))
-        .overlay {
-            if !snapshotMode {
-                ShelfTileInteraction(item: item,
-                                     onHover: { hovering = $0 },
-                                     onFlick: { flick = $0 },
-                                     onFlickEnded: flickEnded)
+                Text(item.name)
+                    .font(.system(size: 11, weight: .medium))
+                    .lineLimit(2)
+                    .multilineTextAlignment(.center)
+                    .frame(width: 92, height: 28, alignment: .top)
             }
         }
-        .overlay(alignment: .topTrailing) {
-            if hovering, flick == .zero {
-                Button { shelf.remove(item) } label: { Image(systemName: "xmark") }
-                    .buttonStyle(IconButtonStyle(size: 20))
-                    .padding(2)
-                    .help("Remove from shelf")
-            }
-        }
-        .rotationEffect(.degrees(Double(flick.width) / 6))
-        .offset(flick)
-        .opacity(thrown ? 0 : 1 - 0.5 * min(1, Double(-flick.height) / 140))
         .onAppear { shelf.loadThumbnail(for: item) }
-        .help(item.name)
-        .accessibilityElement(children: .combine)
-        .accessibilityHint("Drag to use the file. Double-click to open. Flick up to remove.")
-        .accessibilityAction(named: "Open") { shelf.open(item) }
-        .accessibilityAction(named: "Show in Finder") { shelf.reveal(item) }
-        .accessibilityAction(named: "Remove from Shelf") { shelf.remove(item) }
-    }
-
-    private func flickEnded(_ remove: Bool) {
-        guard remove, !Motion.reduceMotion else {
-            if remove {
-                shelf.remove(item)
-            } else {
-                withAnimation(.spring(duration: 0.35, bounce: 0.45)) { flick = .zero }
-            }
-            return
-        }
-        Haptics.tick()
-        withAnimation(.easeIn(duration: 0.2)) {
-            flick = CGSize(width: flick.width * 1.6, height: -230)
-            thrown = true
-        }
-        Task {
-            try? await Task.sleep(for: .milliseconds(200))
-            shelf.remove(item)
-        }
     }
 }

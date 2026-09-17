@@ -47,7 +47,8 @@ struct NotchScroll<Content: View>: View {
         if snapshotMode {
             content
                 .fixedSize(horizontal: axis == .horizontal, vertical: axis == .vertical)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                // minWidth/minHeight 0, so long content is clipped instead of widening its parent.
+                .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity, alignment: .topLeading)
                 .clipped()
         } else {
             ScrollView(axis, showsIndicators: false) { content }

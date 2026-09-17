@@ -99,6 +99,29 @@ final class ShelfService {
         service.perform(withItems: urls)
     }
 
+    func tileHandlers(for item: ShelfItem) -> FileTileHandlers {
+        FileTileHandlers(
+            url: { [weak self] in self?.url(for: item) },
+            thumbnail: { [weak self] in self?.thumbnails[item.id] },
+            open: { [weak self] in self?.open(item) },
+            reveal: { [weak self] in self?.reveal(item) },
+            remove: { [weak self] in self?.remove(item) },
+            removeTitle: "Remove from Shelf",
+            menu: { [weak self] in
+                let menu = NSMenu()
+                guard let self else { return menu }
+                menu.addItem(ClosureMenuItem("Open") { self.open(item) })
+                menu.addItem(ClosureMenuItem("Show in Finder") { self.reveal(item) })
+                if self.canAirDrop {
+                    menu.addItem(ClosureMenuItem("AirDrop…") { self.airDrop([item]) })
+                }
+                menu.addItem(.separator())
+                menu.addItem(ClosureMenuItem("Remove from Shelf") { self.remove(item) })
+                return menu
+            }
+        )
+    }
+
     /// Loads a Quick Look thumbnail once, falling back to the file icon.
     func loadThumbnail(for item: ShelfItem) {
         guard thumbnails[item.id] == nil, let url = url(for: item) else { return }

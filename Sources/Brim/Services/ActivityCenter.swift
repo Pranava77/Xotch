@@ -60,18 +60,18 @@ enum MascotMood: String, CaseIterable {
 
 /// Three kinds of activity:
 /// - a HUD, shown straight away while you adjust something (volume)
-/// - banners, shown one at a time for a few seconds ("+$49", "Copied")
+/// - banners, shown one at a time for a few seconds ("Saved", "Copied")
 /// - ongoing activities, one per module, shown while no banner is up
-///   (a running timer, music playing). The rest wait their turn.
+///   (a running timer, a screen recording, music playing). The rest wait their turn.
 @MainActor
 @Observable
 final class ActivityCenter {
     static let shared = ActivityCenter()
 
     /// Which ongoing activity wins when several are live.
-    private static let priority = ["claude", "timers", "downloads", "media", "notes"]
+    private static let priority = ["capture", "claude", "timers", "downloads", "media", "notes"]
     /// Ongoing activities that count as "working" for the mascot.
-    private static let busyModules: Set<String> = ["claude", "timers", "downloads"]
+    private static let busyModules: Set<String> = ["capture", "claude", "timers", "downloads"]
     private static let sleepAfter: Duration = .seconds(10 * 60)
 
     private(set) var hud: LiveActivity?
@@ -219,6 +219,8 @@ final class ActivityCenter {
     func postDemo() {
         let samples = [
             LiveActivity(moduleID: "timers", symbol: "checkmark.circle.fill", content: .text("Done"), tint: Theme.positive),
+            LiveActivity(moduleID: "capture", symbol: "camera.viewfinder", content: .text("Saved"),
+                         tint: CaptureService.tint, earWidth: 96),
             LiveActivity(moduleID: "shelf", symbol: "tray.full.fill", content: .text("3 files"), tint: .cyan),
             LiveActivity(moduleID: "clipboard", symbol: "doc.on.clipboard.fill", content: .text("Copied"), tint: Theme.accent),
         ]

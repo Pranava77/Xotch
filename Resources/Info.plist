@@ -32,6 +32,8 @@
 	<string>Brim shows your upcoming events in the notch.</string>
 	<key>NSCalendarsUsageDescription</key>
 	<string>Brim shows your upcoming events in the notch.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>With "Record from the microphone" on, Brim includes your voice in screen recordings.</string>
 	<key>NSHighResolutionCapable</key>
 	<true/>
 	<key>NSPrincipalClass</key>

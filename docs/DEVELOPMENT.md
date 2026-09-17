@@ -10,7 +10,7 @@ Brim is a working codename; rename it before launch.
 
 This builds `build/Brim.app` with Swift Package Manager, signs it ad hoc and opens it. Brim lives in the menu bar (no Dock icon). Quit it from the menu bar icon.
 
-Needs macOS 14 or later. Xcode isn't required yet: without Xcode, the script builds against the macOS 26 SDK from Command Line Tools, because the macOS 27 SDK's SwiftUI `@State` macro needs a compiler plugin that only ships with Xcode. Once Xcode is installed, open `Package.swift` in it.
+Needs macOS 14 or later. Xcode isn't required: without it, the script builds against the macOS 26 SDK from Command Line Tools, because the macOS 27 SDK's SwiftUI `@State` macro needs a compiler plugin that only ships with Xcode. With Xcode installed, `swift build` and the script use its toolchain instead, and you can open `Package.swift` in it.
 
 ### Debug commands
 
@@ -20,7 +20,10 @@ With a debug build running:
 ./scripts/debug.sh open [module]     # open and pin the notch, optionally on a module (e.g. media)
 ./scripts/debug.sh close
 ./scripts/debug.sh activity          # sample banner; also activity-media, activity-timer,
-                                     # activity-claude, activity-download, clear-activities [module]
+                                     # activity-claude, activity-download, activity-recording,
+                                     # clear-activities [module]
+./scripts/debug.sh capture area      # take a screenshot: area, window or screen (needs permission)
+./scripts/debug.sh record screen     # start recording: screen, window or area; record-stop ends it
 ./scripts/debug.sh celebrate         # confetti (and the sound, if it's on)
 ./scripts/debug.sh palette           # open the command palette; also ripple
 ./scripts/debug.sh theme aurora      # midnight, smoke, aurora or custom; also mood working|celebrating|sleeping|idle
@@ -54,6 +57,7 @@ See [PERFORMANCE.md](PERFORMANCE.md), [TESTING.md](TESTING.md) (manual checks an
 | Timers | UserNotifications | Notifications |
 | Clipboard | NSPasteboard | Paste from other apps (macOS 26) |
 | Shelf | bookmarks, Quick Look, an AppKit drag source | — |
+| Capture | `/usr/sbin/screencapture`, ScreenCaptureKit, Spotlight (`NSMetadataQuery`) | Screen Recording; Microphone (optional) |
 | Notes | JSON in Application Support | — |
 | System | Mach, getifaddrs, IOKit | — |
 | Claude Code | `~/.claude/projects` logs, a Claude Code hook | Adding the hook (optional) |
@@ -73,9 +77,20 @@ The Revenue, Analytics and Weather modules were removed. On first launch after t
 | Real audio levels | A Core Audio process tap (macOS 14.2+), four bands from an FFT, only while the music bars are showing. Off by default. | 0.17% while the bars show |
 | Mascot | Core Animation character with idle, working, celebrating and sleeping moods from `ActivityCenter` | 0% |
 | Celebration | `CAEmitterLayer` confetti and a double haptic when a focus session finishes (Settings › Features) | 0% |
+| Screen recording | `SCStream` with an `SCRecordingOutput` writes the movie itself (macOS 15+). Brim's own windows are filtered out, so the notch never appears in a recording. | measured below |
 | Command palette | `CommandCatalog` builds commands from the modules, timers, music, themes and clipboard; fuzzy matching | — |
 
 The plan called for a Rive mascot and SwiftUI's `.layerEffect`. Rive needs its package and an animation file from the Rive editor, and `.layerEffect` needs a `.metallib` that only Xcode's Metal compiler can build, so both are done without them for now.
+
+### Capture
+
+`Modules/Capture` has three parts:
+
+- **Screenshots** run macOS's own `/usr/sbin/screencapture`, so the crosshair, the window picker and Esc behave exactly as they do with ⌘⇧4. Brim closes the notch and waits 250 ms first, so it isn't in the shot.
+- **Recordings** use ScreenCaptureKit. A window is chosen with `SCContentSharingPicker` (macOS's own picker, which needs no permission); an area with `RegionPicker`, a dimmed overlay panel per display whose selection becomes `SCStreamConfiguration.sourceRect`. `RecordingFrame` draws a dashed border around that area while it records.
+- **The shelf** lists Brim's folder (scanned with `FileManager`) and, when the setting is on, macOS's own screenshots, found with a live `NSMetadataQuery` for `kMDItemIsScreenCapture`. That query only runs while the Capture module is on screen, because the folder macOS saves to is usually Desktop, and reading it can ask for Desktop access.
+
+Captures are saved to `~/Pictures/Brim` by default. Pictures is one of the few home folders macOS doesn't protect, so saving there asks for nothing. Removing an item from the shelf only hides it (the paths are kept in `capture-hidden.json`); the file itself stays until you move it to the Trash.
 
 ### Claude Code live status
 
@@ -87,7 +102,13 @@ Apple only lets its own processes use the private MediaRemote framework, so Brim
 
 ### Permissions during development
 
-The app is signed ad hoc, so macOS may ask for Calendar access again after a rebuild. A Developer ID signature (Phase 6) fixes that. Debug builds also carry `get-task-allow` so `leaks`, `sample` and `vmmap` work; release builds don't.
+The app is signed ad hoc, so macOS may ask for Calendar access again after a rebuild. Screen Recording is worse: macOS ties the approval to the exact signature, so a rebuilt app is silently denied and never asks again. Clear it and ask afresh with:
+
+```bash
+tccutil reset ScreenCapture com.pranava.brim
+```
+
+Then relaunch and take a capture. Grant it on the build you mean to test, and don't rebuild until you're done. A Developer ID signature (Phase 6) fixes that. Debug builds also carry `get-task-allow` so `leaks`, `sample` and `vmmap` work; release builds don't.
 
 On macOS 26, reading the clipboard in the background needs permission: the Clipboard module asks once, and history only records while macOS is set to always allow Brim.
 

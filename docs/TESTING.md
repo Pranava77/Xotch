@@ -13,6 +13,7 @@ The self-test checks:
 - **Local services:** system stats, battery health and the Now Playing bridge.
 - **Claude hook:** installing then removing the Claude hook in a test settings file.
 - **Claude usage:** scan time for the local logs.
+- **Capture:** file naming (including the " (2)" suffix), the Spotlight predicate for macOS screenshots, both capture folders, the `screencapture` display number, and the area picker's maths (including a too-small drag and one that runs off the screen). It never takes a capture.
 - **Phase 5 logic:**
   - full-screen detection (7 window layouts) and screen-coordinate conversion
   - CPU counter wrap-around
@@ -85,12 +86,22 @@ These need hardware or situations a script can't create. Tick them before a beta
 - [ ] Settings › Features › Celebrate: confetti falls from the notch and the trackpad taps twice. A finished focus session does the same, unless "Celebrate finished focus sessions" is off.
 - [ ] Home: the mascot thinks while a timer runs, jumps when a focus session finishes, and falls asleep after 10 quiet minutes.
 - [ ] Updating from a build that had Revenue, Analytics or Weather: those modules are gone from the dock and Settings, and Keychain Access has no `com.pranava.brim` items for them.
+- [ ] Capture › Screenshot › Area: the crosshair appears without the notch in the shot, the file lands on the shelf, and a preview shows beside the notch. Esc during the crosshair leaves no file.
+- [ ] Screenshot › Window, and Screen: same, and the picture matches what you chose. With "Copy to clipboard" on, ⌘V pastes the image.
+- [ ] Take a screenshot with ⌘⇧4: it appears on the Capture shelf within a second or two (macOS may ask for access to your Desktop folder the first time).
+- [ ] Record › Screen for 5 seconds: a red timer shows beside the notch and in the open notch, clicking either stops it, and the movie plays with sound.
+- [ ] Record › Area: the dashed frame stays around the area, and the recording contains only that area, without Brim's frame or notch.
+- [ ] Record › Window: macOS's window picker appears; the recording follows that window.
+- [ ] While recording, turn on Microphone in Capture: the next recording asks for microphone access, and denying it records without the microphone and says so.
+- [ ] A capture tile: double-click opens it, right-click offers Quick Look, Copy, Show in Finder, AirDrop, Add to Shelf and Move to Trash, and flicking it up takes it off the shelf without deleting the file.
+- [ ] On macOS 14: the Record buttons are greyed out and say recording needs macOS 15.
 - [ ] Turn on real sound for the music bars: macOS asks to record system audio. Allow it and the bars follow the music; deny it and they bounce as before, and Settings explains how to allow it.
 - [ ] Turn on download progress, then download a large file in Safari and in Chrome: the ring and percentage show, then "Done".
 
 ### Accessibility
 
 - [ ] Reduce Motion on: the notch fades instead of springing; the equalizer bars, mascot, glow and LED title are still; no confetti or ripple; a flicked shelf item disappears without flying.
+- [ ] Reduce Motion with a capture: flicking a tile off the shelf removes it without the throw.
 - [ ] VoiceOver reads the dock buttons, playback controls, reminders, the pin and ⌘K buttons, the palette rows, the LED title (as plain text) and the mascot's mood. Shelf items offer Open, Show in Finder and Remove actions.
 
 ## Permission audit
@@ -105,7 +116,10 @@ Every prompt, and what triggers it. Launching Brim triggers none.
 | Desktop and Documents folders | Only when the Shelf is shown with files from those folders. At launch, expiry checks dates only | `ShelfService.removeMissing` |
 | `~/.claude/settings.json` (not a macOS permission) | Only when you press "Add hook"; a backup is saved first | `ClaudeHookInstaller.install` |
 | System audio recording | Only with Settings › "Move the music bars with the real sound" on, the first time the bars show | `AudioTap.start` |
+| Screen Recording | The first screenshot or recording. Choosing a window to record uses macOS's picker instead, which asks for nothing | `CaptureService.ensureScreenPermission` |
+| Microphone | Only when a recording starts with Capture › Microphone on | `CaptureService.microphoneAllowed` |
+| The folder macOS saves screenshots in (usually Desktop) | Only when the Capture module is open with "List screenshots taken with ⌘⇧3…" on | `CaptureService.startQuery` |
 | Downloads folder (may be asked) | Only with Settings › "Show download progress" on | `DownloadsService.settingsChanged` |
-| Accessibility, Screen Recording, Input Monitoring | Never | — |
+| Accessibility, Input Monitoring | Never | — |
 
 Hidden modules (Settings › Modules) stop their background work: the Now Playing helper exits and the clipboard watcher stops.

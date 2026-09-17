@@ -26,6 +26,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         #endif
     }
 
+    /// Quitting mid-recording would leave an unplayable file; stop it first.
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        guard CaptureService.shared.isRecording else { return .terminateNow }
+        CaptureService.shared.stopRecording()
+        Task {
+            for _ in 0..<50 where CaptureService.shared.isRecording {
+                try? await Task.sleep(for: .milliseconds(100))
+            }
+            NSApp.reply(toApplicationShouldTerminate: true)
+        }
+        return .terminateLater
+    }
+
     func applicationWillTerminate(_ notification: Notification) {
         NotesService.shared.flush()
         ClaudeLiveService.shared.stop()

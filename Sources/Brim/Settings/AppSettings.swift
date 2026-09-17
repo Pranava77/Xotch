@@ -30,6 +30,13 @@ enum SettingsKey {
     static let realAudioLevels = "realAudioLevels"
     static let downloadProgress = "downloadProgress"
     static let ledTitle = "ledTitle"
+    static let captureFolder = "captureFolder"
+    static let captureCopies = "captureCopiesToClipboard"
+    static let captureIncludesMac = "captureIncludesMacScreenshots"
+    static let captureSystemAudio = "captureSystemAudio"
+    static let captureMicrophone = "captureMicrophone"
+    static let captureShowsClicks = "captureShowsClicks"
+    static let captureKeepDays = "captureKeepDays"
 }
 
 enum DisplayChoice {
@@ -64,6 +71,13 @@ enum AppSettings {
             SettingsKey.realAudioLevels: false,
             SettingsKey.downloadProgress: false,
             SettingsKey.ledTitle: true,
+            SettingsKey.captureFolder: "",
+            SettingsKey.captureCopies: true,
+            SettingsKey.captureIncludesMac: true,
+            SettingsKey.captureSystemAudio: true,
+            SettingsKey.captureMicrophone: false,
+            SettingsKey.captureShowsClicks: false,
+            SettingsKey.captureKeepDays: 7,
             Diagnostics.shareKey: false,
         ])
     }
@@ -111,5 +125,38 @@ enum AppSettings {
     /// 0 means keep shelf items until removed.
     static var shelfExpiryHours: Int {
         UserDefaults.standard.integer(forKey: SettingsKey.shelfExpiryHours)
+    }
+
+    // MARK: - Capture
+
+    /// Where Brim saves screenshots and recordings. Empty means ~/Pictures/Brim.
+    static var captureFolder: String {
+        UserDefaults.standard.string(forKey: SettingsKey.captureFolder) ?? ""
+    }
+
+    static var captureCopies: Bool {
+        UserDefaults.standard.bool(forKey: SettingsKey.captureCopies)
+    }
+
+    /// Also list screenshots taken with ⌘⇧3, ⌘⇧4 and ⌘⇧5.
+    static var captureIncludesMac: Bool {
+        UserDefaults.standard.bool(forKey: SettingsKey.captureIncludesMac)
+    }
+
+    static var captureSystemAudio: Bool {
+        UserDefaults.standard.bool(forKey: SettingsKey.captureSystemAudio)
+    }
+
+    static var captureMicrophone: Bool {
+        UserDefaults.standard.bool(forKey: SettingsKey.captureMicrophone)
+    }
+
+    static var captureShowsClicks: Bool {
+        UserDefaults.standard.bool(forKey: SettingsKey.captureShowsClicks)
+    }
+
+    /// 0 means list captures of any age.
+    static var captureKeepDays: Int {
+        UserDefaults.standard.integer(forKey: SettingsKey.captureKeepDays)
     }
 }

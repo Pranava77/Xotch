@@ -6,7 +6,7 @@
 
 <p align="center">
   <strong>Your MacBook's notch, put to work.</strong><br>
-  Music, calendar, timers, files, your clipboard and Claude Code, all one hover away.
+  Music, calendar, timers, screenshots, files and Claude Code, all one hover away.
 </p>
 
 <p align="center">
@@ -51,7 +51,7 @@ When something's happening, the notch grows two small "ears" to show it, without
   </tr>
   <tr>
     <td align="center"><img src="docs/images/ears-claude.jpg" alt="Claude Code status beside the notch, reading Editing"><br><sub><b>Claude Code:</b> a soft pulse while it works; a faster one when it needs you</sub></td>
-    <td align="center"><img src="docs/images/ears-done.jpg" alt="A finished timer beside the notch, reading Done"><br><sub><b>Focus done:</b> with a burst of confetti</sub></td>
+    <td align="center"><img src="docs/images/ears-recording.jpg" alt="A red dot and 2 minutes 14 seconds beside the notch, showing a screen recording in progress"><br><sub><b>Screen recording:</b> the time so far; click it to stop</sub></td>
   </tr>
   <tr>
     <td align="center"><img src="docs/images/ears-download.jpg" alt="Download progress at 62 percent beside the notch"><br><sub><b>Downloads:</b> how far along they are</sub></td>
@@ -89,6 +89,18 @@ If more than one thing is live, the most important shows, and small dots tell yo
 **Also inside:**
 - **Home:** the time, your next meeting and what's playing.
 - **Notes:** a scratchpad that can sit beside the notch, and notes that save as you type.
+
+## Screenshots and recordings
+
+<img src="docs/images/module-capture.jpg" alt="Capture: Screenshot and Record buttons for an area, a window or the screen, with recent captures below" align="right" width="46%">
+
+Take a screenshot of an area, a window or the whole screen, or record your screen with sound. It all lands on a shelf in the notch, ready to drag into a message.
+
+The shelf picks up the screenshots you take with **⌘⇧3**, **⌘⇧4** and **⌘⇧5** too, so everything is in one place. Drag one out, AirDrop it, or flick it away.
+
+Screenshots are copied to your clipboard as they're taken, and saved in **Pictures › Brim**. Recording needs macOS 15.
+
+<br clear="right">
 
 ## Claude Code, beside the notch
 
@@ -133,6 +145,7 @@ Press **⌘K** in the open notch and type:
 | `cal` | Open Calendar |
 | `10 min` | Start a 10-minute timer |
 | `pause` | Pause the music |
+| `shot` | Take a screenshot |
 | `aurora` | Switch theme |
 | Something you copied | Copy it again |
 
@@ -152,6 +165,7 @@ Press **⌘K** in the open notch and type:
 - **No tracking:** no account, no analytics.
 - **Stays on your Mac:** your clipboard history, notes and files never leave your Mac.
 - **Offline:** Brim doesn't connect to any online service.
+- **Screenshots and recordings:** saved on your Mac, in Pictures › Brim unless you choose another folder. Nothing is uploaded.
 - **Audio:** when the music bars follow the real sound, Brim only measures how loud it is. Nothing is recorded.
 - **Crash reports:** never sent automatically. If you choose to keep them, you decide whether to email one.
 
@@ -168,9 +182,12 @@ Brim asks only when you use something that needs it.
 | Notifications | You start your first timer | Telling you when time's up |
 | Paste from other apps (macOS 26) | You choose **Allow** in Clipboard | Keeping your clipboard history |
 | System audio recording | You turn on real sound for the music bars | Measuring how loud the music is |
+| Screen Recording | Your first screenshot or recording in Capture | Taking the picture. Choosing a window to record uses macOS's own picker instead, which needs no permission |
+| Microphone | Only if you turn on Capture › Microphone | Recording your voice with the screen |
+| Desktop folder (may be asked) | Opening Capture, if it's listing your ⌘⇧3 and ⌘⇧4 screenshots | Finding those screenshots. macOS saves them to Desktop unless you've changed it |
 | Downloads folder | macOS may ask when you turn on download progress | Showing how far downloads have got |
 
-Brim never asks for Accessibility, Screen Recording or Input Monitoring.
+Brim never asks for Accessibility or Input Monitoring.
 
 </details>
 
@@ -196,6 +213,7 @@ Brim is in private beta. If you have an invite:
 - macOS 14 Sonoma or later, on Apple silicon or Intel. It's best on a MacBook with a notch.
 - Liquid Glass needs macOS 26.
 - Music bars that follow the real sound need macOS 14.2.
+- Screen recording needs macOS 15. Screenshots work on all of them.
 
 <details>
 <summary><b>Connect Claude Code</b></summary>
@@ -232,6 +250,18 @@ Open Clipboard and choose **Allow**. Then set Brim to always allow under **Paste
 <summary><b>The music bars don't follow the music.</b></summary>
 
 Allow Brim under **System Settings › Privacy & Security › Screen & System Audio Recording**, or turn real sound off in Settings to keep the built-in animation.
+</details>
+
+<details>
+<summary><b>My screenshots only show the wallpaper.</b></summary>
+
+macOS hasn't given Brim permission yet. Allow Brim under **System Settings › Privacy & Security › Screen & System Audio Recording**, then quit Brim and open it again.
+</details>
+
+<details>
+<summary><b>Where do my screenshots go?</b></summary>
+
+To **Pictures › Brim**, and to your clipboard. Choose another folder in **Settings › Capture**, or press **Open Folder** in the Capture module.
 </details>
 
 <details>

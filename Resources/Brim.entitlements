@@ -2,8 +2,10 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<!-- Hardened runtime needs this for the Calendar/Reminders module. -->
+	<!-- Hardened runtime needs these: Calendar/Reminders, and the microphone in screen recordings. -->
 	<key>com.apple.security.personal-information.calendars</key>
+	<true/>
+	<key>com.apple.security.device.audio-input</key>
 	<true/>
 </dict>
 </plist>

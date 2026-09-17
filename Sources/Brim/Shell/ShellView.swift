@@ -145,6 +145,12 @@ private struct OpenContent: View {
 
             HStack(spacing: 2) {
                 Spacer(minLength: 0)
+                // Capture shows its own timer and Stop button.
+                if let started = CaptureService.shared.recordingStarted, selected.id != "capture" {
+                    RecordingPill(started: started)
+                        .padding(.trailing, 6)
+                        .transition(.scale.combined(with: .opacity))
+                }
                 PaletteButton { actions.togglePalette() }
                 PinButton(isPinned: model.isPinned) { actions.togglePin() }
             }
@@ -173,6 +179,33 @@ private struct PaletteButton: View {
         .buttonStyle(.plain)
         .help("Command palette  ⌘K")
         .accessibilityLabel("Command palette")
+    }
+}
+
+/// Shown in every module while a screen recording runs; click to stop.
+private struct RecordingPill: View {
+    let started: Date
+
+    var body: some View {
+        Button {
+            CaptureService.shared.stopRecording()
+        } label: {
+            HStack(spacing: 5) {
+                Image(systemName: "stop.fill")
+                    .font(.system(size: 8, weight: .bold))
+                Text(started, style: .timer)
+                    .monospacedDigit()
+            }
+            .font(.system(size: 11, weight: .semibold, design: .rounded))
+            .foregroundStyle(.white)
+            .padding(.horizontal, 8)
+            .frame(height: 20)
+            .background(Capsule().fill(Theme.negative))
+            .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .help("Stop recording")
+        .accessibilityLabel("Stop recording")
     }
 }
 

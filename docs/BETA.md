@@ -7,7 +7,7 @@
 3. Run `./scripts/package-beta.sh`. It builds a release app, checks the signature and writes `build/Brim-<version>-<build>.zip` with its SHA-256.
 4. Strongly recommended: sign with a Developer ID and notarize before sending the build to anyone.
    - Without that, every tester has to override Gatekeeper by hand (below).
-   - macOS may also ask for Calendar access again after each update.
+   - macOS may also ask for Calendar access and Screen Recording again after each update.
    - Use `SIGN_IDENTITY="Developer ID Application: …" ./scripts/package-beta.sh`, then `xcrun notarytool submit` and `xcrun stapler staple`.
 
 Still to do for a beta channel: automatic updates. Adding Sparkle needs the Sparkle package, EdDSA signing keys, and an appcast hosted on your site.
@@ -28,6 +28,7 @@ Still to do for a beta channel: automatic updates. Adding Sparkle needs the Spar
 - **Every day:** Home, Now Playing (Music, Spotify, a browser), Calendar, Timers.
 - **Clipboard:** copy things and search them later. macOS asks once whether Brim may read the clipboard.
 - **Shelf:** drag a file towards the notch, drop it, then drag it out somewhere else.
+- **Capture:** take a screenshot of an area, a window and the screen, record a few seconds of screen, and check that your own ⌘⇧4 screenshots turn up there too. macOS asks for Screen Recording the first time; screen recording itself needs macOS 15.
 - **Make it yours:** try the themes in Settings › Appearance, ⌘K in the open notch, scrolling on the closed notch for volume, and flicking a file off the Shelf.
 - **Different setups:** full-screen apps, an external display, sleep and wake.
 - **Optional:** add the Claude Code hook in the Claude Code module.

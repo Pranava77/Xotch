@@ -27,7 +27,7 @@ debug close
 debug clear-activities
 sleep 3
 measure "Closed, nothing live"
-for module in home media calendar clipboard shelf notes stats claude timers; do
+for module in home media calendar clipboard shelf capture notes stats claude timers; do
   debug open "$module"
   sleep 3
   measure "Open on $module"
@@ -49,6 +49,10 @@ debug clear-activities
 debug activity-download
 sleep 2
 measure "Closed, download progress"
+debug clear-activities
+debug activity-recording
+sleep 2
+measure "Closed, recording indicator (red timer)"
 debug clear-activities
 debug palette
 sleep 3
