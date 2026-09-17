@@ -26,11 +26,13 @@ With a debug build running:
 ./scripts/debug.sh theme aurora      # midnight, smoke, aurora or custom; also mood working|celebrating|sleeping|idle
 ./scripts/debug.sh snapshot ~/Desktop/brim-snapshots     # render every state to PNG (sample data)
 ./scripts/debug.sh effects ~/Desktop/brim-effects        # render the Metal and Core Animation effects to PNG
-./scripts/debug.sh marketing docs/images                 # regenerate the README's product images (sample data)
+./scripts/debug.sh marketing /tmp/brim-images            # regenerate the README's product images (sample data)
 ./scripts/debug.sh selftest ~/Desktop/brim-selftest.txt  # check the real services, write a report
 ./scripts/debug.sh status ~/Desktop/brim-status.txt      # notch state per display, pointer event rate
 ./scripts/debug.sh rebuild 30        # rebuild the notch windows, for leak checks
 ```
+
+The project lives on the Desktop, which macOS protects, and every rebuild resets the debug build's permissions. So render product images into a folder outside Desktop, Documents and Downloads, then copy them into `docs/images`. Writing there directly makes Brim wait for the "access files in your Desktop folder" prompt.
 
 ### Other scripts
 
@@ -54,12 +56,11 @@ See [PERFORMANCE.md](PERFORMANCE.md), [TESTING.md](TESTING.md) (manual checks an
 | Shelf | bookmarks, Quick Look, an AppKit drag source | — |
 | Notes | JSON in Application Support | — |
 | System | Mach, getifaddrs, IOKit | — |
-| Weather | Open-Meteo, CoreLocation | Location (or pick a city) |
-| Revenue | Stripe, Polar and Dodo Payments REST APIs, read-only keys | A key you paste |
-| Analytics | DataFast API, `df_` key | A key you paste |
 | Claude Code | `~/.claude/projects` logs, a Claude Code hook | Adding the hook (optional) |
 
-Everything is stored in `~/Library/Application Support/Brim`; API keys are in the login Keychain under the service `com.pranava.brim`. Brim only talks to Open-Meteo (weather) and the services you connect, with read-only keys.
+Everything is stored in `~/Library/Application Support/Brim`. Brim makes no network requests.
+
+The Revenue, Analytics and Weather modules were removed. On first launch after that change, `Services/LegacyCleanup.swift` deletes what they left behind: their Keychain items, cached files and settings, and their IDs in the saved module order. `Services/LocationProvider.swift` stays for the upcoming Astrology module.
 
 ## Signature UI
 
@@ -68,10 +69,10 @@ Everything is stored in `~/Library/Application Support/Brim`; API keys are in th
 | Themes | `ThemeStore` holds the palette (background, text, accent, glow, solid or glass). The closed notch always stays black. | — |
 | Glass | `.glassEffect()` on macOS 26; an `NSVisualEffectView` blur on 14–15 (`defaults write com.pranava.brim forceBlurFallback -bool YES` to see it on 26) | window server |
 | Drop ripple, artwork glow, LED display | Metal shaders compiled at runtime (`Design/Shaders.swift`). The glow and LED display are drawn once and moved by Core Animation; only the one-second ripple draws frame by frame. | ~0.1% while Now Playing is open |
-| Live updates beside the notch | Timer ring and Claude pulse are Core Animation layers; revenue ticker; download progress; dots for activities waiting their turn; a volume HUD | 0% (ring 0.4%, the countdown text) |
+| Live updates beside the notch | Timer ring and Claude pulse are Core Animation layers; a rolling ticker (`ActivityContent.ticker`); download progress; dots for activities waiting their turn; a volume HUD | 0% (ring 0.4%, the countdown text) |
 | Real audio levels | A Core Audio process tap (macOS 14.2+), four bands from an FFT, only while the music bars are showing. Off by default. | 0.17% while the bars show |
 | Mascot | Core Animation character with idle, working, celebrating and sleeping moods from `ActivityCenter` | 0% |
-| Sale celebration | `CAEmitterLayer` confetti, a double haptic, an optional synthesised "ka-ching" (off by default) | 0% |
+| Celebration | `CAEmitterLayer` confetti and a double haptic when a focus session finishes (Settings › Features) | 0% |
 | Command palette | `CommandCatalog` builds commands from the modules, timers, music, themes and clipboard; fuzzy matching | — |
 
 The plan called for a Rive mascot and SwiftUI's `.layerEffect`. Rive needs its package and an animation file from the Rive editor, and `.layerEffect` needs a `.metallib` that only Xcode's Metal compiler can build, so both are done without them for now.
@@ -86,7 +87,7 @@ Apple only lets its own processes use the private MediaRemote framework, so Brim
 
 ### Permissions during development
 
-The app is signed ad hoc, so macOS may ask for Calendar access, or for Keychain access to saved keys, again after a rebuild. A Developer ID signature (Phase 6) fixes that. Debug builds also carry `get-task-allow` so `leaks`, `sample` and `vmmap` work; release builds don't.
+The app is signed ad hoc, so macOS may ask for Calendar access again after a rebuild. A Developer ID signature (Phase 6) fixes that. Debug builds also carry `get-task-allow` so `leaks`, `sample` and `vmmap` work; release builds don't.
 
 On macOS 26, reading the clipboard in the background needs permission: the Clipboard module asks once, and history only records while macOS is set to always allow Brim.
 
@@ -112,5 +113,5 @@ Sources/Brim/
 - `ScreenManager` watches pointer movement with app-wide event monitors (no extra permissions needed) and passes it to each display's `NotchWindowController`, which runs the state machine: closed → peek → open, plus pinned.
 - "Activity" is derived: a closed or peeking notch widens its ears whenever `ActivityCenter` has something to show. A HUD (volume) shows at once; banners ("+$49", "Copied") show one at a time for a few seconds; ongoing activities (a running timer, music) show while nothing else is, highest priority first, with dots for the ones waiting.
 - Dragging a file towards the notch opens the Shelf; dropping it anywhere on the notch adds it.
-- Views that sample (System, Weather) only run while on screen, so a closed notch costs nothing.
+- Views that sample (System) only run while on screen, so a closed notch costs nothing.
 - `NotchShape` animates its shoulder and corner radii, so every state change is one spring on one shape.

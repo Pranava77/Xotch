@@ -6,7 +6,7 @@ enum Haptics {
     static func tick() { perform(.alignment) }
     static func open() { perform(.levelChange) }
 
-    /// Two quick taps, for a sale.
+    /// Two quick taps, for a celebration.
     static func celebrate() {
         perform(.levelChange)
         Task {

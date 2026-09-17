@@ -27,7 +27,7 @@ debug close
 debug clear-activities
 sleep 3
 measure "Closed, nothing live"
-for module in home media calendar clipboard shelf stats weather revenue analytics claude timers; do
+for module in home media calendar clipboard shelf notes stats claude timers; do
   debug open "$module"
   sleep 3
   measure "Open on $module"

@@ -4,7 +4,7 @@ import SwiftUI
 
 /// Brim's mascot: a tiny notch with glowing eyes. It naps when nothing has
 /// happened for a while, thinks while Claude, a timer or a download is busy,
-/// and jumps for joy at a sale. ActivityCenter decides the mood.
+/// and jumps for joy when a focus session ends. ActivityCenter decides the mood.
 struct MascotBadge: View {
     let mood: MascotMood
     var size: CGFloat = 52

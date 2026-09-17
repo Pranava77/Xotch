@@ -34,7 +34,6 @@ final class ScreenManager {
         }
         observe(workspace, NSWorkspace.didWakeNotification) { manager in
             manager.scheduleRebuild()
-            Task { await RevenueService.shared.refresh() }
         }
         observe(workspace, NSWorkspace.activeSpaceDidChangeNotification) { manager in
             manager.scheduleFullScreenCheck()

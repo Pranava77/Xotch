@@ -26,8 +26,7 @@ enum SettingsKey {
     static let hideInFullScreen = "hideInFullScreen"
     static let scrollForVolume = "scrollForVolume"
     static let showMascot = "showMascot"
-    static let celebrateSales = "celebrateSales"
-    static let saleSound = "saleSound"
+    static let celebrateFocus = "celebrateFocus"
     static let realAudioLevels = "realAudioLevels"
     static let downloadProgress = "downloadProgress"
     static let ledTitle = "ledTitle"
@@ -61,8 +60,7 @@ enum AppSettings {
             SettingsKey.hideInFullScreen: true,
             SettingsKey.scrollForVolume: true,
             SettingsKey.showMascot: true,
-            SettingsKey.celebrateSales: true,
-            SettingsKey.saleSound: false,
+            SettingsKey.celebrateFocus: true,
             SettingsKey.realAudioLevels: false,
             SettingsKey.downloadProgress: false,
             SettingsKey.ledTitle: true,

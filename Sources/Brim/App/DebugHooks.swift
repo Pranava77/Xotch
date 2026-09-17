@@ -59,7 +59,7 @@ enum DebugHooks {
         case "calendar-refresh":
             CalendarService.shared.refresh()
         case "clear-activities":
-            for id in ["media", "timers", "claude", "notes", "revenue", "downloads"] {
+            for id in ["media", "timers", "claude", "notes", "downloads"] {
                 ActivityCenter.shared.setOngoing(nil, for: id)
             }
         default:
@@ -133,16 +133,6 @@ enum DebugHooks {
         lines.append("shelf: \(ShelfService.shared.items.count) items, airdrop=\(ShelfService.shared.canAirDrop)")
         lines.append("notes: \(NotesService.shared.notes.count) notes")
 
-        do {
-            let report = try await WeatherService.shared.forecast(latitude: 52.52, longitude: 13.41, place: "Berlin (test)")
-            lines.append("weather: ok \(report.current.temperature)\(report.temperatureUnit) code \(report.current.code), \(report.hours.count) hours, \(report.days.count) days, tz \(report.timeZone)")
-        } catch {
-            lines.append("weather: failed \(error.localizedDescription)")
-        }
-        let weather = WeatherService.shared
-        lines.append("weather state: status=\(weather.status) locationDenied=\(weather.locationDenied) hasReport=\(weather.report != nil) manualPlace=\(weather.manualPlace != nil)")
-        lines.append("location: \(weather.location.statusDescription)")
-
         // Phase 5
         if #available(macOS 15.4, *) {
             lines.append("pasteboard accessBehavior raw=\(NSPasteboard.general.accessBehavior.rawValue) → brim access \(ClipboardService.shared.access)")
@@ -171,17 +161,8 @@ enum DebugHooks {
         try? FileManager.default.removeItem(at: crashFolder)
         lines.append("crash detection: found=\(found?.lastPathComponent ?? "nil") (expect Brim-2026-09-16-120000.ips) withoutMarker=\(noMarker?.lastPathComponent ?? "nil") (expect nil)")
         lines.append("diagnostics: sharing=\(Diagnostics.shared.isSharingEnabled) lastCrash=\(Diagnostics.shared.lastCrashReport?.lastPathComponent ?? "none") version=\(Diagnostics.versionString)")
-        lines.append("location authorized=\(WeatherService.shared.location.isAuthorized)")
 
-        // Phase 3
-        lines += await RevenueService.selfTest()
-        lines += await AnalyticsService.selfTest()
-        let account = "selftest.\(UUID().uuidString)"
-        let saved = KeychainStore.save("value-123", for: account)
-        let readBack = KeychainStore.read(account)
-        KeychainStore.delete(account)
-        lines.append("keychain: saved=\(saved) readBack=\(readBack == "value-123") deleted=\(KeychainStore.read(account) == nil)")
-
+        // Claude Code
         let reportFolder = URL(fileURLWithPath: path).deletingLastPathComponent()
         let settings = reportFolder.appendingPathComponent("claude-settings-test.json")
         let original = #"{"model":"opus","permissions":{"allow":["Bash(ls:*)"]},"hooks":{"PreToolUse":[{"matcher":"Bash","hooks":[{"type":"command","command":"echo existing"}]}]}}"#
@@ -263,7 +244,6 @@ enum DebugHooks {
         lines.append("spectrum 7 kHz: \(spectrum(frequency: 7000)) (treble highest)")
         lines.append("spectrum silence: \(spectrum(frequency: 0)) (all 0)")
         lines.append("audio levels: enabled=\(AudioLevels.shared.isEnabled) status=\(AudioLevels.shared.status)")
-        lines.append("sale sound: \(CelebrationSound.wav.count) bytes, starts \(String(decoding: CelebrationSound.wav.prefix(4), as: UTF8.self))")
         let volume = SystemVolume.volume
         lines.append("volume: device=\(SystemVolume.outputDevice() != nil) readable=\(volume != nil) settable=\(SystemVolume.canSetVolume) muted=\(SystemVolume.isMuted) symbol=\(SystemVolume.symbol(for: volume ?? 0, muted: SystemVolume.isMuted))")
 
@@ -307,7 +287,7 @@ enum DebugHooks {
                                        tint: .orange, pulse: .calm), for: "claude")
         moods.append("claude working=\(center.mood.rawValue)")
         center.debugSet(celebrating: true)
-        moods.append("sale=\(center.mood.rawValue)")
+        moods.append("celebrating=\(center.mood.rawValue)")
         center.debugSet(celebrating: false)
         center.setOngoing(nil, for: "claude")
         center.setOngoing(LiveActivity(moduleID: "timers", symbol: "pause.fill", content: .text("12:00"),
@@ -322,6 +302,7 @@ enum DebugHooks {
         lines.append("mascot moods: \(moods.joined(separator: " ")) (expect idle working celebrating idle sleeping)")
         let ringNow = RingView.fraction(of: .timed(start: Date().addingTimeInterval(-30), end: Date().addingTimeInterval(90)), at: .now)
         lines.append(String(format: "ring: timed 30 s of 120 s = %.2f (expect 0.25)", ringNow))
+        lines.append("cleanup: done=\(UserDefaults.standard.bool(forKey: "cleanup.removedConnectedModules")) module list \"home,revenue,media,weather,analytics,stats\" → \"\(LegacyCleanup.strippingRemoved(from: "home,revenue,media,weather,analytics,stats"))\" (expect home,media,stats)")
         return lines
     }
 
@@ -553,11 +534,6 @@ enum DebugHooks {
                                        tint: Theme.accent, earWidth: 90, progress: .fraction(0.62)), for: "downloads")
         render("3-activity-download") { _ in }
         center.setOngoing(nil, for: "downloads")
-        center.setOngoing(LiveActivity(moduleID: "revenue", symbol: "chart.line.uptrend.xyaxis",
-                                       content: .ticker(["$1.2k", "14 sales"]), tint: Theme.positive, earWidth: 100),
-                          for: "revenue")
-        render("3-activity-ticker") { _ in }
-        center.setOngoing(nil, for: "revenue")
         center.setOngoing(LiveActivity(moduleID: "volume", symbol: "speaker.wave.2.fill", content: .level(0.56),
                                        tint: Theme.ink, earWidth: 96), for: "volume")
         render("3-activity-volume") { _ in }
@@ -578,30 +554,24 @@ enum DebugHooks {
         }
         center.debugSet(celebrating: false, drowsy: false)
         NotesService.shared.start()
-        center.post(LiveActivity(moduleID: "revenue", symbol: "dollarsign.circle.fill",
-                                 content: .text("+$49"), tint: Theme.positive))
+        center.post(LiveActivity(moduleID: "timers", symbol: "checkmark.circle.fill",
+                                 content: .text("Done"), tint: Theme.positive))
         render("3-activity") { _ in }
     }
 }
 
 /// Swaps every module's data for samples while `body` runs.
 @MainActor
-func withSampleData(showingErrors: Bool = true, _ body: () -> Void) {
+func withSampleData(_ body: () -> Void) {
     MediaService.shared.withSample {
     CalendarService.shared.withSample {
     ClipboardService.shared.withSample {
     NotesService.shared.withSample {
     ShelfService.shared.withSample {
-    WeatherService.shared.withSample {
     StatsService.shared.withSample {
-    RevenueService.shared.withSample(showingErrors: showingErrors) {
-    AnalyticsService.shared.withSample {
     ClaudeUsageService.shared.withSample {
     ClaudeLiveService.shared.withSample {
         body()
-    }
-    }
-    }
     }
     }
     }

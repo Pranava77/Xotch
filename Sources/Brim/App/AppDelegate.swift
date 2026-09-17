@@ -16,6 +16,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.setActivationPolicy(.accessory)
         // Writing to the media bridge after it exits must not kill Brim.
         signal(SIGPIPE, SIG_IGN)
+        LegacyCleanup.run()
         Diagnostics.shared.sessionStarted()
         ModuleRegistry.syncRunning()
         DownloadsService.shared.settingsChanged()

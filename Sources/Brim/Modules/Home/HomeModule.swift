@@ -13,8 +13,6 @@ private struct HomeView: View {
     private var media: MediaService { .shared }
     private var calendar: CalendarService { .shared }
     private var timers: TimerService { .shared }
-    private var weather: WeatherService { .shared }
-    private var revenue: RevenueService { .shared }
     @AppStorage(SettingsKey.showMascot) private var showMascot = true
     @Environment(\.snapshotDate) private var snapshotDate
 
@@ -42,46 +40,6 @@ private struct HomeView: View {
                             .transition(.scale.combined(with: .opacity))
                     }
                 }
-                if let report = weather.report {
-                    Button { ScreenManager.shared.show(moduleID: "weather") } label: {
-                        HStack(spacing: 8) {
-                            Image(systemName: WeatherCode.symbol(report.current.code, isDay: report.current.isDay))
-                                .symbolRenderingMode(.multicolor)
-                                .font(.system(size: 20))
-                            VStack(alignment: .leading, spacing: 0) {
-                                Text("\(Int(report.current.temperature.rounded()))° · \(WeatherCode.description(report.current.code))")
-                                    .font(.system(size: 13, weight: .semibold))
-                                Text(report.place)
-                                    .font(.system(size: 11))
-                                    .foregroundStyle(Theme.secondaryInk)
-                            }
-                        }
-                        .padding(.vertical, 4)
-                        .padding(.horizontal, 6)
-                    }
-                    .buttonStyle(HoverButtonStyle())
-                }
-                if revenue.isConnected {
-                    Button { ScreenManager.shared.show(moduleID: "revenue") } label: {
-                        HStack(spacing: 8) {
-                            Image(systemName: "chart.line.uptrend.xyaxis")
-                                .font(.system(size: 16, weight: .semibold))
-                                .foregroundStyle(Theme.positive)
-                                .frame(width: 26)
-                            VStack(alignment: .leading, spacing: 0) {
-                                Text(revenue.totals.first.map { Money.format($0.amount, currency: $0.currency) } ?? "No sales yet")
-                                    .font(.system(size: 13, weight: .semibold))
-                                    .monospacedDigit()
-                                Text(revenue.sales.count == 1 ? "1 sale today" : "\(revenue.sales.count) sales today")
-                                    .font(.system(size: 11))
-                                    .foregroundStyle(Theme.secondaryInk)
-                            }
-                        }
-                        .padding(.vertical, 4)
-                        .padding(.horizontal, 6)
-                    }
-                    .buttonStyle(HoverButtonStyle())
-                }
                 Spacer(minLength: 0)
             }
             .frame(width: 210, alignment: .leading)
@@ -98,7 +56,6 @@ private struct HomeView: View {
         }
         .task {
             calendar.refresh()
-            weather.refreshIfAllowed()
         }
     }
 
