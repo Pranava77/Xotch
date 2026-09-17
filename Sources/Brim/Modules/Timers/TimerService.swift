@@ -157,6 +157,9 @@ final class TimerService {
             message = "Your \(Format.clock(total)) timer is done."
         }
         reset()
+        if finished == .focus, UserDefaults.standard.bool(forKey: SettingsKey.celebrateFocus) {
+            ActivityCenter.shared.celebrate()
+        }
         NSSound(named: "Glass")?.play()
         notifications.post(title: finished.title, body: message)
         ActivityCenter.shared.post(LiveActivity(moduleID: "timers", symbol: "bell.fill",

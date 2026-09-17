@@ -69,7 +69,7 @@ final class ActivityCenter {
     static let shared = ActivityCenter()
 
     /// Which ongoing activity wins when several are live.
-    private static let priority = ["claude", "timers", "downloads", "media", "notes", "revenue"]
+    private static let priority = ["claude", "timers", "downloads", "media", "notes"]
     /// Ongoing activities that count as "working" for the mascot.
     private static let busyModules: Set<String> = ["claude", "timers", "downloads"]
     private static let sleepAfter: Duration = .seconds(10 * 60)
@@ -173,15 +173,12 @@ final class ActivityCenter {
         }
     }
 
-    /// Confetti, a haptic and (if turned on) a sound, e.g. for a sale.
+    /// Confetti and a haptic, e.g. for a finished focus session.
     func celebrate() {
         noteActivity()
         celebrations += 1
         withAnimation(Motion.activity) { isCelebrating = true }
         Haptics.celebrate()
-        if UserDefaults.standard.bool(forKey: SettingsKey.saleSound) {
-            CelebrationSound.play()
-        }
         celebrationTask?.cancel()
         celebrationTask = Task { [weak self] in
             try? await Task.sleep(for: .seconds(4))
@@ -221,13 +218,13 @@ final class ActivityCenter {
     /// Sample banners for trying the shell.
     func postDemo() {
         let samples = [
-            LiveActivity(moduleID: "revenue", symbol: "dollarsign.circle.fill", content: .text("+$49"), tint: Theme.positive),
+            LiveActivity(moduleID: "timers", symbol: "checkmark.circle.fill", content: .text("Done"), tint: Theme.positive),
             LiveActivity(moduleID: "shelf", symbol: "tray.full.fill", content: .text("3 files"), tint: .cyan),
             LiveActivity(moduleID: "clipboard", symbol: "doc.on.clipboard.fill", content: .text("Copied"), tint: Theme.accent),
         ]
         let sample = samples[demoIndex % samples.count]
         post(sample)
-        if sample.moduleID == "revenue" {
+        if sample.moduleID == "timers" {
             celebrate()
         }
         demoIndex += 1

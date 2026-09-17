@@ -60,6 +60,11 @@ final class AudioLevels {
         update()
     }
 
+    /// Starting and stopping talk to the audio server and can wait on it (for
+    /// example while macOS shows its permission prompt), so they run here,
+    /// never on the main thread.
+    @ObservationIgnored private let control = DispatchQueue(label: "com.pranava.brim.audio-levels.control")
+
     private func update() {
         let shouldRun = viewers > 0 && isEnabled
         if shouldRun, tap == nil {
@@ -68,21 +73,32 @@ final class AudioLevels {
                 return
             }
             let newTap = AudioTap()
-            do {
-                try newTap.start()
-                tap = newTap
-                status = .listening
-            } catch {
-                newTap.stop()
-                status = .failed(error.localizedDescription)
+            tap = newTap
+            status = .listening
+            control.async {
+                do {
+                    try newTap.start()
+                } catch {
+                    newTap.stop()
+                    let message = error.localizedDescription
+                    DispatchQueue.main.async {
+                        MainActor.assumeIsolated { AudioLevels.shared.startFailed(newTap, message: message) }
+                    }
+                }
             }
         } else if !shouldRun, let tap {
-            tap.stop()
             self.tap = nil
+            control.async { tap.stop() }
         }
         if !isEnabled {
             status = .off
         }
+    }
+
+    private func startFailed(_ failed: AudioTap, message: String) {
+        guard tap === failed else { return }
+        tap = nil
+        status = .failed(message)
     }
 }
 

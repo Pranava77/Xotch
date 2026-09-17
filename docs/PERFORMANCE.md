@@ -2,7 +2,7 @@
 
 Budget: **under 0.5% CPU and under 80 MB of memory while idle**, with nothing that keeps working while the notch is closed.
 
-Measured on a 14" MacBook Pro (Mac17,9, Apple M5 Pro), macOS 26.6.2, debug build 0.2.0 (2), with every module shown, the Smoke Glass theme, and Now Playing connected to a paused Chrome tab. No payment or analytics keys were connected.
+Measured on a 14" MacBook Pro (Mac17,9, Apple M5 Pro), macOS 26.6.2, debug build 0.2.0 (2), with every module shown, the Smoke Glass theme, and Now Playing connected to a paused Chrome tab.
 
 ## Results
 
@@ -17,9 +17,6 @@ Measured on a 14" MacBook Pro (Mac17,9, Apple M5 Pro), macOS 26.6.2, debug build
 | Open on Clipboard | 0.00% | 0.00 | 0.5/s | 37 MB |
 | Open on Shelf | 0.00% | 0.00 | 0.5/s | 37 MB |
 | Open on System | 0.60% | 0.60 | 0.5/s | 38 MB |
-| Open on Weather | 0.00% | 0.00 | 0.5/s | 38 MB |
-| Open on Revenue | 0.00% | 0.00 | 0.5/s | 38 MB |
-| Open on Analytics | 0.00% | 0.00 | 0.5/s | 39 MB |
 | Open on Claude Code | 0.00% | 0.00 | 0.5/s | 44 MB |
 | Open on Timers | 0.10% | 0.10 | 0.5/s | 44 MB |
 | Closed, music bars (built-in animation) | 0.00% | 0.00 | 0.7/s | 41 MB |

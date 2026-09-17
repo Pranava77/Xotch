@@ -6,7 +6,7 @@
 
 <p align="center">
   <strong>Your MacBook's notch, put to work.</strong><br>
-  Music, calendar, timers, files and your clipboard, plus today's sales, your site's visitors and Claude Code, all one hover away.
+  Music, calendar, timers, files, your clipboard and Claude Code, all one hover away.
 </p>
 
 <p align="center">
@@ -27,7 +27,7 @@
 </p>
 
 <p align="center">
-  <img src="docs/images/hero.jpg" alt="The Brim notch open at the top of a Mac screen, showing the time, weather, today's sales, the next meeting with a Join button, and the song playing">
+  <img src="docs/images/hero.jpg" alt="The Brim notch open at the top of a Mac screen, showing the time, the next meeting with a Join button, and the song playing">
 </p>
 
 ## Quiet until you need it
@@ -51,7 +51,7 @@ When something's happening, the notch grows two small "ears" to show it, without
   </tr>
   <tr>
     <td align="center"><img src="docs/images/ears-claude.jpg" alt="Claude Code status beside the notch, reading Editing"><br><sub><b>Claude Code:</b> a soft pulse while it works; a faster one when it needs you</sub></td>
-    <td align="center"><img src="docs/images/ears-sale.jpg" alt="A new sale of 49 dollars beside the notch"><br><sub><b>A new sale:</b> with confetti and an optional "ka-ching"</sub></td>
+    <td align="center"><img src="docs/images/ears-done.jpg" alt="A finished timer beside the notch, reading Done"><br><sub><b>Focus done:</b> with a burst of confetti</sub></td>
   </tr>
   <tr>
     <td align="center"><img src="docs/images/ears-download.jpg" alt="Download progress at 62 percent beside the notch"><br><sub><b>Downloads:</b> how far along they are</sub></td>
@@ -77,36 +77,28 @@ If more than one thing is live, the most important shows, and small dots tell yo
   <tr>
     <td><img src="docs/images/module-clipboard.jpg" alt="Clipboard: a searchable list of copied text, links and files, with one pinned"></td>
     <td><img src="docs/images/module-shelf.jpg" alt="Shelf: three files waiting, with AirDrop and Clear buttons"></td>
-    <td><img src="docs/images/module-weather.jpg" alt="Weather: the current temperature, the next hours and the week ahead"></td>
+    <td><img src="docs/images/module-stats.jpg" alt="System: CPU, memory, network, disk and battery health"></td>
   </tr>
   <tr>
     <td valign="top"><b>Clipboard</b><br><sub>Everything you've copied, searchable and pinnable. Passwords from password managers are skipped.</sub></td>
     <td valign="top"><b>Shelf</b><br><sub>Drop files on the notch to keep them handy. Drag them out later, AirDrop them, or flick them away.</sub></td>
-    <td valign="top"><b>Weather</b><br><sub>Now, the next 12 hours and the next 7 days, where you are or for any city.</sub></td>
+    <td valign="top"><b>System</b><br><sub>CPU, memory, network speed, disk space and battery health, updated only while you look.</sub></td>
   </tr>
 </table>
 
 **Also inside:**
-- **Home:** the time, weather, your next meeting and what's playing.
-- **Notes:** a scratchpad that can sit beside the notch.
-- **System:** CPU, memory, network, disk and battery health.
+- **Home:** the time, your next meeting and what's playing.
+- **Notes:** a scratchpad that can sit beside the notch, and notes that save as you type.
 
-## Made for people who ship
+## Claude Code, beside the notch
 
-<table>
-  <tr>
-    <td width="33%"><img src="docs/images/module-revenue.jpg" alt="Revenue: 217 dollars today from four sales, with the latest sales listed"></td>
-    <td width="33%"><img src="docs/images/module-analytics.jpg" alt="Analytics: live visitors, today's traffic, top pages and referrers"></td>
-    <td width="33%"><img src="docs/images/module-claude.jpg" alt="Claude Code: today's tokens, a 4-day streak, a 7-day chart and live sessions"></td>
-  </tr>
-  <tr>
-    <td valign="top"><b>Revenue</b><br><sub>Today's sales from Stripe, Polar and Dodo Payments. Each new one arrives with a burst of confetti.</sub></td>
-    <td valign="top"><b>Analytics</b><br><sub>Live visitors, today's traffic, top pages and referrers from DataFast.</sub></td>
-    <td valign="top"><b>Claude Code</b><br><sub>Today's tokens and streak, and whether each session is working, needs you, or is done.</sub></td>
-  </tr>
-</table>
+<img src="docs/images/module-claude.jpg" alt="Claude Code: today's tokens, a 4-day streak, a 7-day chart and live sessions" align="right" width="46%">
 
-Brim connects with read-only keys, and only when you add one.
+See today's tokens, replies and streak, read from Claude Code's logs on your Mac.
+
+Add the hook, and each session shows whether it's working, needs you, or is done, right beside the camera. That means you can leave Claude running and get back to something else.
+
+<br clear="right">
 
 ## Make it yours
 
@@ -124,7 +116,7 @@ Brim connects with read-only keys, and only when you add one.
 </table>
 
 - **Your own theme:** pick the background, text, accent and glow colours. The closed notch always stays black, so it blends in with the camera.
-- **The mascot:** Brim's little mascot lives on Home. It naps when things are quiet, thinks while you work, and jumps for joy at a sale.
+- **The mascot:** Brim's little mascot lives on Home. It naps when things are quiet, thinks while you work, and jumps for joy when you finish a focus session.
 - **Your modules, your way:**
   - Reorder or hide any module.
   - Choose how the notch opens: hover or click.
@@ -158,8 +150,8 @@ Press **⌘K** in the open notch and type:
 ## Private by design
 
 - **No tracking:** no account, no analytics.
-- **Stays on your Mac:** your clipboard history, notes and files never leave your Mac. API keys are kept in your Keychain.
-- **Few connections:** Brim only contacts Open-Meteo for the weather, and the services you connect yourself.
+- **Stays on your Mac:** your clipboard history, notes and files never leave your Mac.
+- **Offline:** Brim doesn't connect to any online service.
 - **Audio:** when the music bars follow the real sound, Brim only measures how loud it is. Nothing is recorded.
 - **Crash reports:** never sent automatically. If you choose to keep them, you decide whether to email one.
 
@@ -173,7 +165,6 @@ Brim asks only when you use something that needs it.
 | Permission | When | Why |
 |---|---|---|
 | Calendars and Reminders | You choose **Allow** in Calendar | Your events and reminders |
-| Location | You open Weather without choosing a city | A local forecast |
 | Notifications | You start your first timer | Telling you when time's up |
 | Paste from other apps (macOS 26) | You choose **Allow** in Clipboard | Keeping your clipboard history |
 | System audio recording | You turn on real sound for the music bars | Measuring how loud the music is |
@@ -191,7 +182,7 @@ Brim never asks for Accessibility, Screen Recording or Input Monitoring.
 | Closed, with music, Claude Code or a download beside it | 0% |
 | Open, on any module | 0.6% or less |
 
-Measured on a 14-inch MacBook Pro with an M5 Pro chip. Anything that only matters on screen, like system stats and the weather, pauses when you can't see it.
+Measured on a 14-inch MacBook Pro with an M5 Pro chip. Anything that only matters on screen, like system stats, pauses when you can't see it.
 
 ## Get the beta
 
@@ -207,23 +198,12 @@ Brim is in private beta. If you have an invite:
 - Music bars that follow the real sound need macOS 14.2.
 
 <details>
-<summary><b>Connect your services</b></summary>
+<summary><b>Connect Claude Code</b></summary>
 
 <br>
 
-**Revenue:** open the module, choose a provider and paste a read-only key.
-
-| Provider | Key to create |
-|---|---|
-| Stripe | A restricted key with read access to Charges |
-| Polar | An organization access token with the `orders:read` scope |
-| Dodo Payments | An API key from Developer › API Keys |
-
-**Analytics:** paste your DataFast website key. It starts with `df_` and is in your site's settings.
-
-**Claude Code:**
 - Usage stats work straight away, from Claude Code's logs on your Mac.
-- For live status, press **Add hook**. Brim backs up `~/.claude/settings.json`, then adds a small entry so Claude Code can tell Brim what it's doing.
+- For live status, press **Add hook** in the Claude Code module. Brim backs up `~/.claude/settings.json`, then adds a small entry so Claude Code can tell Brim what it's doing.
 - **Remove hook** takes that entry out again.
 
 </details>
@@ -279,7 +259,6 @@ Beta builds aren't signed yet, so macOS can ask again. Signed releases won't.
 2. Quit Brim from the menu bar icon and move it to the Trash.
 3. To remove everything else as well:
    - delete `~/Library/Application Support/Brim` and `~/Library/Preferences/com.pranava.brim.plist`
-   - in Keychain Access, delete the items named `com.pranava.brim`
 </details>
 
 ## Feedback

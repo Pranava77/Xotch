@@ -10,9 +10,8 @@
 ```
 
 The self-test checks:
-- **Local services:** system stats, battery health, the Now Playing bridge, and a weather request.
-- **Connected services:** the Stripe, Polar, Dodo and DataFast parsers against their documented responses, and that each service rejects a fake key.
-- **Keychain and hook:** saving and deleting a Keychain item, and installing then removing the Claude hook in a test settings file.
+- **Local services:** system stats, battery health and the Now Playing bridge.
+- **Claude hook:** installing then removing the Claude hook in a test settings file.
 - **Claude usage:** scan time for the local logs.
 - **Phase 5 logic:**
   - full-screen detection (7 window layouts) and screen-coordinate conversion
@@ -25,7 +24,8 @@ The self-test checks:
   - the dot-matrix font, printed as text
   - Metal shaders compile, and how long it took
   - the audio analyser against 80 Hz, 2.5 kHz and 7 kHz tones and silence
-  - the sale sound, output volume (read only), themes, mascot moods, the timer ring
+  - output volume (read only), themes, mascot moods, the timer ring
+  - that the cleanup for the removed Revenue, Analytics and Weather modules has run, and strips their IDs from the module order
   - download progress, using a fake download in a scratch folder
 
 It records states and counts only, never clipboard contents, notes or track titles. The palette checks run on sample data, because the palette searches the clipboard.
@@ -59,7 +59,6 @@ These need hardware or situations a script can't create. Tick them before a beta
 
 - [ ] Pin the notch open, sleep the Mac, wake it: the notch comes back closed.
 - [ ] A running timer finishes while the Mac is asleep: the "Done" banner and notification appear right after waking.
-- [ ] With Revenue connected, a sale made while asleep shows after waking.
 - [ ] Log out and back in, or run `pkill Brim`: notes typed just before are saved.
 
 ### Permissions (on a fresh macOS user account)
@@ -83,8 +82,9 @@ These need hardware or situations a script can't create. Tick them before a beta
 - [ ] Start a timer: the ring around the icon fills over the whole timer; pause it and the ring stops.
 - [ ] Claude Code working: a soft pulse behind the sparkle; waiting for you: a faster pulse.
 - [ ] Music and a timer at once: the timer shows, with one dot for the music waiting.
-- [ ] Settings › Sales › Celebrate: confetti falls from the notch, the trackpad taps twice, and the sound plays only when it's on.
-- [ ] Home: the mascot thinks while a timer runs, jumps at a sale, and falls asleep after 10 quiet minutes.
+- [ ] Settings › Features › Celebrate: confetti falls from the notch and the trackpad taps twice. A finished focus session does the same, unless "Celebrate finished focus sessions" is off.
+- [ ] Home: the mascot thinks while a timer runs, jumps when a focus session finishes, and falls asleep after 10 quiet minutes.
+- [ ] Updating from a build that had Revenue, Analytics or Weather: those modules are gone from the dock and Settings, and Keychain Access has no `com.pranava.brim` items for them.
 - [ ] Turn on real sound for the music bars: macOS asks to record system audio. Allow it and the bars follow the music; deny it and they bounce as before, and Settings explains how to allow it.
 - [ ] Turn on download progress, then download a large file in Safari and in Chrome: the ring and percentage show, then "Done".
 
@@ -100,14 +100,12 @@ Every prompt, and what triggers it. Launching Brim triggers none.
 | Permission | Asked when | Code |
 |---|---|---|
 | Calendars and Reminders | Pressing "Allow Calendar and Reminders" in Calendar | `CalendarService.requestAccess` |
-| Location | Opening Weather with no city chosen. Home never asks; it only refreshes weather when access is already granted or a city is set | `WeatherService.refresh`, `refreshIfAllowed` |
 | Notifications | Starting the first timer | `NotificationPresenter.requestPermissionIfNeeded` |
 | Paste from other apps (macOS 26) | Pressing "Allow" in Clipboard. History only reads the clipboard once macOS is set to always allow Brim | `ClipboardService.requestAccess`, `currentAccess` |
-| Keychain (saved keys) | Only when a connected service refreshes. Checking whether a key exists never prompts | `KeychainStore.contains` |
 | Desktop and Documents folders | Only when the Shelf is shown with files from those folders. At launch, expiry checks dates only | `ShelfService.removeMissing` |
 | `~/.claude/settings.json` (not a macOS permission) | Only when you press "Add hook"; a backup is saved first | `ClaudeHookInstaller.install` |
 | System audio recording | Only with Settings › "Move the music bars with the real sound" on, the first time the bars show | `AudioTap.start` |
 | Downloads folder (may be asked) | Only with Settings › "Show download progress" on | `DownloadsService.settingsChanged` |
 | Accessibility, Screen Recording, Input Monitoring | Never | — |
 
-Hidden modules (Settings › Modules) stop their background work: the Now Playing helper exits, the clipboard watcher stops, and Revenue stops checking.
+Hidden modules (Settings › Modules) stop their background work: the Now Playing helper exits and the clipboard watcher stops.

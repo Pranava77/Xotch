@@ -43,9 +43,6 @@ enum ModuleRegistry {
         ShelfModule(),
         NotesModule(),
         StatsModule(),
-        WeatherModule(),
-        RevenueModule(),
-        AnalyticsModule(),
         ClaudeModule(),
     ]
 

@@ -8,7 +8,7 @@ sleep 1
 open build/Brim.app
 sleep 7
 PID="$(pgrep -x Brim)"
-for module in home media home calendar media weather media home stats media home clipboard; do
+for module in home media home calendar media notes media home stats media home clipboard; do
   ./scripts/debug.sh open "$module" >/dev/null
   sleep 1
 done

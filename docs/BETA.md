@@ -7,7 +7,7 @@
 3. Run `./scripts/package-beta.sh`. It builds a release app, checks the signature and writes `build/Brim-<version>-<build>.zip` with its SHA-256.
 4. Strongly recommended: sign with a Developer ID and notarize before sending the build to anyone.
    - Without that, every tester has to override Gatekeeper by hand (below).
-   - macOS may also ask for Calendar and Keychain access again after each update.
+   - macOS may also ask for Calendar access again after each update.
    - Use `SIGN_IDENTITY="Developer ID Application: …" ./scripts/package-beta.sh`, then `xcrun notarytool submit` and `xcrun stapler staple`.
 
 Still to do for a beta channel: automatic updates. Adding Sparkle needs the Sparkle package, EdDSA signing keys, and an appcast hosted on your site.
@@ -30,7 +30,7 @@ Still to do for a beta channel: automatic updates. Adding Sparkle needs the Spar
 - **Shelf:** drag a file towards the notch, drop it, then drag it out somewhere else.
 - **Make it yours:** try the themes in Settings › Appearance, ⌘K in the open notch, scrolling on the closed notch for volume, and flicking a file off the Shelf.
 - **Different setups:** full-screen apps, an external display, sleep and wake.
-- **Optional:** connect Stripe, Polar or Dodo Payments with a read-only key, DataFast with a website key, and the Claude Code hook.
+- **Optional:** add the Claude Code hook in the Claude Code module.
 
 ### Sending feedback
 
@@ -42,6 +42,4 @@ Still to do for a beta channel: automatic updates. Adding Sparkle needs the Spar
 
 ### Privacy
 
-Everything Brim keeps is stored on your Mac, in `~/Library/Application Support/Brim`, and API keys are in your Keychain. Brim only contacts:
-- Open-Meteo, for the weather
-- services you connect yourself, using read-only keys
+Everything Brim keeps is stored on your Mac, in `~/Library/Application Support/Brim`. Brim doesn't connect to any online service.

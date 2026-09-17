@@ -58,11 +58,10 @@ enum MarketingShots {
         let openSize = CGSize(width: 700, height: 340)
         let earSize = CGSize(width: 520, height: 50)
 
-        withSampleData(showingErrors: false) {
+        withSampleData {
             theme.withPalette(Palette.midnight.id) {
                 save("hero", open("home"), size: CGSize(width: 1080, height: 400), status: true)
-                for module in ["media", "calendar", "timers", "clipboard", "shelf", "weather",
-                               "revenue", "analytics", "claude"] {
+                for module in ["media", "calendar", "timers", "clipboard", "shelf", "stats", "claude"] {
                     save("module-\(module)", open(module), size: openSize, scale: 1.5)
                 }
                 let palette = open("home")
@@ -90,7 +89,7 @@ enum MarketingShots {
                                            tint: MediaService.shared.tint, image: MediaService.shared.artwork)),
                     ("claude", LiveActivity(moduleID: "claude", symbol: "sparkle", content: .text("Editing"),
                                             tint: ClaudeLiveService.tint, earWidth: 110, pulse: .calm)),
-                    ("sale", LiveActivity(moduleID: "revenue", symbol: "dollarsign.circle.fill", content: .text("+$49"),
+                    ("done", LiveActivity(moduleID: "timers", symbol: "checkmark.circle.fill", content: .text("Done"),
                                           tint: Theme.positive, earWidth: 110)),
                     ("download", LiveActivity(moduleID: "downloads", symbol: "arrow.down", content: .text("62%"),
                                               tint: Palette.midnight.accent.color, earWidth: 90,

@@ -15,8 +15,7 @@ struct SettingsView: View {
     @AppStorage(Diagnostics.shareKey) private var shareDiagnostics = false
     @AppStorage(SettingsKey.scrollForVolume) private var scrollForVolume = true
     @AppStorage(SettingsKey.showMascot) private var showMascot = true
-    @AppStorage(SettingsKey.celebrateSales) private var celebrateSales = true
-    @AppStorage(SettingsKey.saleSound) private var saleSound = false
+    @AppStorage(SettingsKey.celebrateFocus) private var celebrateFocus = true
     @AppStorage(SettingsKey.realAudioLevels) private var realAudioLevels = false
     @AppStorage(SettingsKey.downloadProgress) private var downloadProgress = false
     @AppStorage(SettingsKey.ledTitle) private var ledTitle = true
@@ -76,17 +75,6 @@ struct SettingsView: View {
                     .foregroundStyle(.secondary)
             }
 
-            Section("Sales") {
-                Toggle("Celebrate each sale with confetti", isOn: $celebrateSales)
-                Toggle("Play a cash-register sound", isOn: $saleSound)
-                LabeledContent("Try it") {
-                    Button("Celebrate") {
-                        ActivityCenter.shared.celebrate()
-                        ScreenManager.shared.openPrimaryForPreview()
-                    }
-                }
-            }
-
             Section("Display") {
                 Picker("Show the notch on", selection: $display) {
                     Text("Automatic (built-in notch first)").tag(DisplayChoice.automatic)
@@ -124,6 +112,13 @@ struct SettingsView: View {
             }
 
             Section("Features") {
+                Toggle("Celebrate finished focus sessions", isOn: $celebrateFocus)
+                LabeledContent("Try it") {
+                    Button("Celebrate") {
+                        ActivityCenter.shared.celebrate()
+                        ScreenManager.shared.openPrimaryForPreview()
+                    }
+                }
                 Picker("Keep shelf items for", selection: $shelfExpiryHours) {
                     Text("1 hour").tag(1)
                     Text("1 day").tag(24)
