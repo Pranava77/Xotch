@@ -26,11 +26,13 @@ With a debug build running:
 ./scripts/debug.sh theme aurora      # midnight, smoke, aurora or custom; also mood working|celebrating|sleeping|idle
 ./scripts/debug.sh snapshot ~/Desktop/brim-snapshots     # render every state to PNG (sample data)
 ./scripts/debug.sh effects ~/Desktop/brim-effects        # render the Metal and Core Animation effects to PNG
-./scripts/debug.sh marketing docs/images                 # regenerate the README's product images (sample data)
+./scripts/debug.sh marketing /tmp/brim-images            # regenerate the README's product images (sample data)
 ./scripts/debug.sh selftest ~/Desktop/brim-selftest.txt  # check the real services, write a report
 ./scripts/debug.sh status ~/Desktop/brim-status.txt      # notch state per display, pointer event rate
 ./scripts/debug.sh rebuild 30        # rebuild the notch windows, for leak checks
 ```
+
+The project lives on the Desktop, which macOS protects, and every rebuild resets the debug build's permissions. So render product images into a folder outside Desktop, Documents and Downloads, then copy them into `docs/images`. Writing there directly makes Brim wait for the "access files in your Desktop folder" prompt.
 
 ### Other scripts
 
