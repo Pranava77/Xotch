@@ -1,5 +1,6 @@
 import Foundation
 
+
 /// Small JSON files in ~/Library/Application Support/Brim. Nothing leaves the Mac.
 enum Storage {
     static let directory: URL = {
@@ -55,5 +56,39 @@ final class SaveScheduler {
     func flush() {
         task?.cancel()
         save()
+    }
+}
+
+/// A thread with a run loop for work that mustn't block the main one, like
+/// starting an `NSMetadataQuery`: macOS can hold that call open while it asks
+/// the person for access to the folder being searched.
+final class SpotlightRunner: NSObject, @unchecked Sendable {
+    static let shared = SpotlightRunner()
+    private let thread: Thread
+
+    private final class Box: NSObject {
+        let work: () -> Void
+        init(_ work: @escaping () -> Void) { self.work = work }
+    }
+
+    override init() {
+        thread = Thread {
+            Thread.current.name = "com.pranava.brim.spotlight"
+            let runLoop = RunLoop.current
+            runLoop.add(NSMachPort(), forMode: .default)
+            while !Thread.current.isCancelled {
+                runLoop.run(mode: .default, before: .distantFuture)
+            }
+        }
+        super.init()
+        thread.start()
+    }
+
+    func async(_ work: @escaping @Sendable () -> Void) {
+        perform(#selector(run(_:)), on: thread, with: Box(work), waitUntilDone: false)
+    }
+
+    @objc private func run(_ box: Box) {
+        box.work()
     }
 }

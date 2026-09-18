@@ -11,6 +11,8 @@ protocol NotchModule: AnyObject {
     var symbol: String { get }
     /// Tints the open notch while this module is showing.
     var tint: Color? { get }
+    /// How much room the open notch gives this module.
+    var openSize: CGSize { get }
     func expandedView() -> AnyView
     func start()
     func stop()
@@ -18,6 +20,7 @@ protocol NotchModule: AnyObject {
 
 extension NotchModule {
     var tint: Color? { nil }
+    var openSize: CGSize { Layout.openSize }
     func start() {}
     func stop() {}
 
@@ -42,6 +45,7 @@ enum ModuleRegistry {
         ClipboardModule(),
         ShelfModule(),
         CaptureModule(),
+        LifeModule(),
         NotesModule(),
         StatsModule(),
         ClaudeModule(),

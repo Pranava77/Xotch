@@ -58,6 +58,7 @@ See [PERFORMANCE.md](PERFORMANCE.md), [TESTING.md](TESTING.md) (manual checks an
 | Clipboard | NSPasteboard | Paste from other apps (macOS 26) |
 | Shelf | bookmarks, Quick Look, an AppKit drag source | — |
 | Capture | `/usr/sbin/screencapture`, ScreenCaptureKit, Spotlight (`NSMetadataQuery`) | Screen Recording; Microphone (optional) |
+| Life | JSON in Application Support, UserNotifications | Notifications (only when you set a habit reminder) |
 | Notes | JSON in Application Support | — |
 | System | Mach, getifaddrs, IOKit | — |
 | Claude Code | `~/.claude/projects` logs, a Claude Code hook | Adding the hook (optional) |
@@ -91,6 +92,15 @@ The plan called for a Rive mascot and SwiftUI's `.layerEffect`. Rive needs its p
 - **The shelf** lists Brim's folder (scanned with `FileManager`) and, when the setting is on, macOS's own screenshots, found with a live `NSMetadataQuery` for `kMDItemIsScreenCapture`. That query only runs while the Capture module is on screen, because the folder macOS saves to is usually Desktop, and reading it can ask for Desktop access.
 
 Captures are saved to `~/Pictures/Brim` by default. Pictures is one of the few home folders macOS doesn't protect, so saving there asks for nothing. Removing an item from the shelf only hides it (the paths are kept in `capture-hidden.json`); the file itself stays until you move it to the Trash.
+
+### Life
+
+`Modules/Life` holds to-dos, arcs and the commit graph in one `life.json`, saved through `Storage` like Notes.
+
+- **Scoring:** a finished to-do is worth 1, a habit check-in 2, a milestone 5 (`LifeScore`). Day totals are cached in `LifeService` and thrown away whenever something changes, so the graph never recomputes a year of history while you type.
+- **The graph** is a single SwiftUI `Canvas`: 53 columns × 7 days drawn in one pass, with hit-testing worked out from the point rather than a view per square.
+- **Reminders** (`LifeReminders`) are repeating `UNCalendarNotificationTrigger`s with stable identifiers, so rescheduling replaces them instead of piling up. `plans(arcs:eveningNudge:)` is pure, which is what the self-test checks. The notification carries a **Check in** button, handled without opening the notch.
+- **A wider notch:** `NotchModule.openSize` lets a module ask for more room; Life asks for `Layout.wideOpenSize` (880×460) and everything else keeps 600×300. The panel is sized once from `Layout.maxOpenSize`, and `NotchViewModel.openSize` clamps to the screen so a small display still fits.
 
 ### Claude Code live status
 

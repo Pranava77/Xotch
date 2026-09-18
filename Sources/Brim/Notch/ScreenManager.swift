@@ -84,6 +84,7 @@ final class ScreenManager {
         DownloadsService.shared.settingsChanged()
         AudioLevels.shared.settingsChanged()
         CaptureService.shared.settingsChanged()
+        LifeService.shared.settingsChanged()
         let hide = AppSettings.hideInFullScreen
         if hide != hideInFullScreen {
             hideInFullScreen = hide
@@ -292,7 +293,7 @@ final class ScreenManager {
         if primary.model.phase != .open {
             primary.open(pinned: true, focus: false)
         }
-        primary.model.dropPoint = CGPoint(x: Layout.openSize.width / 2, y: Layout.openSize.height / 2)
+        primary.model.dropPoint = CGPoint(x: primary.model.openSize.width / 2, y: primary.model.openSize.height / 2)
         primary.model.dropCount += 1
     }
 

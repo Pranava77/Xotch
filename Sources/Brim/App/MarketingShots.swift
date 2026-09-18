@@ -64,6 +64,8 @@ enum MarketingShots {
                 for module in ["media", "calendar", "timers", "clipboard", "shelf", "capture", "stats", "claude"] {
                     save("module-\(module)", open(module), size: openSize, scale: 1.5)
                 }
+                // Life asks for a bigger notch, so its shot needs a bigger scene.
+                save("module-life", open("life"), size: CGSize(width: 1000, height: 520), scale: 1.2)
                 let palette = open("home")
                 palette.isPinned = true
                 palette.palette.isOpen = true

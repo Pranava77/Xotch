@@ -13,6 +13,7 @@ The self-test checks:
 - **Local services:** system stats, battery health and the Now Playing bridge.
 - **Claude hook:** installing then removing the Claude hook in a test settings file.
 - **Claude usage:** scan time for the local logs.
+- **Life:** the weighted score and its five levels, the week's start day, sample streaks and the graph's 53×7 days, arc progress, and the reminder schedule a set of habits produces (including that it's stable when worked out twice). It counts only; no task titles are read.
 - **Capture:** file naming (including the " (2)" suffix), the Spotlight predicate for macOS screenshots, both capture folders, the `screencapture` display number, and the area picker's maths (including a too-small drag and one that runs off the screen). It never takes a capture.
 - **Phase 5 logic:**
   - full-screen detection (7 window layouts) and screen-coordinate conversion
@@ -86,6 +87,15 @@ These need hardware or situations a script can't create. Tick them before a beta
 - [ ] Settings › Features › Celebrate: confetti falls from the notch and the trackpad taps twice. A finished focus session does the same, unless "Celebrate finished focus sessions" is off.
 - [ ] Home: the mascot thinks while a timer runs, jumps when a focus session finishes, and falls asleep after 10 quiet minutes.
 - [ ] Updating from a build that had Revenue, Analytics or Weather: those modules are gone from the dock and Settings, and Keychain Access has no `com.pranava.brim` items for them.
+- [ ] Life › Today: type a to-do and press Return; tick it off and watch today's square darken and the streak rise.
+- [ ] Type `#ship` at the end of a to-do: it lands on the arc whose name starts with that.
+- [ ] Life › Arcs › New arc: name it, pick a colour and an end date, add a habit and a milestone, press Lock it in. Quit Brim, reopen: it's all still there.
+- [ ] Check in on a habit, then finish a milestone: confetti falls and the mascot cheers.
+- [ ] Set a habit reminder a minute ahead: macOS asks for notifications the first time, the reminder arrives, and **Check in** on it ticks the habit off without opening the notch.
+- [ ] Life › Week: drag a to-do onto another day; it moves and stays there after a relaunch.
+- [ ] Leave an unfinished to-do overnight: the next morning it's on today, with "1 carried over" beside the notch.
+- [ ] Click an old square in the graph: it lists what you finished that day, and the × goes back to today.
+- [ ] Switching to Life grows the notch and switching away shrinks it, with no flicker in other modules.
 - [ ] Capture › Screenshot › Area: the crosshair appears without the notch in the shot, the file lands on the shelf, and a preview shows beside the notch. Esc during the crosshair leaves no file.
 - [ ] Screenshot › Window, and Screen: same, and the picture matches what you chose. With "Copy to clipboard" on, ⌘V pastes the image.
 - [ ] Take a screenshot with ⌘⇧4: it appears on the Capture shelf within a second or two (macOS may ask for access to your Desktop folder the first time).
@@ -116,6 +126,7 @@ Every prompt, and what triggers it. Launching Brim triggers none.
 | Desktop and Documents folders | Only when the Shelf is shown with files from those folders. At launch, expiry checks dates only | `ShelfService.removeMissing` |
 | `~/.claude/settings.json` (not a macOS permission) | Only when you press "Add hook"; a backup is saved first | `ClaudeHookInstaller.install` |
 | System audio recording | Only with Settings › "Move the music bars with the real sound" on, the first time the bars show | `AudioTap.start` |
+| Notifications (Life) | Only when you set a habit reminder or the evening nudge | `LifeReminders.requestPermission` |
 | Screen Recording | The first screenshot or recording. Choosing a window to record uses macOS's picker instead, which asks for nothing | `CaptureService.ensureScreenPermission` |
 | Microphone | Only when a recording starts with Capture › Microphone on | `CaptureService.microphoneAllowed` |
 | The folder macOS saves screenshots in (usually Desktop) | Only when the Capture module is open with "List screenshots taken with ⌘⇧3…" on | `CaptureService.startQuery` |

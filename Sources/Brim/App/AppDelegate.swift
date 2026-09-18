@@ -41,6 +41,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationWillTerminate(_ notification: Notification) {
         NotesService.shared.flush()
+        LifeService.shared.stop()
         ClaudeLiveService.shared.stop()
         Diagnostics.shared.sessionEnded()
     }

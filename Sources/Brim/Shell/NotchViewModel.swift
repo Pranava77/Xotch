@@ -32,12 +32,21 @@ final class NotchViewModel {
 
     var closedSize: CGSize { geometry.notchSize }
 
+    /// The selected module's room, kept inside the screen so a wide module
+    /// still fits a small display.
+    var openSize: CGSize {
+        let asked = ModuleRegistry.module(id: selectedModuleID)?.openSize ?? Layout.openSize
+        let screen = geometry.screenFrame
+        return CGSize(width: min(asked.width, max(Layout.openSize.width, screen.width - 80)),
+                      height: min(asked.height, max(Layout.openSize.height, screen.height * 0.62)))
+    }
+
     var showsActivity: Bool {
         phase != .open && activities.current != nil
     }
 
     var bodySize: CGSize {
-        if phase == .open { return Layout.openSize }
+        if phase == .open { return openSize }
         var size = closedSize
         if showsActivity, let activity = activities.current {
             size.width += activity.earWidth * 2
