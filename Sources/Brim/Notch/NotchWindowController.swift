@@ -448,4 +448,13 @@ final class NotchWindowController: NotchActions {
         closePalette()
         command.run()
     }
+
+    #if DEBUG
+    var debugFrames: String {
+        String(format: "panel %.0fx%.0f@%.0f,%.0f screen %.0fx%.0f@%.0f,%.0f notch %.0fx%.0f",
+               panel.frame.width, panel.frame.height, panel.frame.minX, panel.frame.minY,
+               screenFrame.width, screenFrame.height, screenFrame.minX, screenFrame.minY,
+               model.closedSize.width, model.closedSize.height)
+    }
+    #endif
 }

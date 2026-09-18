@@ -73,6 +73,8 @@ enum DebugHooks {
         default:
             if command.hasPrefix("clear-activities:") {
                 ActivityCenter.shared.setOngoing(nil, for: String(command.dropFirst("clear-activities:".count)))
+            } else if command.hasPrefix("trace-spaces:") {
+                ScreenManager.shared.debugTraceSpaces(to: String(command.dropFirst("trace-spaces:".count)))
             } else if command.hasPrefix("capture:"),
                       let target = CaptureTarget(rawValue: String(command.dropFirst("capture:".count))) {
                 CaptureService.shared.takeScreenshot(target)

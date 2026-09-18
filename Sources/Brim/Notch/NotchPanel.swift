@@ -11,7 +11,11 @@ final class NotchPanel: NSPanel {
                    defer: false)
         isFloatingPanel = true
         level = NSWindow.Level(rawValue: NSWindow.Level.mainMenu.rawValue + 3)
-        collectionBehavior = [.canJoinAllSpaces, .stationary, .fullScreenAuxiliary, .ignoresCycle]
+        // .auxiliary and .canJoinAllApplications keep Stage Manager's hands off:
+        // without them it treats the notch as an app window, scales it into a
+        // stage and slides it about when you switch desktops or apps.
+        collectionBehavior = [.canJoinAllSpaces, .stationary, .fullScreenAuxiliary, .ignoresCycle,
+                              .auxiliary, .canJoinAllApplications]
         isOpaque = false
         backgroundColor = .clear
         hasShadow = false
