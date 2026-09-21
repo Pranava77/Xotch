@@ -66,6 +66,14 @@ enum CommandCatalog {
         var list: [PaletteCommand] = []
         let timers = TimerService.shared
         let media = MediaService.shared
+        let capture = CaptureService.shared
+
+        if capture.isRecording {
+            list.append(PaletteCommand(id: "record-stop", title: "Stop recording", symbol: "stop.fill",
+                                       tint: Theme.negative, keywords: "screen recording end finish save") {
+                capture.stopRecording()
+            })
+        }
 
         if timers.isActive {
             if timers.isRunning {
@@ -111,6 +119,35 @@ enum CommandCatalog {
                 actions.select(moduleID: module.id)
             })
         }
+
+        list.append(PaletteCommand(id: "shot-area", title: "Screenshot an area", symbol: CaptureTarget.area.symbol,
+                                   tint: CaptureService.tint, keywords: "capture screen grab snip selection") {
+            capture.takeScreenshot(.area)
+        })
+        list.append(PaletteCommand(id: "shot-window", title: "Screenshot a window", symbol: CaptureTarget.window.symbol,
+                                   tint: CaptureService.tint, keywords: "capture screen grab snip") {
+            capture.takeScreenshot(.window)
+        })
+        list.append(PaletteCommand(id: "shot-screen", title: "Screenshot the screen", symbol: CaptureTarget.screen.symbol,
+                                   tint: CaptureService.tint, keywords: "capture display grab whole full") {
+            capture.takeScreenshot(.screen)
+        })
+        if !capture.isRecording, CaptureService.canRecord {
+            for target in CaptureTarget.allCases {
+                let what = switch target {
+                case .area: "an area"
+                case .window: "a window"
+                case .screen: "the screen"
+                }
+                list.append(PaletteCommand(id: "record-\(target.rawValue)", title: "Record \(what)",
+                                           symbol: "record.circle", tint: Theme.negative,
+                                           keywords: "screen recording video capture movie") {
+                    capture.startRecording(target)
+                })
+            }
+        }
+        list.append(PaletteCommand(id: "captures-folder", title: "Open the captures folder", symbol: "folder",
+                                   keywords: "screenshots recordings pictures finder") { capture.openFolder() })
 
         list.append(PaletteCommand(id: "stopwatch",
                                    title: timers.isStopwatchRunning ? "Stop the stopwatch" : "Start the stopwatch",

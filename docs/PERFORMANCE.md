@@ -17,6 +17,9 @@ Measured on a 14" MacBook Pro (Mac17,9, Apple M5 Pro), macOS 26.6.2, debug build
 | Open on Clipboard | 0.00% | 0.00 | 0.5/s | 37 MB |
 | Open on Shelf | 0.00% | 0.00 | 0.5/s | 37 MB |
 | Open on System | 0.60% | 0.60 | 0.5/s | 38 MB |
+| Open on Capture | 0.00%* | 0.00* | — | — |
+| Closed, recording indicator (red timer) | 0.42%* | 0.42* | — | — |
+| Recording the screen with system audio | ~1%* | — | — | — |
 | Open on Claude Code | 0.00% | 0.00 | 0.5/s | 44 MB |
 | Open on Timers | 0.10% | 0.10 | 0.5/s | 44 MB |
 | Closed, music bars (built-in animation) | 0.00% | 0.00 | 0.7/s | 41 MB |
@@ -25,6 +28,10 @@ Measured on a 14" MacBook Pro (Mac17,9, Apple M5 Pro), macOS 26.6.2, debug build
 | Closed, Claude working (pulse) | 0.00% | 0.00 | 1.0/s | 42 MB |
 | Closed, download progress | 0.00% | 0.00 | 1.0/s | 47 MB |
 | Open, command palette | 0.10% | 0.10 | 1.0/s | 54 MB |
+
+\* The Capture rows were measured later, back to back against a closed notch, on a Mac that was in use, so only their CPU figures are worth comparing with the rest of the table. The first time Capture opens, it starts a Spotlight query for the screenshots you take with ⌘⇧3 and ⌘⇧4; that query then stays alive for two minutes after the notch closes, so opening Capture again costs nothing. Without that, each open cost about 3% for a moment.
+
+Recording a 1800×1169 display at 60 fps with system audio cost about 1 percentage point of CPU in Brim over a closed-notch baseline of 1.0% on a busy Mac. That is the red timer plus handing frames over; ScreenCaptureKit encodes the H.264 in macOS's own processes, so the rest of the cost doesn't appear against Brim. The resulting file is about 1.9 MB per second of screen.
 
 The Media helper process (`perl` running `MediaRemoteBridge`) uses 0% CPU and about 4 MB.
 

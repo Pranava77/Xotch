@@ -1,13 +1,16 @@
 #if DEBUG
 import AppKit
 import Metal
+import QuickLookUI
 import SwiftUI
 
 /// Debug builds only: drive the notch from the command line.
 ///
 ///     scripts/debug.sh open [module] | close | activity | activity-media |
 ///                      activity-timer | activity-claude | activity-download |
-///                      clear-activities [module] | celebrate | palette | ripple |
+///                      activity-recording | clear-activities [module] |
+///                      capture <area|window|screen> | record <area|window|screen> |
+///                      record-stop | celebrate | palette | ripple |
 ///                      theme <id> | mood <mood> | rebuild <count> |
 ///                      status <file> | snapshot <folder> | effects <folder> |
 ///                      marketing <folder> | selftest <file>
@@ -50,6 +53,11 @@ enum DebugHooks {
             ActivityCenter.shared.setOngoing(LiveActivity(moduleID: "downloads", symbol: "arrow.down", content: .text("62%"),
                                                           tint: Theme.accent, earWidth: 90, progress: .fraction(0.62)),
                                              for: "downloads")
+        case "activity-recording":
+            ActivityCenter.shared.setOngoing(CaptureService.recordingActivity(since: Date().addingTimeInterval(-42)),
+                                             for: "capture")
+        case "record-stop":
+            CaptureService.shared.stopRecording()
         case "celebrate":
             ActivityCenter.shared.celebrate()
         case "palette":
@@ -59,12 +67,18 @@ enum DebugHooks {
         case "calendar-refresh":
             CalendarService.shared.refresh()
         case "clear-activities":
-            for id in ["media", "timers", "claude", "notes", "downloads"] {
+            for id in ["media", "timers", "claude", "notes", "downloads", "capture"] {
                 ActivityCenter.shared.setOngoing(nil, for: id)
             }
         default:
             if command.hasPrefix("clear-activities:") {
                 ActivityCenter.shared.setOngoing(nil, for: String(command.dropFirst("clear-activities:".count)))
+            } else if command.hasPrefix("capture:"),
+                      let target = CaptureTarget(rawValue: String(command.dropFirst("capture:".count))) {
+                CaptureService.shared.takeScreenshot(target)
+            } else if command.hasPrefix("record:"),
+                      let target = CaptureTarget(rawValue: String(command.dropFirst("record:".count))) {
+                CaptureService.shared.startRecording(target)
             } else if command.hasPrefix("open:") {
                 ScreenManager.shared.debugOpen(moduleID: String(command.dropFirst("open:".count)))
             } else if command.hasPrefix("rebuild:") {
@@ -80,6 +94,7 @@ enum DebugHooks {
                     "theme: \(ThemeStore.shared.palette.id) shaders ready=\(ShaderKit.shared.isReady) compile=\(ShaderKit.shared.compileTime.map { "\($0)" } ?? "-") failure=\(ShaderKit.shared.failure ?? "-")",
                     "audio levels: \(AudioLevels.shared.status)",
                     "clipboard access: \(ClipboardService.shared.access)",
+                    "capture: permission=\(CaptureService.hasScreenPermission) items=\(CaptureService.shared.items.count) recording=\(CaptureService.shared.isRecording) starting=\(CaptureService.shared.isStartingRecording) stopping=\(CaptureService.shared.isStoppingRecording) notice=\(CaptureService.shared.notice.map { "\($0)" } ?? "-") quickLook=\(QLPreviewPanel.sharedPreviewPanelExists() && QLPreviewPanel.shared().isVisible)",
                     String(format: "pointer events: %.1f/s", ScreenManager.shared.debugPointerRate()),
                 ]
                 try? (lines.joined(separator: "\n") + "\n").write(toFile: path, atomically: true, encoding: .utf8)
@@ -132,6 +147,7 @@ enum DebugHooks {
         lines.append("clipboard: \(ClipboardService.shared.items.count) items, history=\(AppSettings.clipboardHistory)")
         lines.append("shelf: \(ShelfService.shared.items.count) items, airdrop=\(ShelfService.shared.canAirDrop)")
         lines.append("notes: \(NotesService.shared.notes.count) notes")
+        lines += captureSelfTest()
 
         // Phase 5
         if #available(macOS 15.4, *) {
@@ -306,6 +322,38 @@ enum DebugHooks {
         return lines
     }
 
+    /// File naming, folders and the Spotlight query, without taking a capture.
+    @MainActor
+    private static func captureSelfTest() -> [String] {
+        let capture = CaptureService.shared
+        var lines: [String] = []
+        var parts = DateComponents()
+        (parts.year, parts.month, parts.day, parts.hour, parts.minute, parts.second) = (2026, 9, 17, 15, 4, 5)
+        let date = Calendar.current.date(from: parts) ?? .now
+        lines.append("capture names: \"\(CaptureService.fileName(prefix: "Screenshot", date: date, extension: "png"))\" \"\(CaptureService.fileName(prefix: "Screen Recording", date: date, extension: "mov", attempt: 2))\" (expect \"Screenshot 2026-09-17 at 15.04.05.png\" \"Screen Recording 2026-09-17 at 15.04.05 (2).mov\")")
+        let since = Date(timeIntervalSince1970: 1_800_000_000)
+        lines.append("capture query: \(CaptureService.macScreenshotPredicate(since: since).predicateFormat) | \(CaptureService.macScreenshotPredicate(since: nil).predicateFormat)")
+        lines.append("capture folders: brim=\(capture.folder.path.replacingOccurrences(of: NSHomeDirectory(), with: "~")) mac=\(CaptureService.macScreenshotFolder.path.replacingOccurrences(of: NSHomeDirectory(), with: "~"))")
+        let main = CGMainDisplayID()
+        lines.append("capture display: pointer=\(CaptureService.screencaptureIndex(of: CaptureService.displayUnderPointer())) main=\(CaptureService.screencaptureIndex(of: main)) (expect main=1) unknown=\(CaptureService.screencaptureIndex(of: 999_999)) (expect 1)")
+        if let screen = NSScreen.screens.first {
+            let height = screen.frame.height
+            let picked = RegionPicker.selection(for: NSRect(x: 100, y: height - 300, width: 400.4, height: 200), on: screen)
+            let tiny = RegionPicker.selection(for: NSRect(x: 10, y: 10, width: 8, height: 40), on: screen)
+            let edge = RegionPicker.selection(for: NSRect(x: -50, y: -50, width: 150, height: 150), on: screen)
+            lines.append("capture area: rect=\(picked.map { "\($0.rect)" } ?? "nil") (expect (100.0, 100.0, 401.0, 200.0)) tiny=\(tiny == nil ? "nil" : "rect") (expect nil) edge=\(edge.map { "\($0.rect.size)" } ?? "nil") (expect (100.0, 100.0))")
+        }
+        lines.append("capture: permission=\(CaptureService.hasScreenPermission) canRecord=\(CaptureService.canRecord) items=\(capture.items.count) keepDays=\(AppSettings.captureKeepDays) includesMac=\(AppSettings.captureIncludesMac) copies=\(AppSettings.captureCopies)")
+        let actions = SnapshotActions()
+        var titles: [String] = []
+        for query in ["shot", "record", "screenshot win"] {
+            let found = CommandCatalog.commands(for: query, actions: actions).map(\.title)
+            titles.append("\"\(query)\" → \(found.prefix(3).joined(separator: " | "))")
+        }
+        lines.append("capture palette: \(titles.joined(separator: "; "))")
+        return lines
+    }
+
     private static var glassAvailable: Bool {
         if #available(macOS 26.0, *) { return true }
         return false
@@ -475,6 +523,21 @@ enum DebugHooks {
                 }
             }
         }
+        withSampleData {
+            CaptureService.shared.debugSetRecording(since: Date().addingTimeInterval(-75))
+            render("4-open-capture-recording") {
+                $0.phase = .open
+                $0.selectedModuleID = "capture"
+            }
+            render("4-open-home-recording") {
+                $0.phase = .open
+                $0.selectedModuleID = "home"
+            }
+        }
+        render("4-open-capture-empty") {
+            $0.phase = .open
+            $0.selectedModuleID = "capture"
+        }
         render("5-open-pinned") {
             $0.phase = .open
             $0.isPinned = true
@@ -534,6 +597,9 @@ enum DebugHooks {
                                        tint: Theme.accent, earWidth: 90, progress: .fraction(0.62)), for: "downloads")
         render("3-activity-download") { _ in }
         center.setOngoing(nil, for: "downloads")
+        center.setOngoing(CaptureService.recordingActivity(since: Date().addingTimeInterval(-42)), for: "capture")
+        render("3-activity-recording") { _ in }
+        center.setOngoing(nil, for: "capture")
         center.setOngoing(LiveActivity(moduleID: "volume", symbol: "speaker.wave.2.fill", content: .level(0.56),
                                        tint: Theme.ink, earWidth: 96), for: "volume")
         render("3-activity-volume") { _ in }
@@ -568,10 +634,12 @@ func withSampleData(_ body: () -> Void) {
     ClipboardService.shared.withSample {
     NotesService.shared.withSample {
     ShelfService.shared.withSample {
+    CaptureService.shared.withSample {
     StatsService.shared.withSample {
     ClaudeUsageService.shared.withSample {
     ClaudeLiveService.shared.withSample {
         body()
+    }
     }
     }
     }

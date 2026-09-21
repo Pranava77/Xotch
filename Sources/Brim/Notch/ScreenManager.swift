@@ -83,6 +83,7 @@ final class ScreenManager {
         ModuleRegistry.syncRunning()
         DownloadsService.shared.settingsChanged()
         AudioLevels.shared.settingsChanged()
+        CaptureService.shared.settingsChanged()
         let hide = AppSettings.hideInFullScreen
         if hide != hideInFullScreen {
             hideInFullScreen = hide

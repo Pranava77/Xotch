@@ -1,32 +1,110 @@
 import AppKit
 import SwiftUI
 
-/// Mouse handling for a shelf tile, in AppKit so one drag can mean two things:
+/// What a file tile can do. The Shelf and Capture modules each supply their own.
+struct FileTileHandlers {
+    var url: @MainActor () -> URL?
+    var thumbnail: @MainActor () -> NSImage?
+    var open: @MainActor () -> Void
+    var reveal: @MainActor () -> Void
+    /// Option-click, the × button and a flick.
+    var remove: @MainActor () -> Void
+    var removeTitle: String
+    var menu: @MainActor () -> NSMenu
+}
+
+/// A file that can be dragged out, double-clicked to open, and flicked up
+/// to remove. `content` draws the thumbnail and label.
+struct FileTile<Content: View>: View {
+    let name: String
+    let handlers: FileTileHandlers
+    var padding: CGFloat = 8
+    @ViewBuilder var content: Content
+    @State private var hovering = false
+    @State private var flick = CGSize.zero
+    @State private var thrown = false
+    @Environment(\.snapshotMode) private var snapshotMode
+
+    var body: some View {
+        content
+            .padding(padding)
+            .background(RoundedRectangle(cornerRadius: 12).fill(hovering || flick != .zero ? Theme.fill : .clear))
+            .contentShape(RoundedRectangle(cornerRadius: 12))
+            .overlay {
+                if !snapshotMode {
+                    FileTileInteraction(handlers: handlers,
+                                        onHover: { hovering = $0 },
+                                        onFlick: { flick = $0 },
+                                        onFlickEnded: flickEnded)
+                }
+            }
+            .overlay(alignment: .topTrailing) {
+                if hovering, flick == .zero {
+                    Button { handlers.remove() } label: { Image(systemName: "xmark") }
+                        .buttonStyle(IconButtonStyle(size: 20))
+                        .padding(2)
+                        .help(handlers.removeTitle)
+                }
+            }
+            .rotationEffect(.degrees(Double(flick.width) / 6))
+            .offset(flick)
+            .opacity(thrown ? 0 : 1 - 0.5 * min(1, Double(-flick.height) / 140))
+            .help(name)
+            .accessibilityElement(children: .combine)
+            .accessibilityHint("Drag to use the file. Double-click to open. Flick up to remove.")
+            .accessibilityAction(named: "Open") { handlers.open() }
+            .accessibilityAction(named: "Show in Finder") { handlers.reveal() }
+            .accessibilityAction(named: handlers.removeTitle) { handlers.remove() }
+    }
+
+    private func flickEnded(_ remove: Bool) {
+        guard remove, !Motion.reduceMotion else {
+            if remove {
+                handlers.remove()
+            } else {
+                withAnimation(.spring(duration: 0.35, bounce: 0.45)) { flick = .zero }
+            }
+            return
+        }
+        Haptics.tick()
+        withAnimation(.easeIn(duration: 0.2)) {
+            flick = CGSize(width: flick.width * 1.6, height: -230)
+            thrown = true
+        }
+        let remove = handlers.remove
+        Task {
+            try? await Task.sleep(for: .milliseconds(200))
+            remove()
+        }
+    }
+}
+
+/// Mouse handling for a file tile, in AppKit so one drag can mean two things:
 /// pulling a file up (towards the top of the screen, where nothing else can
-/// take it) flicks it off the shelf; pulling it any other way drags the file out.
+/// take it) flicks it away; pulling it any other way drags the file out.
 /// Also handles double-click to open, Option-click to remove, and the menu.
-struct ShelfTileInteraction: NSViewRepresentable {
-    let item: ShelfItem
+struct FileTileInteraction: NSViewRepresentable {
+    let handlers: FileTileHandlers
     let onHover: (Bool) -> Void
     /// Offset while flicking, in SwiftUI coordinates (y down).
     let onFlick: (CGSize) -> Void
     /// True when the flick was far or fast enough to remove the item.
     let onFlickEnded: (Bool) -> Void
 
-    func makeNSView(context: Context) -> ShelfTileView {
-        ShelfTileView()
+    func makeNSView(context: Context) -> FileTileView {
+        FileTileView()
     }
 
-    func updateNSView(_ view: ShelfTileView, context: Context) {
-        view.item = item
+    func updateNSView(_ view: FileTileView, context: Context) {
+        view.handlers = handlers
         view.onHover = onHover
         view.onFlick = onFlick
         view.onFlickEnded = onFlickEnded
     }
 }
 
-final class ShelfTileView: NSView, NSDraggingSource {
-    var item: ShelfItem?
+final class FileTileView: NSView, NSDraggingSource {
+    var handlers: FileTileHandlers?
     var onHover: (Bool) -> Void = { _ in }
     var onFlick: (CGSize) -> Void = { _ in }
     var onFlickEnded: (Bool) -> Void = { _ in }
@@ -39,7 +117,6 @@ final class ShelfTileView: NSView, NSDraggingSource {
     private var mouseDown: NSEvent?
     private var start = NSPoint.zero
     private var recent: [(time: TimeInterval, y: CGFloat)] = []
-    private var shelf: ShelfService { .shared }
 
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
 
@@ -54,13 +131,13 @@ final class ShelfTileView: NSView, NSDraggingSource {
     override func mouseExited(with event: NSEvent) { onHover(false) }
 
     override func mouseDown(with event: NSEvent) {
-        guard let item else { return }
+        guard let handlers else { return }
         if event.modifierFlags.contains(.option) {
-            shelf.remove(item)
+            handlers.remove()
             return
         }
         if event.clickCount == 2 {
-            shelf.open(item)
+            handlers.open()
             return
         }
         mode = .waiting
@@ -112,8 +189,8 @@ final class ShelfTileView: NSView, NSDraggingSource {
     }
 
     private func beginFileDrag(with event: NSEvent) {
-        guard let item, let url = shelf.url(for: item) else { return }
-        let image = shelf.thumbnails[item.id] ?? NSWorkspace.shared.icon(forFile: url.path)
+        guard let handlers, let url = handlers.url() else { return }
+        let image = handlers.thumbnail() ?? NSWorkspace.shared.icon(forFile: url.path)
         let dragItem = NSDraggingItem(pasteboardWriter: url as NSURL)
         let side: CGFloat = 64
         let frame = NSRect(x: bounds.midX - side / 2, y: bounds.midY - side / 2, width: side, height: side)
@@ -123,21 +200,12 @@ final class ShelfTileView: NSView, NSDraggingSource {
 
     func draggingSession(_ session: NSDraggingSession,
                          sourceOperationMaskFor context: NSDraggingContext) -> NSDragOperation {
-        // Other apps get a copy; the shelf keeps its item. Dropping back on the notch does nothing.
+        // Other apps get a copy; the tile stays. Dropping back on the notch does nothing.
         context == .outsideApplication ? .copy : []
     }
 
     override func menu(for event: NSEvent) -> NSMenu? {
-        guard let item else { return nil }
-        let menu = NSMenu()
-        menu.addItem(ClosureMenuItem("Open") { [weak self] in self?.shelf.open(item) })
-        menu.addItem(ClosureMenuItem("Show in Finder") { [weak self] in self?.shelf.reveal(item) })
-        if shelf.canAirDrop {
-            menu.addItem(ClosureMenuItem("AirDrop…") { [weak self] in self?.shelf.airDrop([item]) })
-        }
-        menu.addItem(.separator())
-        menu.addItem(ClosureMenuItem("Remove from Shelf") { [weak self] in self?.shelf.remove(item) })
-        return menu
+        handlers?.menu()
     }
 }
 
