@@ -1,6 +1,6 @@
-# Developing Brim
+# Developing Xotch
 
-Brim is a working codename; rename it before launch.
+Xotch is a working codename; rename it before launch.
 
 ## Run it
 
@@ -8,7 +8,7 @@ Brim is a working codename; rename it before launch.
 ./scripts/build-app.sh debug --run
 ```
 
-This builds `build/Brim.app` with Swift Package Manager, signs it ad hoc and opens it. Brim lives in the menu bar (no Dock icon). Quit it from the menu bar icon.
+This builds `build/Xotch.app` with Swift Package Manager, signs it ad hoc and opens it. Xotch lives in the menu bar (no Dock icon). Quit it from the menu bar icon.
 
 Needs macOS 14 or later. Xcode isn't required: without it, the script builds against the macOS 26 SDK from Command Line Tools, because the macOS 27 SDK's SwiftUI `@State` macro needs a compiler plugin that only ships with Xcode. With Xcode installed, `swift build` and the script use its toolchain instead, and you can open `Package.swift` in it.
 
@@ -28,15 +28,15 @@ With a debug build running:
 ./scripts/debug.sh celebrate         # confetti (and the sound, if it's on)
 ./scripts/debug.sh palette           # open the command palette; also ripple
 ./scripts/debug.sh theme aurora      # midnight, smoke, aurora or custom; also mood working|celebrating|sleeping|idle
-./scripts/debug.sh snapshot ~/Desktop/brim-snapshots     # render every state to PNG (sample data)
-./scripts/debug.sh effects ~/Desktop/brim-effects        # render the Metal and Core Animation effects to PNG
-./scripts/debug.sh marketing /tmp/brim-images            # regenerate the README's product images (sample data)
-./scripts/debug.sh selftest ~/Desktop/brim-selftest.txt  # check the real services, write a report
-./scripts/debug.sh status ~/Desktop/brim-status.txt      # notch state per display, pointer event rate
+./scripts/debug.sh snapshot ~/Desktop/xotch-snapshots     # render every state to PNG (sample data)
+./scripts/debug.sh effects ~/Desktop/xotch-effects        # render the Metal and Core Animation effects to PNG
+./scripts/debug.sh marketing /tmp/xotch-images            # regenerate the README's product images (sample data)
+./scripts/debug.sh selftest ~/Desktop/xotch-selftest.txt  # check the real services, write a report
+./scripts/debug.sh status ~/Desktop/xotch-status.txt      # notch state per display, pointer event rate
 ./scripts/debug.sh rebuild 30        # rebuild the notch windows, for leak checks
 ```
 
-The project lives on the Desktop, which macOS protects, and every rebuild resets the debug build's permissions. So render product images into a folder outside Desktop, Documents and Downloads, then copy them into `docs/images`. Writing there directly makes Brim wait for the "access files in your Desktop folder" prompt.
+The project lives on the Desktop, which macOS protects, and every rebuild resets the debug build's permissions. So render product images into a folder outside Desktop, Documents and Downloads, then copy them into `docs/images`. Writing there directly makes Xotch wait for the "access files in your Desktop folder" prompt.
 
 ### Other scripts
 
@@ -45,6 +45,7 @@ The project lives on the Desktop, which macOS protects, and every rebuild resets
 | `scripts/perf.sh [seconds]` | CPU, energy, wakeups and memory for each notch state, as a Markdown table |
 | `scripts/switch-peak.sh` | Memory peak while switching modules |
 | `scripts/package-beta.sh` | Release build, signature check and zip for testers |
+| `scripts/package-dmg.sh` | Release build wrapped in a drag-to-Applications disk image (uses `create-dmg` if installed, `hdiutil` otherwise) |
 
 See [PERFORMANCE.md](PERFORMANCE.md), [TESTING.md](TESTING.md) (manual checks and permission audit) and [BETA.md](BETA.md).
 
@@ -64,7 +65,7 @@ See [PERFORMANCE.md](PERFORMANCE.md), [TESTING.md](TESTING.md) (manual checks an
 | System | Mach, getifaddrs, IOKit | — |
 | Claude Code | `~/.claude/projects` logs, a Claude Code hook | Adding the hook (optional) |
 
-Everything is stored in `~/Library/Application Support/Brim`. Brim makes no network requests.
+Everything is stored in `~/Library/Application Support/Xotch`. Xotch makes no network requests.
 
 The Revenue, Analytics and Weather modules were removed. On first launch after that change, `Services/LegacyCleanup.swift` deletes what they left behind: their Keychain items, cached files and settings, and their IDs in the saved module order.
 
@@ -73,13 +74,13 @@ The Revenue, Analytics and Weather modules were removed. On first launch after t
 | Feature | How it works | Cost |
 |---|---|---|
 | Themes | `ThemeStore` holds the palette (background, text, accent, glow, solid or glass). The closed notch always stays black. | — |
-| Glass | `.glassEffect()` on macOS 26; an `NSVisualEffectView` blur on 14–15 (`defaults write com.pranava.brim forceBlurFallback -bool YES` to see it on 26) | window server |
+| Glass | `.glassEffect()` on macOS 26; an `NSVisualEffectView` blur on 14–15 (`defaults write com.pranava.xotch forceBlurFallback -bool YES` to see it on 26) | window server |
 | Drop ripple, artwork glow, LED display | Metal shaders compiled at runtime (`Design/Shaders.swift`). The glow and LED display are drawn once and moved by Core Animation; only the one-second ripple draws frame by frame. | ~0.1% while Now Playing is open |
 | Live updates beside the notch | Timer ring and Claude pulse are Core Animation layers; a rolling ticker (`ActivityContent.ticker`); download progress; dots for activities waiting their turn; a volume HUD | 0% (ring 0.4%, the countdown text) |
 | Real audio levels | A Core Audio process tap (macOS 14.2+), four bands from an FFT, only while the music bars are showing. Off by default. | 0.17% while the bars show |
 | Mascot | Core Animation character with idle, working, celebrating and sleeping moods from `ActivityCenter` | 0% |
 | Celebration | `CAEmitterLayer` confetti and a double haptic when a focus session finishes (Settings › Features) | 0% |
-| Screen recording | `SCStream` with an `SCRecordingOutput` writes the movie itself (macOS 15+). Brim's own windows are filtered out, so the notch never appears in a recording. | measured below |
+| Screen recording | `SCStream` with an `SCRecordingOutput` writes the movie itself (macOS 15+). Xotch's own windows are filtered out, so the notch never appears in a recording. | measured below |
 | Command palette | `CommandCatalog` builds commands from the modules, timers, music, themes and clipboard; fuzzy matching | — |
 
 The plan called for a Rive mascot and SwiftUI's `.layerEffect`. Rive needs its package and an animation file from the Rive editor, and `.layerEffect` needs a `.metallib` that only Xcode's Metal compiler can build, so both are done without them for now.
@@ -88,11 +89,11 @@ The plan called for a Rive mascot and SwiftUI's `.layerEffect`. Rive needs its p
 
 `Modules/Capture` has three parts:
 
-- **Screenshots** run macOS's own `/usr/sbin/screencapture`, so the crosshair, the window picker and Esc behave exactly as they do with ⌘⇧4. Brim closes the notch and waits 250 ms first, so it isn't in the shot.
+- **Screenshots** run macOS's own `/usr/sbin/screencapture`, so the crosshair, the window picker and Esc behave exactly as they do with ⌘⇧4. Xotch closes the notch and waits 250 ms first, so it isn't in the shot.
 - **Recordings** use ScreenCaptureKit. A window is chosen with `SCContentSharingPicker` (macOS's own picker, which needs no permission); an area with `RegionPicker`, a dimmed overlay panel per display whose selection becomes `SCStreamConfiguration.sourceRect`. `RecordingFrame` draws a dashed border around that area while it records.
-- **The shelf** lists Brim's folder (scanned with `FileManager`) and, when the setting is on, macOS's own screenshots, found with a live `NSMetadataQuery` for `kMDItemIsScreenCapture`. That query only runs while the Capture module is on screen, because the folder macOS saves to is usually Desktop, and reading it can ask for Desktop access.
+- **The shelf** lists Xotch's folder (scanned with `FileManager`) and, when the setting is on, macOS's own screenshots, found with a live `NSMetadataQuery` for `kMDItemIsScreenCapture`. That query only runs while the Capture module is on screen, because the folder macOS saves to is usually Desktop, and reading it can ask for Desktop access.
 
-Captures are saved to `~/Pictures/Brim` by default. Pictures is one of the few home folders macOS doesn't protect, so saving there asks for nothing. Removing an item from the shelf only hides it (the paths are kept in `capture-hidden.json`); the file itself stays until you move it to the Trash.
+Captures are saved to `~/Pictures/Xotch` by default. Pictures is one of the few home folders macOS doesn't protect, so saving there asks for nothing. Removing an item from the shelf only hides it (the paths are kept in `capture-hidden.json`); the file itself stays until you move it to the Trash.
 
 ### Life
 
@@ -105,19 +106,23 @@ Captures are saved to `~/Pictures/Brim` by default. Pictures is one of the few h
 
 ### Claude Code live status
 
-"Add hook" in the Claude module adds one command per event to `~/.claude/settings.json` (a backup is saved as `settings.json.brim-backup` first). The command pipes Claude Code's event JSON to `~/Library/Application Support/Brim/claude.sock`, a socket only your user can open, and does nothing if Brim isn't running. Each call takes about 15 ms. "Remove hook" takes the entries out again and leaves the rest of the file alone.
+"Add hook" in the Claude module adds one command per event to `~/.claude/settings.json` (a backup is saved as `settings.json.xotch-backup` first). The command pipes Claude Code's event JSON to `~/Library/Application Support/Xotch/claude.sock`, a socket only your user can open, and does nothing if Xotch isn't running. Each call takes about 15 ms. "Remove hook" takes the entries out again and leaves the rest of the file alone.
 
 ### Now Playing and macOS 15.4+
 
-Apple only lets its own processes use the private MediaRemote framework, so Brim runs `/usr/bin/perl` with a tiny library (`MediaRemoteBridge/`) that reads media info and prints it as JSON lines. Same technique as [mediaremote-adapter](https://github.com/ungive/mediaremote-adapter), written from scratch. The build script compiles it into `Brim.app/Contents/Frameworks`.
+Apple only lets its own processes use the private MediaRemote framework, so Xotch runs `/usr/bin/perl` with a tiny library (`MediaRemoteBridge/`) that reads media info and prints it as JSON lines. Same technique as [mediaremote-adapter](https://github.com/ungive/mediaremote-adapter), written from scratch. The build script compiles it into `Xotch.app/Contents/Frameworks`.
+
+### The landing page
+
+`docs/index.html` is the product page: one self-contained file that reuses the rendered images in `docs/images`, so there's no build step. Preview it by opening the file; to publish it with GitHub Pages, set Pages to the `main` branch's `/docs` folder — which needs the repository to be public, or a paid plan while it's private. `docs/.nojekyll` keeps GitHub from running Jekyll over it. The beta button is a `mailto:` placeholder; swap in your address or a form service before you share the link.
 
 ### Known: the notch slides when you change desktop
 
 macOS animates every window sideways during a desktop switch, and the notch goes with them. It shouldn't: the panel is set up exactly as Apple documents for a window that stays put — `canJoinAllSpaces`, `stationary`, `fullScreenAuxiliary`, `auxiliary`, `canJoinAllApplications`, above the menu bar — and `scripts/debug.sh status` prints those flags back at runtime to prove they're still applied.
 
-What was measured, with a window-server trace (`CGWindowListCopyWindowInfo` on Brim's own window, 30 times a second) against Brim's own notification log:
+What was measured, with a window-server trace (`CGWindowListCopyWindowInfo` on Xotch's own window, 30 times a second) against Xotch's own notification log:
 
-- The panel's reported position slides from x 542 to about −1300 or +2400 and back, for one to six seconds, while Brim's own `panel.frame` never changes. The window server is moving it, not Brim.
+- The panel's reported position slides from x 542 to about −1300 or +2400 and back, for one to six seconds, while Xotch's own `panel.frame` never changes. The window server is moving it, not Xotch.
 - A test harness of panels at six different levels (menu bar + 3, `.screenSaver`, `.popUpMenu`, assistive, cursor, plain floating) with several collection behaviours **all slid by exactly the same amount**. No level or behaviour escapes it.
 - It happens with Stage Manager both on and off.
 - `NSWorkspace.activeSpaceDidChangeNotification` arrives about **3.4 seconds after the slide starts**, and for three of five switches never arrived at all, so it can't be used to get out of the way in time.
@@ -127,23 +132,27 @@ The one thing that removes it is System Settings › Accessibility › Display �
 
 Worth revisiting if a future macOS adds a real opt-out, or if the closed notch is ever drawn by something that isn't a window.
 
+### Updating from a build called Brim
+
+Xotch was called Brim until the name was chosen. `Services/Migration.swift` runs once, before anything reads `Storage` or the settings, and moves everything across: the Application Support folder (notes, to-dos, arcs, clipboard, shelf), the settings from the old `com.pranava.brim` domain, and an installed Claude Code hook, which pointed at the old socket path.
+
 ### Permissions during development
 
 The app is signed ad hoc, so macOS may ask for Calendar access again after a rebuild. Screen Recording is worse: macOS ties the approval to the exact signature, so a rebuilt app is silently denied and never asks again. Clear it and ask afresh with:
 
 ```bash
-tccutil reset ScreenCapture com.pranava.brim
+tccutil reset ScreenCapture com.pranava.xotch
 ```
 
 Then relaunch and take a capture. Grant it on the build you mean to test, and don't rebuild until you're done. A Developer ID signature (Phase 6) fixes that. Debug builds also carry `get-task-allow` so `leaks`, `sample` and `vmmap` work; release builds don't.
 
-On macOS 26, reading the clipboard in the background needs permission: the Clipboard module asks once, and history only records while macOS is set to always allow Brim.
+On macOS 26, reading the clipboard in the background needs permission: the Clipboard module asks once, and history only records while macOS is set to always allow Xotch.
 
 ## Layout
 
 ```
-Sources/Brim/
-├─ App/        BrimApp (menu bar + Settings scenes), AppDelegate, DebugHooks, MarketingShots
+Sources/Xotch/
+├─ App/        XotchApp (menu bar + Settings scenes), AppDelegate, DebugHooks, MarketingShots
 ├─ Notch/      NotchPanel, NotchGeometry, NotchWindowController, ScreenManager
 ├─ Shell/      NotchShape, NotchViewModel, ShellView (open content, switcher, live activity bar),
 │              EarViews (ring, pulse, ticker), CommandPalette, Celebration

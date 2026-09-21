@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Xotch — your MacBook's notch, put to work</title>
+<meta name="description" content="Your to-dos, music, calendar, timers, screenshots and Claude Code, all one hover away from the notch. No account, no tracking, no network calls.">
+<meta property="og:title" content="Xotch — your MacBook's notch, put to work">
+<meta property="og:description" content="To-dos and arcs, screenshots and recordings, music, calendar and Claude Code — one hover away.">
+<meta property="og:image" content="images/hero.jpg">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#000000">
+<link rel="icon" href="images/icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Hanken+Grotesk:wght@400;500;600&display=swap">
+<style>
+:root {
+  color-scheme: dark;
+  --ink: #F3F4F6;
+  --ink-2: #B9BFC9;
+  --muted: #868D99;
+  --ground: #08090B;
+  --surface: #101216;
+  --raised: #171A1F;
+  --line: #22262D;
+  --accent: #FF9F0A;
+  --accent-ink: #1A1200;
+  --good: #30C26A;
+  --display: "Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
+  --body: "Hanken Grotesk", -apple-system, "Segoe UI", system-ui, sans-serif;
+  --spring: cubic-bezier(.32, 1.28, .44, 1);
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 90px; }
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: 17px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+img { max-width: 100%; display: block; }
+a { color: var(--accent); text-underline-offset: 3px; }
+h1, h2, h3 { font-family: var(--display); margin: 0; text-wrap: balance; letter-spacing: -.02em; line-height: 1.1; }
+p { margin: 0; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 6px; }
+
+/* The notch, holding the navigation */
+.notch {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  height: 38px;
+  padding: 0 22px;
+  padding-top: env(safe-area-inset-top, 0px);
+  background: #000;
+  border-radius: 0 0 18px 18px;
+  font-size: 14px;
+  font-weight: 500;
+}
+.notch::before, .notch::after {
+  content: "";
+  position: absolute;
+  top: env(safe-area-inset-top, 0px);
+  width: 14px; height: 14px;
+  pointer-events: none;
+}
+.notch::before { left: -14px; background: radial-gradient(circle at 0 100%, transparent 13.5px, #000 14px); }
+.notch::after { right: -14px; background: radial-gradient(circle at 100% 100%, transparent 13.5px, #000 14px); }
+.notch a { color: var(--ink-2); text-decoration: none; white-space: nowrap; }
+.notch a:hover { color: var(--ink); }
+.notch .name { font-family: var(--display); font-weight: 700; color: var(--ink); letter-spacing: -.01em; }
+.notch .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 9px var(--accent); }
+
+.wrap { max-width: 1080px; margin: 0 auto; padding-inline: 24px; }
+main { display: grid; gap: 104px; padding-block: 132px 96px; }
+section { display: grid; gap: 28px; }
+.head { display: grid; gap: 10px; max-width: 62ch; }
+h2 { font-size: clamp(28px, 4vw, 38px); font-weight: 700; }
+.head p { color: var(--ink-2); font-size: 18px; }
+.kicker { font-size: 13px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); }
+
+/* Hero */
+.hero { display: grid; gap: 30px; justify-items: center; text-align: center; }
+.hero h1 { font-size: clamp(56px, 11vw, 116px); font-weight: 700; letter-spacing: -.045em; }
+.hero .lede { font-size: clamp(19px, 2.4vw, 25px); color: var(--ink-2); max-width: 30ch; line-height: 1.35; }
+.badges { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; font-size: 13.5px; color: var(--muted); }
+.badges span { border: 1px solid var(--line); border-radius: 999px; padding: 3px 12px; }
+.cta { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
+.button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 13px 26px;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 16px;
+  text-decoration: none;
+  border: 1px solid transparent;
+  transition: transform .25s var(--spring), background .2s ease;
+}
+.button.primary { background: var(--accent); color: var(--accent-ink); }
+.button.ghost { border-color: var(--line); color: var(--ink); }
+.button:hover { transform: translateY(-2px); }
+.button.ghost:hover { background: var(--surface); }
+.shot { border-radius: 16px; overflow: hidden; border: 1px solid var(--line); background: var(--surface); }
+.hero .shot { max-width: 940px; }
+
+/* Grids */
+.grid { display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); }
+/* The ears are wide and shallow: give them room or they read as a line. */
+.grid.wide { grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 22px; }
+.card { display: grid; gap: 10px; align-content: start; }
+.card .shot { border-radius: 12px; }
+.card b { font-size: 16px; font-weight: 600; }
+.card span { color: var(--muted); font-size: 14.5px; line-height: 1.5; }
+
+/* Split sections */
+.split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 40px; align-items: center; }
+.split.flip > .shot { order: -1; }
+.split ul { margin: 14px 0 0; padding-left: 20px; color: var(--ink-2); display: grid; gap: 8px; }
+
+/* Numbers */
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+.stats div { background: var(--surface); padding: 20px; display: grid; gap: 4px; }
+.stats b { font-family: var(--display); font-size: 30px; font-weight: 700; }
+.stats span { color: var(--muted); font-size: 14px; }
+
+/* Privacy */
+.promise { display: grid; gap: 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 28px; }
+.promise ul { margin: 0; padding-left: 20px; display: grid; gap: 10px; color: var(--ink-2); }
+.promise strong { color: var(--ink); }
+
+/* Beta */
+.beta { background: linear-gradient(160deg, #1A1305, var(--surface) 60%); border: 1px solid #3A2A09; border-radius: 22px; padding: 40px; display: grid; gap: 18px; justify-items: start; }
+.beta ol { margin: 0; padding-left: 20px; color: var(--ink-2); display: grid; gap: 8px; }
+.note { font-size: 14px; color: var(--muted); }
+
+footer { border-top: 1px solid var(--line); padding-block: 34px 60px; color: var(--muted); font-size: 14px; display: grid; gap: 10px; }
+footer a { color: var(--ink-2); }
+
+@media (max-width: 860px) {
+  .split, .split.flip { grid-template-columns: minmax(0, 1fr); }
+  .split.flip > .shot { order: 0; }
+  main { gap: 76px; padding-block: 108px 64px; }
+  .notch { gap: 14px; padding: 0 16px; font-size: 13px; }
+  .notch .hide-small { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  * { transition-duration: .01ms !important; }
+}
+</style>
+</head>
+<body>
+
+<nav class="notch" aria-label="Main">
+  <span class="dot" aria-hidden="true"></span>
+  <span class="name">Xotch</span>
+  <a href="#features">Features</a>
+  <a href="#life" class="hide-small">Life</a>
+  <a href="#privacy" class="hide-small">Privacy</a>
+  <a href="#beta">Beta</a>
+</nav>
+
+<div class="wrap">
+<main>
+
+  <section class="hero">
+    <h1>Xotch</h1>
+    <p class="lede">Your MacBook's notch, put to work.</p>
+    <p style="color:var(--ink-2);max-width:56ch">To-dos and the arcs you're committed to, screenshots and screen recordings, music, calendar, timers, your clipboard and Claude Code — all one hover away.</p>
+    <div class="cta">
+      <a class="button primary" href="#beta">Get the beta</a>
+      <a class="button ghost" href="#features">See what it does</a>
+    </div>
+    <div class="badges">
+      <span>macOS 14 or later</span>
+      <span>Apple silicon + Intel</span>
+      <span>No account</span>
+      <span>No tracking</span>
+      <span>Works offline</span>
+    </div>
+    <div class="shot"><img src="images/hero.jpg" alt="The Xotch notch open at the top of a Mac screen, showing the time, the next meeting with a Join button, and the song playing" width="2160" height="800"></div>
+  </section>
+
+  <section id="quiet">
+    <div class="head">
+      <p class="kicker">Quiet until you need it</p>
+      <h2>It lives in the notch and stays out of the way</h2>
+      <p>Move the pointer to the notch and it grows a little. Keep it there and it opens. Click, and it stays open until you press Esc.</p>
+    </div>
+    <div class="stats">
+      <div><b>0%</b><span>processor time while closed and idle</span></div>
+      <div><b>11</b><span>modules, each one switchable and reorderable</span></div>
+      <div><b>0</b><span>network requests, ever</span></div>
+    </div>
+  </section>
+
+  <section id="live">
+    <div class="head">
+      <p class="kicker">Live, right beside the camera</p>
+      <h2>Small things happen without opening anything</h2>
+      <p>When something's running, the notch grows two little "ears" to show it. If more than one thing is live, the most important shows and dots count the rest.</p>
+    </div>
+    <div class="grid wide">
+      <div class="card"><div class="shot"><img src="images/ears-timer.jpg" alt="A focus timer beside the notch, with a ring around its icon" loading="lazy"></div><b>Focus timer</b><span>A ring fills as the session runs down.</span></div>
+      <div class="card"><div class="shot"><img src="images/ears-music.jpg" alt="Album art and music bars beside the notch" loading="lazy"></div><b>Music</b><span>Artwork and bars that can follow the real sound.</span></div>
+      <div class="card"><div class="shot"><img src="images/ears-recording.jpg" alt="A red dot and elapsed time beside the notch while the screen records" loading="lazy"></div><b>Screen recording</b><span>The time so far. Click it to stop.</span></div>
+      <div class="card"><div class="shot"><img src="images/ears-claude.jpg" alt="Claude Code status beside the notch, reading Editing" loading="lazy"></div><b>Claude Code</b><span>A soft pulse while it works, a faster one when it needs you.</span></div>
+      <div class="card"><div class="shot"><img src="images/ears-download.jpg" alt="Download progress at 62 percent beside the notch" loading="lazy"></div><b>Downloads</b><span>How far along they are.</span></div>
+      <div class="card"><div class="shot"><img src="images/ears-volume.jpg" alt="A volume bar beside the notch" loading="lazy"></div><b>Volume</b><span>Scroll on the closed notch to change it.</span></div>
+    </div>
+  </section>
+
+  <section id="life" class="split">
+    <div>
+      <p class="kicker">Life</p>
+      <h2>Your life, one square at a time</h2>
+      <p style="color:var(--ink-2);margin-top:10px">Today's to-dos, the week at a glance, and a square for every day that darkens with what you got done — a commit graph, for your life.</p>
+      <ul>
+        <li><strong>Arcs</strong> are the stretches you commit to: an end date, the habits you'll keep, the milestones that prove it.</li>
+        <li>A to-do counts as one commit, a habit kept as two, a milestone as five.</li>
+        <li>Habits can remind you, and you can check in from the notification.</li>
+        <li>Unfinished to-dos carry over instead of quietly disappearing.</li>
+      </ul>
+    </div>
+    <div class="shot"><img src="images/module-life.jpg" alt="The Life module: today's to-dos, today's habits, and a year of squares" loading="lazy"></div>
+  </section>
+
+  <section id="capture" class="split flip">
+    <div>
+      <p class="kicker">Capture</p>
+      <h2>Screenshots and recordings, without leaving the notch</h2>
+      <p style="color:var(--ink-2);margin-top:10px">Grab an area, a window or the whole screen, or record your screen with sound. Everything lands on a shelf in the notch, ready to drag into a message.</p>
+      <ul>
+        <li>Your ⌘⇧3, ⌘⇧4 and ⌘⇧5 screenshots turn up on the same shelf.</li>
+        <li>Screenshots copy themselves to your clipboard.</li>
+        <li>Recording needs macOS 15; screenshots work everywhere.</li>
+      </ul>
+    </div>
+    <div class="shot"><img src="images/module-capture.jpg" alt="The Capture module: buttons for area, window and screen, with recent captures below" loading="lazy"></div>
+  </section>
+
+  <section id="features">
+    <div class="head">
+      <p class="kicker">Everything else</p>
+      <h2>The things you reach for, in one place</h2>
+    </div>
+    <div class="grid">
+      <div class="card"><div class="shot"><img src="images/module-media.jpg" alt="Now Playing: album art, a dot-matrix track display and controls" loading="lazy"></div><b>Now Playing</b><span>Artwork, a dot-matrix display and controls for Music, Spotify or any app playing audio.</span></div>
+      <div class="card"><div class="shot"><img src="images/module-calendar.jpg" alt="Calendar: the next few days with a Join button, and reminders" loading="lazy"></div><b>Calendar</b><span>The next 7 days, one-click Join for Zoom, Meet and Teams, and reminders you can tick off.</span></div>
+      <div class="card"><div class="shot"><img src="images/module-timers.jpg" alt="Timers: a 25-minute focus session ready to start" loading="lazy"></div><b>Timers</b><span>Focus sessions with breaks, countdowns, and a stopwatch with laps.</span></div>
+      <div class="card"><div class="shot"><img src="images/module-clipboard.jpg" alt="Clipboard: a searchable list of copied text, links and files" loading="lazy"></div><b>Clipboard</b><span>Everything you've copied, searchable and pinnable. Passwords are skipped.</span></div>
+      <div class="card"><div class="shot"><img src="images/module-shelf.jpg" alt="Shelf: files waiting, with AirDrop and Clear buttons" loading="lazy"></div><b>Shelf</b><span>Drop files on the notch to keep them handy. Drag them out later, or AirDrop them.</span></div>
+      <div class="card"><div class="shot"><img src="images/module-claude.jpg" alt="Claude Code: today's tokens, a streak, a 7-day chart and live sessions" loading="lazy"></div><b>Claude Code</b><span>Today's tokens and streak from the logs on your Mac, and live session status beside the camera.</span></div>
+    </div>
+  </section>
+
+  <section id="yours">
+    <div class="head">
+      <p class="kicker">Make it yours</p>
+      <h2>Three themes, or build your own</h2>
+      <p>Pick the background, text, accent and glow. The closed notch always stays black, so it blends into the camera housing.</p>
+    </div>
+    <div class="grid">
+      <div class="card"><div class="shot"><img src="images/theme-midnight.jpg" alt="The Midnight theme: a solid black notch" loading="lazy"></div><b>Midnight</b><span>Solid black, the default.</span></div>
+      <div class="card"><div class="shot"><img src="images/theme-smoke.jpg" alt="The Smoke Glass theme: a frosted notch showing a blur of the wallpaper" loading="lazy"></div><b>Smoke Glass</b><span>Liquid Glass on macOS 26.</span></div>
+      <div class="card"><div class="shot"><img src="images/theme-aurora.jpg" alt="The Aurora theme: a deep blue notch with a violet glow" loading="lazy"></div><b>Aurora</b><span>Deep blue with a violet glow.</span></div>
+    </div>
+    <div class="split" style="margin-top:22px">
+      <div>
+        <h3 style="font-size:24px">One shortcut for everything</h3>
+        <p style="color:var(--ink-2);margin-top:10px">Press ⌘K in the open notch and type: <code>cal</code> to open Calendar, <code>10 min</code> to start a timer, <code>shot</code> to take a screenshot, <code>pause</code> for the music — or anything else, and it becomes today's to-do.</p>
+      </div>
+      <div class="shot"><img src="images/palette.jpg" alt="The command palette over the open notch" loading="lazy"></div>
+    </div>
+  </section>
+
+  <section id="privacy">
+    <div class="head">
+      <p class="kicker">Private by design</p>
+      <h2>Nothing leaves your Mac. Nothing, at all.</h2>
+    </div>
+    <div class="promise">
+      <ul>
+        <li><strong>No network requests.</strong> Xotch has no server, no account and no analytics. It doesn't connect to anything.</li>
+        <li><strong>Your data stays put.</strong> Clipboard history, notes, to-dos, arcs, captures and shelved files live in one folder on your Mac.</li>
+        <li><strong>Permissions are asked for in context</strong> — Calendar when you open Calendar, Screen Recording at your first screenshot — and never at launch. Xotch never asks for Accessibility or Input Monitoring.</li>
+        <li><strong>Crash reports are never sent automatically.</strong> If you keep them, you decide whether to email one.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="beta">
+    <div class="beta">
+      <p class="kicker">Private beta</p>
+      <h2>Try it before it ships</h2>
+      <p style="color:var(--ink-2);max-width:54ch">Xotch is in private beta while it's signed and notarised. Testers get the build, the changelog, and a direct line for anything that breaks.</p>
+      <!-- Set this to your own address (or swap in a form service) before publishing. -->
+      <a class="button primary" href="mailto:hello@xotch.app?subject=Xotch%20beta">Ask for an invite</a>
+      <ol>
+        <li>Unzip the download and drag <strong>Xotch</strong> to Applications.</li>
+        <li>Open it. While beta builds are unsigned, macOS asks you to allow it once in Privacy &amp; Security.</li>
+        <li>Move the pointer to the notch. Xotch lives in the menu bar and has no Dock icon.</li>
+      </ol>
+      <p class="note">Needs macOS 14 Sonoma or later, on Apple silicon or Intel. Best on a MacBook with a notch — other displays get one drawn for them. Liquid Glass needs macOS 26; screen recording needs macOS 15.</p>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div>Xotch — a Mac notch app. Built solo.</div>
+  <div>Questions: <a href="mailto:hello@xotch.app">hello@xotch.app</a></div>
+</footer>
+</div>
+
+</body>
+</html>

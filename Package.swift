@@ -2,12 +2,12 @@
 import PackageDescription
 
 let package = Package(
-    name: "Brim",
+    name: "Xotch",
     platforms: [.macOS(.v14)],
     targets: [
         .executableTarget(
-            name: "Brim",
-            path: "Sources/Brim"
+            name: "Xotch",
+            path: "Sources/Xotch"
         )
     ]
 )

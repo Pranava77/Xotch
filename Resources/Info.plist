@@ -5,15 +5,15 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
-	<string>Brim</string>
+	<string>Xotch</string>
 	<key>CFBundleExecutable</key>
-	<string>Brim</string>
+	<string>Xotch</string>
 	<key>CFBundleIdentifier</key>
-	<string>com.pranava.brim</string>
+	<string>com.pranava.xotch</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>Brim</string>
+	<string>Xotch</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -27,20 +27,20 @@
 	<key>LSUIElement</key>
 	<true/>
 	<key>NSAudioCaptureUsageDescription</key>
-	<string>With "Real audio levels" on, Brim reads how loud the music is to move the bars beside the notch. Nothing is recorded or kept.</string>
+	<string>With "Real audio levels" on, Xotch reads how loud the music is to move the bars beside the notch. Nothing is recorded or kept.</string>
 	<key>NSCalendarsFullAccessUsageDescription</key>
-	<string>Brim shows your upcoming events in the notch.</string>
+	<string>Xotch shows your upcoming events in the notch.</string>
 	<key>NSCalendarsUsageDescription</key>
-	<string>Brim shows your upcoming events in the notch.</string>
+	<string>Xotch shows your upcoming events in the notch.</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>With "Record from the microphone" on, Brim includes your voice in screen recordings.</string>
+	<string>With "Record from the microphone" on, Xotch includes your voice in screen recordings.</string>
 	<key>NSHighResolutionCapable</key>
 	<true/>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
 	<key>NSRemindersFullAccessUsageDescription</key>
-	<string>Brim shows your reminders in the notch and lets you tick them off.</string>
+	<string>Xotch shows your reminders in the notch and lets you tick them off.</string>
 	<key>NSRemindersUsageDescription</key>
-	<string>Brim shows your reminders in the notch and lets you tick them off.</string>
+	<string>Xotch shows your reminders in the notch and lets you tick them off.</string>
 </dict>
 </plist>

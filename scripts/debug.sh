@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Sends a command to a running debug build of Brim.
+# Sends a command to a running debug build of Xotch.
 # Usage: scripts/debug.sh open [module] | close | activity | activity-media | activity-timer |
 #        activity-claude | activity-download | clear-activities [module] | celebrate | palette | ripple |
 #        theme <id> | mood <mood> | rebuild <count> | status <file> | snapshot <folder> |
@@ -29,7 +29,7 @@ fi
 swift - "$COMMAND" <<'EOF' 2>&1 | grep -v "ld: warning" || true
 import Foundation
 DistributedNotificationCenter.default().postNotificationName(
-    Notification.Name("com.pranava.brim.debug"),
+    Notification.Name("com.pranava.xotch.debug"),
     object: CommandLine.arguments[1],
     userInfo: nil,
     deliverImmediately: true

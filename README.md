@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="docs/images/icon.png" width="112" alt="Brim's icon: a small notch-shaped face with glowing eyes">
+  <img src="docs/images/icon.png" width="112" alt="Xotch's icon: a small notch-shaped face with glowing eyes">
 </p>
 
-<h1 align="center">Brim</h1>
+<h1 align="center">Xotch</h1>
 
 <p align="center">
   <strong>Your MacBook's notch, put to work.</strong><br>
@@ -27,18 +27,18 @@
 </p>
 
 <p align="center">
-  <img src="docs/images/hero.jpg" alt="The Brim notch open at the top of a Mac screen, showing the time, the next meeting with a Join button, and the song playing">
+  <img src="docs/images/hero.jpg" alt="The Xotch notch open at the top of a Mac screen, showing the time, the next meeting with a Join button, and the song playing">
 </p>
 
 ## Quiet until you need it
 
-Brim lives in the notch and doesn't get in your way.
+Xotch lives in the notch and doesn't get in your way.
 
 - **Peek:** move the pointer to the notch and it grows slightly.
-- **Open:** keep the pointer there and Brim opens.
+- **Open:** keep the pointer there and Xotch opens.
 - **Keep it open:** click, and it stays open until you press Esc or click somewhere else.
 
-When the notch is closed and nothing's happening, Brim uses no processor time at all.
+When the notch is closed and nothing's happening, Xotch uses no processor time at all.
 
 ## Live, right beside the camera
 
@@ -113,7 +113,7 @@ Take a screenshot of an area, a window or the whole screen, or record your scree
 
 The shelf picks up the screenshots you take with **⌘⇧3**, **⌘⇧4** and **⌘⇧5** too, so everything is in one place. Drag one out, AirDrop it, or flick it away.
 
-Screenshots are copied to your clipboard as they're taken, and saved in **Pictures › Brim**. Recording needs macOS 15.
+Screenshots are copied to your clipboard as they're taken, and saved in **Pictures › Xotch**. Recording needs macOS 15.
 
 <br clear="right">
 
@@ -143,7 +143,7 @@ Add the hook, and each session shows whether it's working, needs you, or is done
 </table>
 
 - **Your own theme:** pick the background, text, accent and glow colours. The closed notch always stays black, so it blends in with the camera.
-- **The mascot:** Brim's little mascot lives on Home. It naps when things are quiet, thinks while you work, and jumps for joy when you finish a focus session.
+- **The mascot:** Xotch's little mascot lives on Home. It naps when things are quiet, thinks while you work, and jumps for joy when you finish a focus session.
 - **Your modules, your way:**
   - Reorder or hide any module.
   - Choose how the notch opens: hover or click.
@@ -181,17 +181,17 @@ Press **⌘K** in the open notch and type:
 
 - **No tracking:** no account, no analytics.
 - **Stays on your Mac:** your clipboard history, notes, to-dos and files never leave your Mac.
-- **Offline:** Brim doesn't connect to any online service.
-- **Screenshots and recordings:** saved on your Mac, in Pictures › Brim unless you choose another folder. Nothing is uploaded.
-- **Audio:** when the music bars follow the real sound, Brim only measures how loud it is. Nothing is recorded.
+- **Offline:** Xotch doesn't connect to any online service.
+- **Screenshots and recordings:** saved on your Mac, in Pictures › Xotch unless you choose another folder. Nothing is uploaded.
+- **Audio:** when the music bars follow the real sound, Xotch only measures how loud it is. Nothing is recorded.
 - **Crash reports:** never sent automatically. If you choose to keep them, you decide whether to email one.
 
 <details>
-<summary><b>What Brim asks permission for, and when</b></summary>
+<summary><b>What Xotch asks permission for, and when</b></summary>
 
 <br>
 
-Brim asks only when you use something that needs it.
+Xotch asks only when you use something that needs it.
 
 | Permission | When | Why |
 |---|---|---|
@@ -204,7 +204,7 @@ Brim asks only when you use something that needs it.
 | Desktop folder (may be asked) | Opening Capture, if it's listing your ⌘⇧3 and ⌘⇧4 screenshots | Finding those screenshots. macOS saves them to Desktop unless you've changed it |
 | Downloads folder | macOS may ask when you turn on download progress | Showing how far downloads have got |
 
-Brim never asks for Accessibility or Input Monitoring.
+Xotch never asks for Accessibility or Input Monitoring.
 
 </details>
 
@@ -220,11 +220,11 @@ Measured on a 14-inch MacBook Pro with an M5 Pro chip. Anything that only matter
 
 ## Get the beta
 
-Brim is in private beta. If you have an invite:
+Xotch is in private beta. If you have an invite:
 
-1. Unzip the download and drag **Brim** to your Applications folder.
-2. Open Brim. If macOS says it can't check the app, open **System Settings › Privacy & Security** and choose **Open Anyway**. Beta builds aren't signed yet; releases will be.
-3. Move the pointer to the notch. Brim lives in the menu bar and has no Dock icon.
+1. Unzip the download and drag **Xotch** to your Applications folder.
+2. Open Xotch. If macOS says it can't check the app, open **System Settings › Privacy & Security** and choose **Open Anyway**. Beta builds aren't signed yet; releases will be.
+3. Move the pointer to the notch. Xotch lives in the menu bar and has no Dock icon.
 
 **Requirements:**
 - macOS 14 Sonoma or later, on Apple silicon or Intel. It's best on a MacBook with a notch.
@@ -238,7 +238,7 @@ Brim is in private beta. If you have an invite:
 <br>
 
 - Usage stats work straight away, from Claude Code's logs on your Mac.
-- For live status, press **Add hook** in the Claude Code module. Brim backs up `~/.claude/settings.json`, then adds a small entry so Claude Code can tell Brim what it's doing.
+- For live status, press **Add hook** in the Claude Code module. Xotch backs up `~/.claude/settings.json`, then adds a small entry so Claude Code can tell Xotch what it's doing.
 - **Remove hook** takes that entry out again.
 
 </details>
@@ -248,25 +248,25 @@ Brim is in private beta. If you have an invite:
 <details>
 <summary><b>The notch disappeared.</b></summary>
 
-Brim steps aside while an app is full screen. To keep it, turn off **Settings › Display › Hide the notch while an app is full screen**.
+Xotch steps aside while an app is full screen. To keep it, turn off **Settings › Display › Hide the notch while an app is full screen**.
 </details>
 
 <details>
 <summary><b>Now Playing is empty.</b></summary>
 
-Start playing something. If Brim says Now Playing isn't available, choose **Try again**.
+Start playing something. If Xotch says Now Playing isn't available, choose **Try again**.
 </details>
 
 <details>
 <summary><b>My clipboard history is empty (macOS 26).</b></summary>
 
-Open Clipboard and choose **Allow**. Then set Brim to always allow under **Paste** in **System Settings › Privacy & Security**.
+Open Clipboard and choose **Allow**. Then set Xotch to always allow under **Paste** in **System Settings › Privacy & Security**.
 </details>
 
 <details>
 <summary><b>The music bars don't follow the music.</b></summary>
 
-Allow Brim under **System Settings › Privacy & Security › Screen & System Audio Recording**, or turn real sound off in Settings to keep the built-in animation.
+Allow Xotch under **System Settings › Privacy & Security › Screen & System Audio Recording**, or turn real sound off in Settings to keep the built-in animation.
 </details>
 
 <details>
@@ -280,13 +280,13 @@ To stop it, turn on **System Settings › Accessibility › Display › Reduce m
 <details>
 <summary><b>My screenshots only show the wallpaper.</b></summary>
 
-macOS hasn't given Brim permission yet. Allow Brim under **System Settings › Privacy & Security › Screen & System Audio Recording**, then quit Brim and open it again.
+macOS hasn't given Xotch permission yet. Allow Xotch under **System Settings › Privacy & Security › Screen & System Audio Recording**, then quit Xotch and open it again.
 </details>
 
 <details>
 <summary><b>Where do my screenshots go?</b></summary>
 
-To **Pictures › Brim**, and to your clipboard. Choose another folder in **Settings › Capture**, or press **Open Folder** in the Capture module.
+To **Pictures › Xotch**, and to your clipboard. Choose another folder in **Settings › Capture**, or press **Open Folder** in the Capture module.
 </details>
 
 <details>
@@ -298,7 +298,7 @@ Turn on **Settings › Show download progress**. Progress appears for apps that 
 <details>
 <summary><b>⌘K or ⌘1–9 does nothing.</b></summary>
 
-Click the notch first, so Brim receives your keyboard input.
+Click the notch first, so Xotch receives your keyboard input.
 </details>
 
 <details>
@@ -308,18 +308,18 @@ Beta builds aren't signed yet, so macOS can ask again. Signed releases won't.
 </details>
 
 <details>
-<summary><b>How do I uninstall Brim?</b></summary>
+<summary><b>How do I uninstall Xotch?</b></summary>
 
 1. If you added the Claude Code hook, press **Remove hook** in the Claude Code module.
-2. Quit Brim from the menu bar icon and move it to the Trash.
+2. Quit Xotch from the menu bar icon and move it to the Trash.
 3. To remove everything else as well:
-   - delete `~/Library/Application Support/Brim` and `~/Library/Preferences/com.pranava.brim.plist`
+   - delete `~/Library/Application Support/Xotch` and `~/Library/Preferences/com.pranava.xotch.plist`
 </details>
 
 ## Feedback
 
-Choose **Send Feedback…** from the menu bar icon. It opens an email with your Brim and macOS versions filled in.
+Choose **Send Feedback…** from the menu bar icon. It opens an email with your Xotch and macOS versions filled in.
 
 <br>
 
-<p align="center"><sub>Building Brim from source? See <a href="docs/DEVELOPMENT.md">docs/DEVELOPMENT.md</a>.</sub></p>
+<p align="center"><sub>Building Xotch from source? See <a href="docs/DEVELOPMENT.md">docs/DEVELOPMENT.md</a>.</sub></p>

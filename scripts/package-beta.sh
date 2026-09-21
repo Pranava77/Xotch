@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
-# Builds a release Brim.app and zips it for beta testers.
+# Builds a release Xotch.app and zips it for beta testers.
 # Usage: scripts/package-beta.sh
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-APP="$ROOT/build/Brim.app"
+APP="$ROOT/build/Xotch.app"
 
 "$ROOT/scripts/build-app.sh" release
 
 VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$APP/Contents/Info.plist")
 BUILD=$(/usr/libexec/PlistBuddy -c "Print :CFBundleVersion" "$APP/Contents/Info.plist")
-ZIP="$ROOT/build/Brim-$VERSION-$BUILD.zip"
+ZIP="$ROOT/build/Xotch-$VERSION-$BUILD.zip"
 
 codesign --verify --deep --strict "$APP"
 echo "Signature verified."

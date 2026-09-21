@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# Builds Brim.app from the Swift package, and optionally launches it.
+# Builds Xotch.app from the Swift package, and optionally launches it.
 # Usage: scripts/build-app.sh [debug|release] [--run]
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 CONFIG="${1:-debug}"
 RUN="${2:-}"
-APP="$ROOT/build/Brim.app"
+APP="$ROOT/build/Xotch.app"
 # "-" signs ad hoc. Set SIGN_IDENTITY to your Developer ID once you have one.
 IDENTITY="${SIGN_IDENTITY:--}"
 
@@ -23,11 +23,11 @@ fi
 
 cd "$ROOT"
 swift build -c "$CONFIG" 2>&1 | { grep -v "ld: warning: search path" || true; }
-BIN="$(swift build -c "$CONFIG" --show-bin-path)/Brim"
+BIN="$(swift build -c "$CONFIG" --show-bin-path)/Xotch"
 
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources" "$APP/Contents/Frameworks"
-cp "$BIN" "$APP/Contents/MacOS/Brim"
+cp "$BIN" "$APP/Contents/MacOS/Xotch"
 cp "$ROOT/Resources/Info.plist" "$APP/Contents/Info.plist"
 
 # Now Playing helper: a small library that Apple's perl loads (see MediaRemoteBridge.m).
@@ -38,17 +38,17 @@ clang -dynamiclib -fobjc-arc -Os -arch arm64 -arch x86_64 -mmacosx-version-min=1
 cp "$ROOT/MediaRemoteBridge/mediaremote-bridge.pl" "$APP/Contents/Resources/"
 
 codesign --force --options runtime --sign "$IDENTITY" "$APP/Contents/Frameworks/MediaRemoteBridge.dylib"
-ENTITLEMENTS="$ROOT/Resources/Brim.entitlements"
+ENTITLEMENTS="$ROOT/Resources/Xotch.entitlements"
 if [[ "$CONFIG" == "debug" ]]; then
   # Lets leaks, sample and vmmap inspect debug builds. Never in release builds.
-  ENTITLEMENTS="$ROOT/Resources/Brim.debug.entitlements"
+  ENTITLEMENTS="$ROOT/Resources/Xotch.debug.entitlements"
 fi
 codesign --force --options runtime --sign "$IDENTITY" --entitlements "$ENTITLEMENTS" "$APP"
 
 echo "Built $APP"
 
 if [[ "$RUN" == "--run" ]]; then
-  pkill -x Brim 2>/dev/null || true
+  pkill -x Xotch 2>/dev/null || true
   sleep 0.5
   open "$APP"
 fi
