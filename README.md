@@ -6,7 +6,7 @@
 
 <p align="center">
   <strong>Your MacBook's notch, put to work.</strong><br>
-  Music, calendar, timers, screenshots, files and Claude Code, all one hover away.
+  Your to-dos, music, calendar, timers, screenshots and Claude Code, all one hover away.
 </p>
 
 <p align="center">
@@ -90,6 +90,21 @@ If more than one thing is live, the most important shows, and small dots tell yo
 - **Home:** the time, your next meeting and what's playing.
 - **Notes:** a scratchpad that can sit beside the notch, and notes that save as you type.
 
+## Your life, one square at a time
+
+<img src="docs/images/module-life.jpg" alt="Life: today's to-dos on the left, today's habits on the right, and a year of squares that darken with what you got done">
+
+Today's to-dos, the week at a glance, and a square for every day that darkens with what you got done — a commit graph, for your life.
+
+**Arcs** are the stretches you're committing to: a name, an end date, the habits you'll keep and the milestones that prove it. A finished to-do counts as one commit, a habit kept as two, a milestone as five, and the streak counts the days you kept going.
+
+- Type a to-do straight into the notch, or press ⌘K anywhere and say what you're doing.
+- Habits can remind you at a time you pick, and you can check in from the notification without opening anything.
+- Unfinished to-dos carry over to the next day rather than quietly disappearing.
+- Click any square to see what you finished that day.
+
+The notch grows when you open Life, and shrinks back for everything else.
+
 ## Screenshots and recordings
 
 <img src="docs/images/module-capture.jpg" alt="Capture: Screenshot and Record buttons for an area, a window or the screen, with recent captures below" align="right" width="46%">
@@ -146,6 +161,8 @@ Press **⌘K** in the open notch and type:
 | `10 min` | Start a 10-minute timer |
 | `pause` | Pause the music |
 | `shot` | Take a screenshot |
+| `gym` | Check in on a habit |
+| Anything else | Add it to today's to-dos |
 | `aurora` | Switch theme |
 | Something you copied | Copy it again |
 
@@ -163,7 +180,7 @@ Press **⌘K** in the open notch and type:
 ## Private by design
 
 - **No tracking:** no account, no analytics.
-- **Stays on your Mac:** your clipboard history, notes and files never leave your Mac.
+- **Stays on your Mac:** your clipboard history, notes, to-dos and files never leave your Mac.
 - **Offline:** Brim doesn't connect to any online service.
 - **Screenshots and recordings:** saved on your Mac, in Pictures › Brim unless you choose another folder. Nothing is uploaded.
 - **Audio:** when the music bars follow the real sound, Brim only measures how loud it is. Nothing is recorded.
@@ -179,7 +196,7 @@ Brim asks only when you use something that needs it.
 | Permission | When | Why |
 |---|---|---|
 | Calendars and Reminders | You choose **Allow** in Calendar | Your events and reminders |
-| Notifications | You start your first timer | Telling you when time's up |
+| Notifications | You start your first timer, or set a habit reminder | Telling you when time's up, and nudging a habit |
 | Paste from other apps (macOS 26) | You choose **Allow** in Clipboard | Keeping your clipboard history |
 | System audio recording | You turn on real sound for the music bars | Measuring how loud the music is |
 | Screen Recording | Your first screenshot or recording in Capture | Taking the picture. Choosing a window to record uses macOS's own picker instead, which needs no permission |

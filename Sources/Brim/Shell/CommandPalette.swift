@@ -47,6 +47,17 @@ enum CommandCatalog {
             })
         }
 
+        // Anything typed that isn't a command can become today's to-do.
+        if text.count >= 3, duration(in: text) == nil {
+            results.append(PaletteCommand(
+                id: "life-add", title: "Add “\(text)” to today", symbol: "plus.circle",
+                tint: Theme.accent
+            ) {
+                LifeService.shared.add(text)
+                actions.select(moduleID: "life")
+            })
+        }
+
         let all = catalog(actions: actions)
         if text.isEmpty {
             results += all
@@ -119,6 +130,27 @@ enum CommandCatalog {
                 actions.select(moduleID: module.id)
             })
         }
+
+        let life = LifeService.shared
+        for (arc, habit) in life.liveArcs.flatMap({ arc in arc.habits.map { (arc, $0) } })
+        where life.isDue(habit) {
+            list.append(PaletteCommand(id: "checkin-\(habit.id)", title: "Check in on \(habit.title)",
+                                       subtitle: arc.name, symbol: "circle.circle",
+                                       tint: arc.colour.color, keywords: "habit arc streak done life") {
+                life.toggleCheckIn(habit, in: arc)
+            })
+        }
+        for task in life.tasks(on: LifeService.today).filter({ !$0.isDone }).prefix(3) {
+            list.append(PaletteCommand(id: "tick-\(task.id)", title: "Tick off \(task.title)",
+                                       subtitle: "Today", symbol: "checkmark.circle",
+                                       keywords: "todo task done finish life") {
+                life.toggle(task)
+            })
+        }
+        list.append(PaletteCommand(id: "new-arc", title: "Start a new arc", symbol: "target",
+                                   keywords: "life goal habit milestone lock in") {
+            actions.select(moduleID: "life")
+        })
 
         list.append(PaletteCommand(id: "shot-area", title: "Screenshot an area", symbol: CaptureTarget.area.symbol,
                                    tint: CaptureService.tint, keywords: "capture screen grab snip selection") {

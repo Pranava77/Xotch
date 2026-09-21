@@ -148,6 +148,7 @@ enum DebugHooks {
         lines.append("shelf: \(ShelfService.shared.items.count) items, airdrop=\(ShelfService.shared.canAirDrop)")
         lines.append("notes: \(NotesService.shared.notes.count) notes")
         lines += captureSelfTest()
+        lines += lifeSelfTest()
 
         // Phase 5
         if #available(macOS 15.4, *) {
@@ -319,6 +320,40 @@ enum DebugHooks {
         let ringNow = RingView.fraction(of: .timed(start: Date().addingTimeInterval(-30), end: Date().addingTimeInterval(90)), at: .now)
         lines.append(String(format: "ring: timed 30 s of 120 s = %.2f (expect 0.25)", ringNow))
         lines.append("cleanup: done=\(UserDefaults.standard.bool(forKey: "cleanup.removedConnectedModules")) module list \"home,revenue,media,weather,analytics,stats\" → \"\(LegacyCleanup.strippingRemoved(from: "home,revenue,media,weather,analytics,stats"))\" (expect home,media,stats)")
+        return lines
+    }
+
+    /// Scoring, streaks, weeks, rollover and the reminder schedule, on sample
+    /// data only: no task titles or arcs of your own are read.
+    @MainActor
+    private static func lifeSelfTest() -> [String] {
+        var lines: [String] = []
+        let life = LifeService.shared
+        let levels = [0, 1, 2, 3, 5, 6, 9, 10, 40].map { "\($0)→\(LifeScore.level(of: $0))" }
+        lines.append("life levels: \(levels.joined(separator: " ")) (expect 0→0 1→1 2→1 3→2 5→2 6→3 9→3 10→4 40→4)")
+        lines.append("life weights: task=\(LifeScore.task) checkIn=\(LifeScore.checkIn) milestone=\(LifeScore.milestone)")
+
+        life.withSample {
+            let today = LifeService.today
+            let week = life.week()
+            let names = week.map { LifeService.calendar.component(.weekday, from: $0) }
+            lines.append("life week: starts weekday \(names.first ?? 0) (\(AppSettings.weekStartsMonday ? "Monday=2" : "Sunday=1")) days=\(names.count) containsToday=\(week.contains(today))")
+            lines.append("life sample: \(life.tasks.count) tasks, \(life.arcs.count) arcs, \(life.checkIns.count) check-ins, today=\(life.commits(on: today)) commits, week=\(life.commitsThisWeek()), streak=\(life.streak), longest=\(life.longestStreak)")
+            let columns = life.graphColumns()
+            let days = columns.flatMap { $0 }
+            let lit = days.filter { life.commits(on: $0) > 0 }.count
+            lines.append("life graph: \(columns.count) weeks × 7 = \(days.count) days, \(lit) with commits, ends \(days.last.map { LifeService.calendar.component(.weekday, from: $0) } ?? 0) (7 per column)")
+            if let arc = life.liveArcs.first(where: { !$0.milestones.isEmpty }) {
+                let progress = life.progress(of: arc)
+                lines.append("life arc: milestones \(progress.milestonesDone)/\(progress.milestonesTotal) habitRate=\(String(format: "%.2f", progress.habitRate)) daysLeft=\(progress.daysLeft.map(String.init) ?? "-")")
+            }
+            let plans = LifeReminders.plans(arcs: life.liveArcs, eveningNudge: 21 * 60)
+            let described = plans.map { "\($0.title.prefix(12))@\(String(format: "%02d:%02d", $0.hour, $0.minute))\($0.weekday.map { "w\($0)" } ?? "")" }
+            lines.append("life reminders: \(plans.count) → \(described.joined(separator: " "))")
+            let again = LifeReminders.plans(arcs: life.liveArcs, eveningNudge: 21 * 60)
+            lines.append("life reminders stable: \(Set(plans.map(\.identifier)) == Set(again.map(\.identifier)) && plans.count == again.count) (expect true)")
+        }
+        lines.append("life: \(life.tasks.count) tasks, \(life.arcs.count) arcs, rollover=\(AppSettings.lifeRollover), ear=\(AppSettings.lifeActivity), nudge=\(AppSettings.lifeEveningNudge)")
         return lines
     }
 
@@ -524,6 +559,29 @@ enum DebugHooks {
             }
         }
         withSampleData {
+            for tab in ["Week", "Arcs"] {
+                LifeService.debugTab = tab
+                render("4-open-life-\(tab.lowercased())") {
+                    $0.phase = .open
+                    $0.selectedModuleID = "life"
+                }
+            }
+            LifeService.debugTab = "Arcs"
+            LifeService.debugDesigner = true
+            render("4-open-life-designer") {
+                $0.phase = .open
+                $0.selectedModuleID = "life"
+            }
+            LifeService.debugDesigner = false
+            LifeService.debugTab = "Today"
+            LifeService.debugSelectedDay = LifeService.calendar.date(byAdding: .day, value: -9, to: LifeService.today)
+            render("4-open-life-day") {
+                $0.phase = .open
+                $0.selectedModuleID = "life"
+            }
+            LifeService.debugReset()
+        }
+        withSampleData {
             CaptureService.shared.debugSetRecording(since: Date().addingTimeInterval(-75))
             render("4-open-capture-recording") {
                 $0.phase = .open
@@ -635,10 +693,12 @@ func withSampleData(_ body: () -> Void) {
     NotesService.shared.withSample {
     ShelfService.shared.withSample {
     CaptureService.shared.withSample {
+    LifeService.shared.withSample {
     StatsService.shared.withSample {
     ClaudeUsageService.shared.withSample {
     ClaudeLiveService.shared.withSample {
         body()
+    }
     }
     }
     }

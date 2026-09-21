@@ -23,8 +23,11 @@ enum Theme {
 }
 
 enum Layout {
-    /// Size of the open notch body, not counting its shoulders.
+    /// Size of the open notch body, not counting its shoulders. A module can
+    /// ask for more room (see `NotchModule.openSize`); Life does.
     static let openSize = CGSize(width: 600, height: 300)
+    /// Room for a year of squares, the week's columns and an arc beside them.
+    static let wideOpenSize = CGSize(width: 880, height: 460)
     /// Default width of each "ear" beside the hardware notch in the activity state.
     static let earWidth: CGFloat = 78
     /// How much the closed notch grows while the pointer rests on it.
@@ -37,10 +40,16 @@ enum Layout {
     /// Room around the open notch for its shadow.
     static let shadowMargin: CGFloat = 44
 
+    /// The largest any module asks for; the panel has to hold it.
+    static var maxOpenSize: CGSize {
+        CGSize(width: max(openSize.width, wideOpenSize.width),
+               height: max(openSize.height, wideOpenSize.height))
+    }
+
     /// The panel never resizes, so it's sized for the largest state.
     static var panelSize: CGSize {
-        CGSize(width: openSize.width + openShoulder * 2 + shadowMargin * 2,
-               height: openSize.height + shadowMargin)
+        CGSize(width: maxOpenSize.width + openShoulder * 2 + shadowMargin * 2,
+               height: maxOpenSize.height + shadowMargin)
     }
 }
 
@@ -242,7 +251,8 @@ enum Format {
 
     @MainActor static func relative(_ date: Date, to now: Date = .now) -> String {
         let seconds = now.timeIntervalSince(date)
-        if seconds < 60 { return "now" }
+        // Dates in the future read "in 3 days"; only the present minute is "now".
+        if abs(seconds) < 60 { return "now" }
         return RelativeDateTimeFormatter.brim.localizedString(for: date, relativeTo: now)
     }
 }

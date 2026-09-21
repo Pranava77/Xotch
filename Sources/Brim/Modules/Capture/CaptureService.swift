@@ -53,7 +53,7 @@ final class CaptureService {
     static let shared = CaptureService()
     static let tint = Color(red: 0.36, green: 0.78, blue: 1)
     /// The most items the shelf shows.
-    static let limit = 40
+    nonisolated static let limit = 40
 
     enum Notice: Equatable {
         case needsScreenPermission
@@ -486,35 +486,52 @@ final class CaptureService {
         query.notificationBatchingInterval = 0.5
         let center = NotificationCenter.default
         for name in [Notification.Name.NSMetadataQueryDidFinishGathering, .NSMetadataQueryDidUpdate] {
-            queryObservers.append(center.addObserver(forName: name, object: query, queue: .main) { @Sendable [weak self] _ in
-                MainActor.assumeIsolated { self?.queryChanged() }
+            // queue: nil, so results are read on the query's own thread and
+            // only the finished list crosses to the main one.
+            queryObservers.append(center.addObserver(forName: name, object: query, queue: nil) { @Sendable note in
+                guard let query = note.object as? NSMetadataQuery else { return }
+                let found = CaptureService.items(from: query)
+                DispatchQueue.main.async {
+                    MainActor.assumeIsolated { CaptureService.shared.macItemsFound(found) }
+                }
             })
         }
         self.query = query
         queryFolder = scope
-        query.start()
+        // Starting a Spotlight query can block while macOS asks for access to
+        // the folder it searches, which is Desktop by default. That must never
+        // happen on the main thread, so it runs on a thread of its own.
+        nonisolated(unsafe) let starting = query
+        SpotlightRunner.shared.async { starting.start() }
     }
 
     private func stopQuery() {
-        query?.stop()
+        if let query {
+            nonisolated(unsafe) let stopping = query
+            SpotlightRunner.shared.async { stopping.stop() }
+        }
         query = nil
         queryFolder = nil
         queryObservers.forEach(NotificationCenter.default.removeObserver)
         queryObservers = []
     }
 
-    private func queryChanged() {
-        guard let query else { return }
+    /// Reads the query's results on the thread it runs on.
+    nonisolated private static func items(from query: NSMetadataQuery) -> [CaptureItem] {
         query.disableUpdates()
         defer { query.enableUpdates() }
         var found: [CaptureItem] = []
         // Sorted newest first; hidden ones may be among them, so read a few more than shown.
-        for index in 0..<min(query.resultCount, Self.limit * 3) {
+        for index in 0..<min(query.resultCount, limit * 3) {
             guard let result = query.result(at: index) as? NSMetadataItem,
                   let path = result.value(forAttribute: NSMetadataItemPathKey) as? String else { continue }
             let date = result.value(forAttribute: NSMetadataItemFSCreationDateKey) as? Date ?? .distantPast
             found.append(CaptureItem(url: URL(fileURLWithPath: path), date: date, fromMac: true))
         }
+        return found
+    }
+
+    private func macItemsFound(_ found: [CaptureItem]) {
         macItems = found
         merge()
     }

@@ -37,6 +37,11 @@ enum SettingsKey {
     static let captureMicrophone = "captureMicrophone"
     static let captureShowsClicks = "captureShowsClicks"
     static let captureKeepDays = "captureKeepDays"
+    static let weekStartsMonday = "weekStartsMonday"
+    static let lifeRollover = "lifeRollover"
+    static let lifeActivity = "lifeActivity"
+    static let lifeEveningNudge = "lifeEveningNudge"
+    static let lifeNudgeMinutes = "lifeNudgeMinutes"
 }
 
 enum DisplayChoice {
@@ -78,6 +83,11 @@ enum AppSettings {
             SettingsKey.captureMicrophone: false,
             SettingsKey.captureShowsClicks: false,
             SettingsKey.captureKeepDays: 7,
+            SettingsKey.weekStartsMonday: true,
+            SettingsKey.lifeRollover: true,
+            SettingsKey.lifeActivity: false,
+            SettingsKey.lifeEveningNudge: false,
+            SettingsKey.lifeNudgeMinutes: 21 * 60,
             Diagnostics.shareKey: false,
         ])
     }
@@ -158,5 +168,30 @@ enum AppSettings {
     /// 0 means list captures of any age.
     static var captureKeepDays: Int {
         UserDefaults.standard.integer(forKey: SettingsKey.captureKeepDays)
+    }
+
+    // MARK: - Life
+
+    static var weekStartsMonday: Bool {
+        UserDefaults.standard.bool(forKey: SettingsKey.weekStartsMonday)
+    }
+
+    /// Unfinished tasks move to today at the first launch of a new day.
+    static var lifeRollover: Bool {
+        UserDefaults.standard.bool(forKey: SettingsKey.lifeRollover)
+    }
+
+    /// Shows how many to-dos are left beside the notch.
+    static var lifeActivity: Bool {
+        UserDefaults.standard.bool(forKey: SettingsKey.lifeActivity)
+    }
+
+    static var lifeEveningNudge: Bool {
+        UserDefaults.standard.bool(forKey: SettingsKey.lifeEveningNudge)
+    }
+
+    /// Minutes after midnight for the evening nudge.
+    static var lifeNudgeMinutes: Int {
+        UserDefaults.standard.integer(forKey: SettingsKey.lifeNudgeMinutes)
     }
 }

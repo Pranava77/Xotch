@@ -42,12 +42,12 @@ struct ShellView: View {
                 if model.phase == .open {
                     OpenContent(model: model, modules: modules, selected: selected,
                                 actions: actions, namespace: namespace)
-                        .frame(width: Layout.openSize.width, height: Layout.openSize.height, alignment: .top)
+                        .frame(width: model.openSize.width, height: model.openSize.height, alignment: .top)
                         .transition(.blurScale)
                 }
                 if model.phase == .open {
                     RippleOverlay(trigger: model.dropCount, origin: model.dropPoint, tint: palette.accent)
-                        .frame(width: Layout.openSize.width, height: Layout.openSize.height)
+                        .frame(width: model.openSize.width, height: model.openSize.height)
                 }
                 if isDropTarget {
                     shape
