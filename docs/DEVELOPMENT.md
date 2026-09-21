@@ -23,6 +23,7 @@ With a debug build running:
                                      # activity-claude, activity-download, activity-recording,
                                      # clear-activities [module]
 ./scripts/debug.sh capture area      # take a screenshot: area, window or screen (needs permission)
+./scripts/debug.sh trace-spaces ~/Desktop/spaces.txt  # log desktop-switch notifications with timestamps
 ./scripts/debug.sh record screen     # start recording: screen, window or area; record-stop ends it
 ./scripts/debug.sh celebrate         # confetti (and the sound, if it's on)
 ./scripts/debug.sh palette           # open the command palette; also ripple
@@ -109,6 +110,22 @@ Captures are saved to `~/Pictures/Brim` by default. Pictures is one of the few h
 ### Now Playing and macOS 15.4+
 
 Apple only lets its own processes use the private MediaRemote framework, so Brim runs `/usr/bin/perl` with a tiny library (`MediaRemoteBridge/`) that reads media info and prints it as JSON lines. Same technique as [mediaremote-adapter](https://github.com/ungive/mediaremote-adapter), written from scratch. The build script compiles it into `Brim.app/Contents/Frameworks`.
+
+### Known: the notch slides when you change desktop
+
+macOS animates every window sideways during a desktop switch, and the notch goes with them. It shouldn't: the panel is set up exactly as Apple documents for a window that stays put — `canJoinAllSpaces`, `stationary`, `fullScreenAuxiliary`, `auxiliary`, `canJoinAllApplications`, above the menu bar — and `scripts/debug.sh status` prints those flags back at runtime to prove they're still applied.
+
+What was measured, with a window-server trace (`CGWindowListCopyWindowInfo` on Brim's own window, 30 times a second) against Brim's own notification log:
+
+- The panel's reported position slides from x 542 to about −1300 or +2400 and back, for one to six seconds, while Brim's own `panel.frame` never changes. The window server is moving it, not Brim.
+- A test harness of panels at six different levels (menu bar + 3, `.screenSaver`, `.popUpMenu`, assistive, cursor, plain floating) with several collection behaviours **all slid by exactly the same amount**. No level or behaviour escapes it.
+- It happens with Stage Manager both on and off.
+- `NSWorkspace.activeSpaceDidChangeNotification` arrives about **3.4 seconds after the slide starts**, and for three of five switches never arrived at all, so it can't be used to get out of the way in time.
+- Hiding the window once the slide is detected doesn't help either: macOS composites a snapshot of each window taken before the animation begins, so changing `alphaValue` mid-slide changes nothing on screen. That attempt was written, measured and removed; only the DEBUG tracing is kept (`scripts/debug.sh trace-spaces <file>`).
+
+The one thing that removes it is System Settings › Accessibility › Display › **Reduce motion**, which turns the desktop-switch animation off entirely.
+
+Worth revisiting if a future macOS adds a real opt-out, or if the closed notch is ever drawn by something that isn't a window.
 
 ### Permissions during development
 

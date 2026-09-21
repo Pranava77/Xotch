@@ -450,6 +450,22 @@ final class NotchWindowController: NotchActions {
     }
 
     #if DEBUG
+    var debugBehaviour: String {
+        var names: [String] = []
+        let behaviour = panel.collectionBehavior
+        let flags: [(NSWindow.CollectionBehavior, String)] = [
+            (.canJoinAllSpaces, "canJoinAllSpaces"), (.stationary, "stationary"),
+            (.fullScreenAuxiliary, "fullScreenAuxiliary"), (.ignoresCycle, "ignoresCycle"),
+            (.auxiliary, "auxiliary"), (.canJoinAllApplications, "canJoinAllApplications"),
+            (.moveToActiveSpace, "moveToActiveSpace"), (.transient, "transient"),
+            (.participatesInCycle, "participatesInCycle"), (.primary, "primary"),
+        ]
+        for (flag, name) in flags where behaviour.contains(flag) {
+            names.append(name)
+        }
+        return "level=\(panel.level.rawValue) alpha=\(panel.alphaValue) behaviour=[\(names.joined(separator: ","))] raw=\(behaviour.rawValue)"
+    }
+
     var debugFrames: String {
         String(format: "panel %.0fx%.0f@%.0f,%.0f screen %.0fx%.0f@%.0f,%.0f notch %.0fx%.0f",
                panel.frame.width, panel.frame.height, panel.frame.minX, panel.frame.minY,

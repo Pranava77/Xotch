@@ -270,6 +270,14 @@ Allow Brim under **System Settings › Privacy & Security › Screen & System Au
 </details>
 
 <details>
+<summary><b>The notch slides across when I change desktop.</b></summary>
+
+macOS slides every window sideways as desktops change, and it won't let an app opt a window out — the notch is pinned to all desktops, and it still gets moved. It lands back in place when the animation finishes.
+
+To stop it, turn on **System Settings › Accessibility › Display › Reduce motion**: desktops then change without the sliding animation.
+</details>
+
+<details>
 <summary><b>My screenshots only show the wallpaper.</b></summary>
 
 macOS hasn't given Brim permission yet. Allow Brim under **System Settings › Privacy & Security › Screen & System Audio Recording**, then quit Brim and open it again.

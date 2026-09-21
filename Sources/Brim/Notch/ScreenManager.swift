@@ -22,6 +22,9 @@ final class ScreenManager {
         installMonitors()
 
         observe(NotificationCenter.default, NSApplication.didChangeScreenParametersNotification) { manager in
+            #if DEBUG
+            manager.debugNoteSpaceChange("didChangeScreenParameters")
+            #endif
             manager.scheduleRebuild()
         }
         observe(NotificationCenter.default, UserDefaults.didChangeNotification) { manager in
@@ -37,11 +40,14 @@ final class ScreenManager {
         }
         observe(workspace, NSWorkspace.activeSpaceDidChangeNotification) { manager in
             #if DEBUG
-            manager.debugNoteSpaceChange()
+            manager.debugNoteSpaceChange("activeSpaceDidChange")
             #endif
             manager.scheduleFullScreenCheck()
         }
         observe(workspace, NSWorkspace.didActivateApplicationNotification) { manager in
+            #if DEBUG
+            manager.debugNoteSpaceChange("didActivateApplication")
+            #endif
             manager.scheduleFullScreenCheck()
         }
     }
@@ -271,9 +277,13 @@ final class ScreenManager {
         try? "space change log\n".write(to: URL(fileURLWithPath: path), atomically: true, encoding: .utf8)
     }
 
-    func debugNoteSpaceChange() {
+    func debugNoteSpaceChange(_ reason: String) {
+        debugLog(reason)
+    }
+
+    private func debugLog(_ text: String) {
         guard let spaceLog, let handle = try? FileHandle(forWritingTo: spaceLog) else { return }
-        let line = String(format: "%.3f activeSpaceDidChange\n", Date().timeIntervalSince1970)
+        let line = String(format: "%.3f %@\n", Date().timeIntervalSince1970, text)
         handle.seekToEndOfFile()
         handle.write(Data(line.utf8))
         try? handle.close()
@@ -292,7 +302,7 @@ final class ScreenManager {
 
     var debugSummary: String {
         controllers.map { key, controller in
-            "\(key): phase=\(controller.model.phase) hiddenForFullScreen=\(controller.isHiddenForFullScreen) module=\(controller.model.selectedModuleID) \(controller.debugFrames)"
+            "\(key): phase=\(controller.model.phase) hiddenForFullScreen=\(controller.isHiddenForFullScreen) module=\(controller.model.selectedModuleID) \(controller.debugFrames) \(controller.debugBehaviour)"
         }.sorted().joined(separator: "; ")
     }
 
