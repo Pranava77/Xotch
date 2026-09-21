@@ -22,6 +22,9 @@ final class ScreenManager {
         installMonitors()
 
         observe(NotificationCenter.default, NSApplication.didChangeScreenParametersNotification) { manager in
+            #if DEBUG
+            manager.debugNoteSpaceChange("didChangeScreenParameters")
+            #endif
             manager.scheduleRebuild()
         }
         observe(NotificationCenter.default, UserDefaults.didChangeNotification) { manager in
@@ -36,9 +39,15 @@ final class ScreenManager {
             manager.scheduleRebuild()
         }
         observe(workspace, NSWorkspace.activeSpaceDidChangeNotification) { manager in
+            #if DEBUG
+            manager.debugNoteSpaceChange("activeSpaceDidChange")
+            #endif
             manager.scheduleFullScreenCheck()
         }
         observe(workspace, NSWorkspace.didActivateApplicationNotification) { manager in
+            #if DEBUG
+            manager.debugNoteSpaceChange("didActivateApplication")
+            #endif
             manager.scheduleFullScreenCheck()
         }
     }
@@ -259,6 +268,27 @@ final class ScreenManager {
     }
 
     #if DEBUG
+    /// Timestamps when macOS says the desktop changed, to line up against the
+    /// window server's slide animation.
+    private var spaceLog: URL?
+
+    func debugTraceSpaces(to path: String) {
+        spaceLog = URL(fileURLWithPath: path)
+        try? "space change log\n".write(to: URL(fileURLWithPath: path), atomically: true, encoding: .utf8)
+    }
+
+    func debugNoteSpaceChange(_ reason: String) {
+        debugLog(reason)
+    }
+
+    private func debugLog(_ text: String) {
+        guard let spaceLog, let handle = try? FileHandle(forWritingTo: spaceLog) else { return }
+        let line = String(format: "%.3f %@\n", Date().timeIntervalSince1970, text)
+        handle.seekToEndOfFile()
+        handle.write(Data(line.utf8))
+        try? handle.close()
+    }
+
     private var pointerEvents = 0
     private var lastCountReset = Date()
 
@@ -272,7 +302,7 @@ final class ScreenManager {
 
     var debugSummary: String {
         controllers.map { key, controller in
-            "\(key): phase=\(controller.model.phase) hiddenForFullScreen=\(controller.isHiddenForFullScreen) module=\(controller.model.selectedModuleID)"
+            "\(key): phase=\(controller.model.phase) hiddenForFullScreen=\(controller.isHiddenForFullScreen) module=\(controller.model.selectedModuleID) \(controller.debugFrames) \(controller.debugBehaviour)"
         }.sorted().joined(separator: "; ")
     }
 

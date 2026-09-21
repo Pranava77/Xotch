@@ -47,17 +47,6 @@ enum CommandCatalog {
             })
         }
 
-        // Anything typed that isn't a command can become today's to-do.
-        if text.count >= 3, duration(in: text) == nil {
-            results.append(PaletteCommand(
-                id: "life-add", title: "Add “\(text)” to today", symbol: "plus.circle",
-                tint: Theme.accent
-            ) {
-                LifeService.shared.add(text)
-                actions.select(moduleID: "life")
-            })
-        }
-
         let all = catalog(actions: actions)
         if text.isEmpty {
             results += all
@@ -66,6 +55,17 @@ enum CommandCatalog {
                 .compactMap { command in score(command, for: text).map { (command, $0) } }
                 .sorted { $0.1 > $1.1 }
                 .map(\.0)
+            // Anything typed that isn't a command can become today's to-do.
+            // It goes after the real matches: "shot" means the screenshot.
+            if text.count >= 3, duration(in: text) == nil {
+                results.append(PaletteCommand(
+                    id: "life-add", title: "Add “\(text)” to today", symbol: "plus.circle",
+                    tint: Theme.accent
+                ) {
+                    LifeService.shared.add(text)
+                    actions.select(moduleID: "life")
+                })
+            }
             results += clipboardMatches(for: text)
         }
         return Array(results.prefix(limit))

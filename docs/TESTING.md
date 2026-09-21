@@ -51,7 +51,7 @@ These need hardware or situations a script can't create. Tick them before a beta
 
 ### Spaces, full screen and Stage Manager
 
-- [ ] Switch between desktops: the notch stays put and doesn't flicker.
+- [ ] Switch between desktops: the notch comes back in place afterwards. It slides across with the animation on the way — that's macOS moving every window, and no window can opt out; see DEVELOPMENT.md. With Reduce Motion on, there's no animation and no slide.
 - [ ] Make an app full screen (Safari, a video): the notch steps aside within a second and returns when you leave full screen.
 - [ ] Split View with two apps: the notch steps aside.
 - [ ] Settings › Hide the notch while an app is full screen, turned off: the notch stays over full-screen apps.
