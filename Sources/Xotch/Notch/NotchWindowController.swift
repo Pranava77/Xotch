@@ -463,7 +463,7 @@ final class NotchWindowController: NotchActions {
         for (flag, name) in flags where behaviour.contains(flag) {
             names.append(name)
         }
-        return "level=\(panel.level.rawValue) alpha=\(panel.alphaValue) behaviour=[\(names.joined(separator: ","))] raw=\(behaviour.rawValue)"
+        return "key=\(panel.isKeyWindow) mouse=\(panel.ignoresMouseEvents ? "ignored" : "taken") level=\(panel.level.rawValue) alpha=\(panel.alphaValue) behaviour=[\(names.joined(separator: ","))] raw=\(behaviour.rawValue)"
     }
 
     var debugFrames: String {

@@ -240,6 +240,7 @@ private struct TaskRow: View {
         .background(RoundedRectangle(cornerRadius: 8).fill(hovering ? Theme.fill : .clear))
         .onHover { hovering = $0 }
         .modifier(TaskDragger(task: task))
+        .contextMenu { TaskMenu(task: task) }
         .accessibilityElement(children: .combine)
         .accessibilityAction(named: "Delete") { life.delete(task) }
     }
@@ -347,16 +348,26 @@ private struct DayColumn: View {
                     .frame(width: 8, height: 8)
             }
             ForEach(tasks.prefix(6)) { task in
-                HStack(spacing: 4) {
-                    Circle()
-                        .fill(life.arc(id: task.arcID)?.colour.color ?? Theme.tertiaryInk)
-                        .frame(width: 5, height: 5)
-                    Text(task.title)
-                        .font(.system(size: 10))
-                        .strikethrough(task.isDone, color: Theme.tertiaryInk)
-                        .foregroundStyle(task.isDone ? Theme.tertiaryInk : Theme.ink)
-                        .lineLimit(1)
+                Button {
+                    life.toggle(task)
+                } label: {
+                    HStack(spacing: 4) {
+                        Circle()
+                            .fill(life.arc(id: task.arcID)?.colour.color ?? Theme.tertiaryInk)
+                            .frame(width: 5, height: 5)
+                        Text(task.title)
+                            .font(.system(size: 10))
+                            .strikethrough(task.isDone, color: Theme.tertiaryInk)
+                            .foregroundStyle(task.isDone ? Theme.tertiaryInk : Theme.ink)
+                            .lineLimit(1)
+                        Spacer(minLength: 0)
+                    }
+                    .contentShape(Rectangle())
                 }
+                .buttonStyle(.plain)
+                .help("Click to tick off. Right-click to move it.")
+                .modifier(TaskDragger(task: task))
+                .contextMenu { TaskMenu(task: task) }
             }
             if tasks.count > 6 {
                 Text("+\(tasks.count - 6) more")
@@ -399,6 +410,33 @@ private struct DayColumn: View {
         formatter.dateFormat = "d"
         return formatter
     }()
+}
+
+/// Moving a task without dragging: right-click any task, in Today or in the
+/// week's columns. Dragging works too, but this doesn't depend on it.
+private struct TaskMenu: View {
+    let task: LifeTask
+    private var life: LifeService { .shared }
+
+    var body: some View {
+        Button(task.isDone ? "Mark as not done" : "Tick it off") { life.toggle(task) }
+        Divider()
+        ForEach(life.week(), id: \.self) { day in
+            Button(Self.label(for: day)) { life.move(task, to: day) }
+                .disabled(task.day.map { LifeService.day($0) == day } ?? false)
+        }
+        Button("Someday") { life.move(task, to: nil) }
+            .disabled(task.day == nil)
+        Divider()
+        Button("Delete", role: .destructive) { life.delete(task) }
+    }
+
+    private static func label(for day: Date) -> String {
+        let today = LifeService.today
+        if day == today { return "Move to today" }
+        if day == LifeService.calendar.date(byAdding: .day, value: 1, to: today) { return "Move to tomorrow" }
+        return "Move to " + day.formatted(.dateTime.weekday(.wide))
+    }
 }
 
 /// Dragging a task to another day, and a column that takes one. Both are

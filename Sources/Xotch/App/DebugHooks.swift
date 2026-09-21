@@ -325,6 +325,37 @@ enum DebugHooks {
         return lines
     }
 
+    /// Makes a real arc, keeps a habit, ticks a real task, then clears up —
+    /// the same calls the buttons make, so a broken save shows up here.
+    @MainActor
+    private static func lifeRoundTrip() -> [String] {
+        let life = LifeService.shared
+        let arcsBefore = life.arcs.count, tasksBefore = life.tasks.count
+        var arc = Arc(name: "Self-test arc", colour: RGBA(hex: 0x4FA3FF), intent: "Deleted straight away")
+        arc.habits = [Habit(title: "Self-test habit", cadence: .daily)]
+        arc.milestones = [Milestone(title: "Self-test milestone")]
+        life.save(arc)
+        let saved = life.arcs.contains { $0.id == arc.id }
+        guard let stored = life.arcs.first(where: { $0.id == arc.id }), let habit = stored.habits.first else {
+            return ["life round trip: FAILED to save the arc"]
+        }
+        life.toggleCheckIn(habit, in: stored)
+        let kept = life.isKept(habit)
+        let task = life.add("Self-test task", on: LifeService.today, arcID: stored.id)
+        let added = task != nil
+        var ticked = false
+        if let task {
+            life.toggle(task)
+            ticked = life.tasks.first { $0.id == task.id }?.isDone ?? false
+            life.delete(task)
+        }
+        let commits = life.commits(on: LifeService.today)
+        if kept { life.toggleCheckIn(habit, in: stored) }
+        life.delete(stored)
+        let cleaned = life.arcs.count == arcsBefore && life.tasks.count == tasksBefore
+        return ["life round trip: saved=\(saved) checkedIn=\(kept) taskAdded=\(added) taskTicked=\(ticked) commitsSeen=\(commits) cleanedUp=\(cleaned) (all expect true)"]
+    }
+
     /// Scoring, streaks, weeks, rollover and the reminder schedule, on sample
     /// data only: no task titles or arcs of your own are read.
     @MainActor
@@ -355,6 +386,7 @@ enum DebugHooks {
             let again = LifeReminders.plans(arcs: life.liveArcs, eveningNudge: 21 * 60)
             lines.append("life reminders stable: \(Set(plans.map(\.identifier)) == Set(again.map(\.identifier)) && plans.count == again.count) (expect true)")
         }
+        lines += lifeRoundTrip()
         let renamed = UserDefaults.standard.bool(forKey: "migration.renamedFromBrim")
         let oldFolder = FileManager.default.fileExists(atPath: FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent("Brim").path)
         lines.append("rename: migrated=\(renamed) oldFolderLeft=\(oldFolder) oldSettings=\(Migration.oldSettings()?.count ?? 0) keys, support=\(Storage.directory.lastPathComponent), hook=\(ClaudeHookInstaller.marker)")

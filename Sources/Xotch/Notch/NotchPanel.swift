@@ -32,6 +32,17 @@ final class NotchPanel: NSPanel {
     override var canBecomeKey: Bool { true }
     override var canBecomeMain: Bool { false }
 
+    /// `acceptsFirstMouse` on the hosting view lets a click act straight away
+    /// while another app is in front — but it also means the click never makes
+    /// this panel key, so text fields would quietly ignore the keyboard. Take
+    /// focus as soon as someone clicks anything inside the notch.
+    override func sendEvent(_ event: NSEvent) {
+        if event.type == .leftMouseDown, !isKeyWindow {
+            makeKey()
+        }
+        super.sendEvent(event)
+    }
+
     // Stop AppKit from pushing the panel below the menu bar.
     override func constrainFrameRect(_ frameRect: NSRect, to screen: NSScreen?) -> NSRect {
         frameRect

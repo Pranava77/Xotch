@@ -7,6 +7,7 @@ struct ArcDesigner: View {
     @State private var draft: Arc
     @State private var newHabit = ""
     @State private var newMilestone = ""
+    @FocusState private var nameFocused: Bool
     /// Nil when cancelled.
     let done: (Arc?) -> Void
     @Environment(\.snapshotMode) private var snapshotMode
@@ -42,7 +43,7 @@ struct ArcDesigner: View {
 
             HStack(alignment: .top, spacing: 14) {
                 VStack(alignment: .leading, spacing: 8) {
-                    Field(title: "Name", text: $draft.name, placeholder: "Ship Xotch")
+                    Field(title: "Name", text: $draft.name, placeholder: "Ship Xotch", focused: $nameFocused)
                     Field(title: "Intent", text: Binding(get: { draft.intent ?? "" },
                                                          set: { draft.intent = $0 }),
                           placeholder: "One line: what this is for")
@@ -120,6 +121,8 @@ struct ArcDesigner: View {
         .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(Theme.fill))
         .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).strokeBorder(Theme.hairline))
         .shadow(color: .black.opacity(0.45), radius: 20, y: 8)
+        // Start in the name field, so you can just type.
+        .onAppear { nameFocused = true }
     }
 }
 
@@ -129,6 +132,7 @@ private struct Field: View {
     let title: String
     @Binding var text: String
     let placeholder: String
+    var focused: FocusState<Bool>.Binding?
     @Environment(\.snapshotMode) private var snapshotMode
 
     var body: some View {
@@ -139,6 +143,10 @@ private struct Field: View {
                     Text(text.isEmpty ? placeholder : text)
                         .foregroundStyle(text.isEmpty ? Theme.tertiaryInk : Theme.ink)
                         .frame(maxWidth: .infinity, alignment: .leading)
+                } else if let focused {
+                    TextField(placeholder, text: $text)
+                        .textFieldStyle(.plain)
+                        .focused(focused)
                 } else {
                     TextField(placeholder, text: $text)
                         .textFieldStyle(.plain)
