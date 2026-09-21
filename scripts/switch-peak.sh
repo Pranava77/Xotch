@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-# Relaunches a debug Brim, switches modules while the notch is open and prints the
+# Relaunches a debug Xotch, switches modules while the notch is open and prints the
 # memory peak. Transitions can allocate large off-screen graphics buffers.
 set -euo pipefail
 cd "$(dirname "$0")/.."
-pkill -x Brim 2>/dev/null || true
+pkill -x Xotch 2>/dev/null || true
 sleep 1
-open build/Brim.app
+open build/Xotch.app
 sleep 7
-PID="$(pgrep -x Brim)"
+PID="$(pgrep -x Xotch)"
 for module in home media home calendar media notes media home stats media home clipboard; do
   ./scripts/debug.sh open "$module" >/dev/null
   sleep 1

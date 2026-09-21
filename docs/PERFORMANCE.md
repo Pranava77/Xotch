@@ -34,15 +34,15 @@ Measured on a 14" MacBook Pro (Mac17,9, Apple M5 Pro), macOS 26.6.2, debug build
 
 Life costs nothing while it's open: the graph is one `Canvas` pass over 371 squares, day totals are cached until something changes, and nothing polls. Opening it also grows the notch from 600×300 to 880×460, which is a window resize the window server handles.
 
-Recording a 1800×1169 display at 60 fps with system audio cost about 1 percentage point of CPU in Brim over a closed-notch baseline of 1.0% on a busy Mac. That is the red timer plus handing frames over; ScreenCaptureKit encodes the H.264 in macOS's own processes, so the rest of the cost doesn't appear against Brim. The resulting file is about 1.9 MB per second of screen.
+Recording a 1800×1169 display at 60 fps with system audio cost about 1 percentage point of CPU in Xotch over a closed-notch baseline of 1.0% on a busy Mac. That is the red timer plus handing frames over; ScreenCaptureKit encodes the H.264 in macOS's own processes, so the rest of the cost doesn't appear against Xotch. The resulting file is about 1.9 MB per second of screen.
 
 The Media helper process (`perl` running `MediaRemoteBridge`) uses 0% CPU and about 4 MB.
 
-The music bars cost nothing with their built-in animation. With Settings › "Move the music bars with the real sound" on, Brim reads the audio tap and updates the bars 20 times a second while they're showing, and stops the tap when they're hidden. Measured back to back: 0.17% with the bars up, 0.00% with them hidden. The analysis runs on every other window of audio whatever is playing; with music, each update also moves four layers. That case hasn't been measured yet, because it needs music playing and the permission granted.
+The music bars cost nothing with their built-in animation. With Settings › "Move the music bars with the real sound" on, Xotch reads the audio tap and updates the bars 20 times a second while they're showing, and stops the tap when they're hidden. Measured back to back: 0.17% with the bars up, 0.00% with them hidden. The analysis runs on every other window of audio whatever is playing; with music, each update also moves four layers. That case hasn't been measured yet, because it needs music playing and the permission granted.
 
 Measurements are noisy while the Mac is in use: one run with Settings open and the pointer moving read 12–20% for the same state, and 0.17% again once things were quiet.
 
-The first time each module opens after launch costs a short burst of CPU (loading its data, a Claude log scan of about 0.9 s, compiling the Metal shaders in about 0.1–0.25 s on a background thread). The numbers above are after that settles. Moving the pointer wakes Brim for every move, because it watches for the pointer reaching the notch; each event is a rectangle check. Wakeup counts in the table go up whenever the Mac is being used during the run.
+The first time each module opens after launch costs a short burst of CPU (loading its data, a Claude log scan of about 0.9 s, compiling the Metal shaders in about 0.1–0.25 s on a background thread). The numbers above are after that settles. Moving the pointer wakes Xotch for every move, because it watches for the pointer reaching the notch; each event is a rectangle check. Wakeup counts in the table go up whenever the Mac is being used during the run.
 
 ## What Phase 4 changed
 
@@ -67,9 +67,9 @@ The first time each module opens after launch costs a short burst of CPU (loadin
 
 - `scripts/debug.sh rebuild 30`, three times (90 full rebuilds of the notch windows): memory settles at 58 MB and stays there.
 - One notch window remains afterwards; none are left behind.
-- `leaks` reports 266 leaks (13 KB), all inside Apple's App Intents XPC connection (`com.apple.linkd.autoShortcut`). The count is the same before and after the rebuilds. No Brim objects are listed.
+- `leaks` reports 266 leaks (13 KB), all inside Apple's App Intents XPC connection (`com.apple.linkd.autoShortcut`). The count is the same before and after the rebuilds. No Xotch objects are listed.
 
-Debug builds are signed with `get-task-allow` (`Resources/Brim.debug.entitlements`) so `leaks`, `sample` and `vmmap` can inspect them; release builds aren't.
+Debug builds are signed with `get-task-allow` (`Resources/Xotch.debug.entitlements`) so `leaks`, `sample` and `vmmap` can inspect them; release builds aren't.
 
 ## Known: transient graphics memory when switching modules
 
@@ -83,7 +83,7 @@ It isn't caused by the transition style: plain cross-fades and a rectangular cli
 ./scripts/build-app.sh debug --run
 ./scripts/perf.sh 12          # the table above
 ./scripts/switch-peak.sh      # the transient graphics peak
-./scripts/debug.sh rebuild 30 # then: leaks $(pgrep -x Brim)
+./scripts/debug.sh rebuild 30 # then: leaks $(pgrep -x Xotch)
 ```
 
 `perf.sh` opens the notch on each module without taking keyboard focus. Keep the pointer still while it runs, because pointer movement adds wakeups.

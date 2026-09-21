@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Measures Brim's CPU, energy impact, idle wakeups and memory in common states,
+# Measures Xotch's CPU, energy impact, idle wakeups and memory in common states,
 # printing a Markdown table. Needs a running debug build; opens the notch while it runs.
 # Usage: scripts/perf.sh [seconds per state]
 set -euo pipefail
 cd "$(dirname "$0")/.."
 DURATION="${1:-10}"
-PID="$(pgrep -x Brim)" || { echo "Brim isn't running. Start it with: scripts/build-app.sh debug --run"; exit 1; }
+PID="$(pgrep -x Xotch)" || { echo "Xotch isn't running. Start it with: scripts/build-app.sh debug --run"; exit 1; }
 
 debug() { ./scripts/debug.sh "$@" >/dev/null; }
 

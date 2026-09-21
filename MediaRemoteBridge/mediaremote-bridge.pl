@@ -8,7 +8,7 @@ use DynaLoader;
 my $library = shift or die "usage: mediaremote-bridge.pl <MediaRemoteBridge.dylib>\n";
 my $handle = DynaLoader::dl_load_file($library, 0)
     or die "couldn't load $library: " . DynaLoader::dl_error() . "\n";
-my $symbol = DynaLoader::dl_find_symbol($handle, "BrimMediaRemoteRun")
-    or die "BrimMediaRemoteRun not found: " . DynaLoader::dl_error() . "\n";
+my $symbol = DynaLoader::dl_find_symbol($handle, "XotchMediaRemoteRun")
+    or die "XotchMediaRemoteRun not found: " . DynaLoader::dl_error() . "\n";
 DynaLoader::dl_install_xsub("main::run_bridge", $symbol);
 run_bridge();

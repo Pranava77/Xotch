@@ -2,9 +2,9 @@
 
 ## Before sending a build
 
-1. Set `Diagnostics.supportAddress` in `Sources/Brim/Services/Diagnostics.swift`, so "Send Feedback…" and crash reports are addressed to you.
+1. Set `Diagnostics.supportAddress` in `Sources/Xotch/Services/Diagnostics.swift`, so "Send Feedback…" and crash reports are addressed to you.
 2. Bump `CFBundleShortVersionString` and `CFBundleVersion` in `Resources/Info.plist`.
-3. Run `./scripts/package-beta.sh`. It builds a release app, checks the signature and writes `build/Brim-<version>-<build>.zip` with its SHA-256.
+3. Run `./scripts/package-beta.sh` for a zip, or `./scripts/package-dmg.sh` for a drag-to-Applications disk image. Both build a release app, check the signature and print a SHA-256.
 4. Strongly recommended: sign with a Developer ID and notarize before sending the build to anyone.
    - Without that, every tester has to override Gatekeeper by hand (below).
    - macOS may also ask for Calendar access and Screen Recording again after each update.
@@ -18,15 +18,15 @@ Still to do for a beta channel: automatic updates. Adding Sparkle needs the Spar
 
 ### Install
 
-1. Unzip `Brim-….zip` and drag Brim to Applications.
-2. Open Brim. macOS will probably say it can't check the app for malicious software. Close that message.
-3. Open System Settings › Privacy & Security, scroll to Security, and press **Open Anyway** next to Brim.
-4. Brim appears in the menu bar; there's no Dock icon. Hover over the notch to peek, then click to open.
+1. Open `Xotch-….dmg` (or unzip `Xotch-….zip`) and drag Xotch to Applications.
+2. Open Xotch. macOS will probably say it can't check the app for malicious software. Close that message.
+3. Open System Settings › Privacy & Security, scroll to Security, and press **Open Anyway** next to Xotch.
+4. Xotch appears in the menu bar; there's no Dock icon. Hover over the notch to peek, then click to open.
 
 ### What to try over the week
 
 - **Every day:** Home, Now Playing (Music, Spotify, a browser), Calendar, Timers.
-- **Clipboard:** copy things and search them later. macOS asks once whether Brim may read the clipboard.
+- **Clipboard:** copy things and search them later. macOS asks once whether Xotch may read the clipboard.
 - **Shelf:** drag a file towards the notch, drop it, then drag it out somewhere else.
 - **Life:** put today's to-dos in, tick them off, and design one arc you actually care about. Check the graph after a few days — it should look like your week.
 - **Capture:** take a screenshot of an area, a window and the screen, record a few seconds of screen, and check that your own ⌘⇧4 screenshots turn up there too. macOS asks for Screen Recording the first time; screen recording itself needs macOS 15.
@@ -36,12 +36,12 @@ Still to do for a beta channel: automatic updates. Adding Sparkle needs the Spar
 
 ### Sending feedback
 
-- **Menu bar icon › Send Feedback…** opens an email with your Brim and macOS versions filled in.
-- **If Brim quits unexpectedly:**
+- **Menu bar icon › Send Feedback…** opens an email with your Xotch and macOS versions filled in.
+- **If Xotch quits unexpectedly:**
   1. Turn on Settings › Privacy and feedback › "Keep crash reports I can choose to send".
   2. The menu bar then offers **Email Report…**, which attaches macOS's crash report.
   3. Nothing is sent unless you send that email.
 
 ### Privacy
 
-Everything Brim keeps is stored on your Mac, in `~/Library/Application Support/Brim`. Brim doesn't connect to any online service.
+Everything Xotch keeps is stored on your Mac, in `~/Library/Application Support/Xotch`. Xotch doesn't connect to any online service.

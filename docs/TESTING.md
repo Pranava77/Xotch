@@ -4,9 +4,9 @@
 
 ```bash
 ./scripts/build-app.sh debug --run
-./scripts/debug.sh selftest ~/Desktop/brim-selftest.txt
-./scripts/debug.sh snapshot ~/Desktop/brim-snapshots
-./scripts/debug.sh effects ~/Desktop/brim-effects
+./scripts/debug.sh selftest ~/Desktop/xotch-selftest.txt
+./scripts/debug.sh snapshot ~/Desktop/xotch-snapshots
+./scripts/debug.sh effects ~/Desktop/xotch-effects
 ```
 
 The self-test checks:
@@ -61,7 +61,7 @@ These need hardware or situations a script can't create. Tick them before a beta
 
 - [ ] Pin the notch open, sleep the Mac, wake it: the notch comes back closed.
 - [ ] A running timer finishes while the Mac is asleep: the "Done" banner and notification appear right after waking.
-- [ ] Log out and back in, or run `pkill Brim`: notes typed just before are saved.
+- [ ] Log out and back in, or run `pkill Xotch`: notes typed just before are saved.
 
 ### Permissions (on a fresh macOS user account)
 
@@ -72,8 +72,8 @@ These need hardware or situations a script can't create. Tick them before a beta
 ### Signature UI
 
 - [ ] Each theme in Settings › Appearance: the open notch changes at once, the closed notch stays black.
-- [ ] Smoke Glass on macOS 26 shows Liquid Glass; on macOS 14–15 (or with `defaults write com.pranava.brim forceBlurFallback -bool YES`) a blur. Text stays readable over a white window and over a dark one.
-- [ ] Customise a theme, quit Brim, reopen: the custom colours are kept.
+- [ ] Smoke Glass on macOS 26 shows Liquid Glass; on macOS 14–15 (or with `defaults write com.pranava.xotch forceBlurFallback -bool YES`) a blur. Text stays readable over a white window and over a dark one.
+- [ ] Customise a theme, quit Xotch, reopen: the custom colours are kept.
 - [ ] Drop a file on the notch: a ripple spreads from where it landed.
 - [ ] Now Playing: the title scrolls on the dot-matrix display a column at a time; the artwork glows in its colours and the glow shifts while music plays.
 - [ ] Shelf: flick a file upwards and it flies off; a short or slow pull springs back. Dragging the same file down to the desktop still copies it. Double-click opens, Option-click removes, right-click shows the menu.
@@ -86,10 +86,10 @@ These need hardware or situations a script can't create. Tick them before a beta
 - [ ] Music and a timer at once: the timer shows, with one dot for the music waiting.
 - [ ] Settings › Features › Celebrate: confetti falls from the notch and the trackpad taps twice. A finished focus session does the same, unless "Celebrate finished focus sessions" is off.
 - [ ] Home: the mascot thinks while a timer runs, jumps when a focus session finishes, and falls asleep after 10 quiet minutes.
-- [ ] Updating from a build that had Revenue, Analytics or Weather: those modules are gone from the dock and Settings, and Keychain Access has no `com.pranava.brim` items for them.
+- [ ] Updating from a build that had Revenue, Analytics or Weather: those modules are gone from the dock and Settings, and Keychain Access has no `com.pranava.xotch` items for them.
 - [ ] Life › Today: type a to-do and press Return; tick it off and watch today's square darken and the streak rise.
 - [ ] Type `#ship` at the end of a to-do: it lands on the arc whose name starts with that.
-- [ ] Life › Arcs › New arc: name it, pick a colour and an end date, add a habit and a milestone, press Lock it in. Quit Brim, reopen: it's all still there.
+- [ ] Life › Arcs › New arc: name it, pick a colour and an end date, add a habit and a milestone, press Lock it in. Quit Xotch, reopen: it's all still there.
 - [ ] Check in on a habit, then finish a milestone: confetti falls and the mascot cheers.
 - [ ] Set a habit reminder a minute ahead: macOS asks for notifications the first time, the reminder arrives, and **Check in** on it ticks the habit off without opening the notch.
 - [ ] Life › Week: drag a to-do onto another day; it moves and stays there after a relaunch.
@@ -100,7 +100,7 @@ These need hardware or situations a script can't create. Tick them before a beta
 - [ ] Screenshot › Window, and Screen: same, and the picture matches what you chose. With "Copy to clipboard" on, ⌘V pastes the image.
 - [ ] Take a screenshot with ⌘⇧4: it appears on the Capture shelf within a second or two (macOS may ask for access to your Desktop folder the first time).
 - [ ] Record › Screen for 5 seconds: a red timer shows beside the notch and in the open notch, clicking either stops it, and the movie plays with sound.
-- [ ] Record › Area: the dashed frame stays around the area, and the recording contains only that area, without Brim's frame or notch.
+- [ ] Record › Area: the dashed frame stays around the area, and the recording contains only that area, without Xotch's frame or notch.
 - [ ] Record › Window: macOS's window picker appears; the recording follows that window.
 - [ ] While recording, turn on Microphone in Capture: the next recording asks for microphone access, and denying it records without the microphone and says so.
 - [ ] A capture tile: double-click opens it, right-click offers Quick Look, Copy, Show in Finder, AirDrop, Add to Shelf and Move to Trash, and flicking it up takes it off the shelf without deleting the file.
@@ -116,13 +116,13 @@ These need hardware or situations a script can't create. Tick them before a beta
 
 ## Permission audit
 
-Every prompt, and what triggers it. Launching Brim triggers none.
+Every prompt, and what triggers it. Launching Xotch triggers none.
 
 | Permission | Asked when | Code |
 |---|---|---|
 | Calendars and Reminders | Pressing "Allow Calendar and Reminders" in Calendar | `CalendarService.requestAccess` |
 | Notifications | Starting the first timer | `NotificationPresenter.requestPermissionIfNeeded` |
-| Paste from other apps (macOS 26) | Pressing "Allow" in Clipboard. History only reads the clipboard once macOS is set to always allow Brim | `ClipboardService.requestAccess`, `currentAccess` |
+| Paste from other apps (macOS 26) | Pressing "Allow" in Clipboard. History only reads the clipboard once macOS is set to always allow Xotch | `ClipboardService.requestAccess`, `currentAccess` |
 | Desktop and Documents folders | Only when the Shelf is shown with files from those folders. At launch, expiry checks dates only | `ShelfService.removeMissing` |
 | `~/.claude/settings.json` (not a macOS permission) | Only when you press "Add hook"; a backup is saved first | `ClaudeHookInstaller.install` |
 | System audio recording | Only with Settings › "Move the music bars with the real sound" on, the first time the bars show | `AudioTap.start` |

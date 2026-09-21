@@ -1,31 +1,31 @@
 // MediaRemoteBridge
 //
 // Since macOS 15.4, only Apple-signed processes may use the private
-// MediaRemote framework. /usr/bin/perl is one, so Brim starts
+// MediaRemote framework. /usr/bin/perl is one, so Xotch starts
 //
 //     /usr/bin/perl mediaremote-bridge.pl MediaRemoteBridge.dylib
 //
-// and perl loads this library and calls BrimMediaRemoteRun (see the .pl).
+// and perl loads this library and calls XotchMediaRemoteRun (see the .pl).
 // Same technique as github.com/ungive/mediaremote-adapter (BSD-3), written
-// from scratch for Brim.
+// from scratch for Xotch.
 //
 // Protocol (one line per message):
 //   stdout: JSON object describing the current media; "artwork" (base64) is
 //           only included when the artwork changed.
 //   stdin:  play | pause | toggle | next | previous | seek <seconds> | refresh
-// The bridge exits when stdin closes, so it never outlives Brim.
+// The bridge exits when stdin closes, so it never outlives Xotch.
 
 #import <Foundation/Foundation.h>
 #include <dlfcn.h>
 #include <stdio.h>
 
-typedef void (^BrimInfoBlock)(CFDictionaryRef info);
-typedef void (^BrimBoolBlock)(Boolean value);
-typedef void (^BrimClientBlock)(id client);
+typedef void (^XotchInfoBlock)(CFDictionaryRef info);
+typedef void (^XotchBoolBlock)(Boolean value);
+typedef void (^XotchClientBlock)(id client);
 
-static void (*MRGetNowPlayingInfo)(dispatch_queue_t, BrimInfoBlock);
-static void (*MRGetIsPlaying)(dispatch_queue_t, BrimBoolBlock);
-static void (*MRGetClient)(dispatch_queue_t, BrimClientBlock);
+static void (*MRGetNowPlayingInfo)(dispatch_queue_t, XotchInfoBlock);
+static void (*MRGetIsPlaying)(dispatch_queue_t, XotchBoolBlock);
+static void (*MRGetClient)(dispatch_queue_t, XotchClientBlock);
 static void (*MRRegisterForNotifications)(dispatch_queue_t);
 static Boolean (*MRSendCommand)(int command, CFDictionaryRef options);
 static void (*MRSetElapsedTime)(double seconds);
@@ -128,7 +128,7 @@ static BOOL loadSymbols(void) {
 }
 
 // Called by perl as an XSUB; the two arguments are perl's and are ignored.
-void BrimMediaRemoteRun(void *perlInterpreter, void *perlCV) {
+void XotchMediaRemoteRun(void *perlInterpreter, void *perlCV) {
     (void)perlInterpreter;
     (void)perlCV;
     @autoreleasepool {
