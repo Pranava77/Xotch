@@ -63,7 +63,7 @@ enum AppSettings {
             SettingsKey.openBehavior: OpenBehavior.hover.rawValue,
             SettingsKey.hoverDelay: 150.0,
             SettingsKey.haptics: true,
-            SettingsKey.display: DisplayChoice.automatic,
+            SettingsKey.display: DisplayChoice.all,
             SettingsKey.moduleOrder: "",
             SettingsKey.hiddenModules: "",
             SettingsKey.clipboardHistory: true,

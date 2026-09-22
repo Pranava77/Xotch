@@ -32,6 +32,34 @@ final class NotchPanel: NSPanel {
     override var canBecomeKey: Bool { true }
     override var canBecomeMain: Bool { false }
 
+    /// Called on a click inside the notch, so the controller can keep it open.
+    var onClickInside: (() -> Void)?
+
+    #if DEBUG
+    /// Counted so `scripts/debug.sh status` can show whether clicks arrive here at all.
+    nonisolated(unsafe) static var debugClicks = 0
+    nonisolated(unsafe) static var debugLastClick = "-"
+    nonisolated(unsafe) static var debugPins = 0
+    #endif
+
+    /// `acceptsFirstMouse` on the hosting view lets a click act straight away
+    /// while another app is in front — but it also means the click never makes
+    /// this panel key, so text fields would quietly ignore the keyboard. Take
+    /// focus as soon as someone clicks anything inside the notch.
+    override func sendEvent(_ event: NSEvent) {
+        if event.type == .leftMouseDown {
+            #if DEBUG
+            NotchPanel.debugClicks += 1
+            NotchPanel.debugLastClick = "\(Int(event.locationInWindow.x)),\(Int(event.locationInWindow.y))"
+            #endif
+            if !isKeyWindow {
+                makeKey()
+            }
+            onClickInside?()
+        }
+        super.sendEvent(event)
+    }
+
     // Stop AppKit from pushing the panel below the menu bar.
     override func constrainFrameRect(_ frameRect: NSRect, to screen: NSScreen?) -> NSRect {
         frameRect

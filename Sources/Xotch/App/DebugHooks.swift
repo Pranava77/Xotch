@@ -81,8 +81,24 @@ enum DebugHooks {
             } else if command.hasPrefix("record:"),
                       let target = CaptureTarget(rawValue: String(command.dropFirst("record:".count))) {
                 CaptureService.shared.startRecording(target)
+            } else if command.hasPrefix("click:") {
+                // Either "x,y" in window coordinates, or the name a control
+                // gave itself with `.debugFrame(_:)`.
+                let target = String(command.dropFirst("click:".count))
+                let parts = target.split(separator: ",").compactMap { Double($0) }
+                if parts.count == 2 {
+                    ScreenManager.shared.debugClick(at: CGPoint(x: parts[0], y: parts[1]))
+                } else {
+                    ScreenManager.shared.debugClick(named: target)
+                }
+            } else if command.hasPrefix("type:") {
+                ScreenManager.shared.debugType(String(command.dropFirst("type:".count)))
+            } else if command.hasPrefix("probe:") {
+                ScreenManager.shared.debugProbe(writingTo: String(command.dropFirst("probe:".count)))
             } else if command.hasPrefix("open:") {
-                ScreenManager.shared.debugOpen(moduleID: String(command.dropFirst("open:".count)))
+                let target = String(command.dropFirst("open:".count)).split(separator: "@", maxSplits: 1)
+                ScreenManager.shared.debugOpen(moduleID: String(target[0]),
+                                               screen: target.count > 1 ? Int(target[1]) : nil)
             } else if command.hasPrefix("rebuild:") {
                 let count = Int(command.dropFirst("rebuild:".count)) ?? 1
                 for _ in 0..<count {
@@ -96,6 +112,8 @@ enum DebugHooks {
                     "theme: \(ThemeStore.shared.palette.id) shaders ready=\(ShaderKit.shared.isReady) compile=\(ShaderKit.shared.compileTime.map { "\($0)" } ?? "-") failure=\(ShaderKit.shared.failure ?? "-")",
                     "audio levels: \(AudioLevels.shared.status)",
                     "clipboard access: \(ClipboardService.shared.access)",
+                    "life ui: \(LifeService.debugUI) tasksToday=\(LifeService.shared.openToday) arcs=\(LifeService.shared.liveArcs.count)",
+                    "life draft: \(LifeService.shared.draft.map { "\($0.name.isEmpty ? "untitled" : $0.name) colour=\(String(format: "%02X%02X%02X", Int($0.colour.red * 255), Int($0.colour.green * 255), Int($0.colour.blue * 255))) habits=\($0.habits.count) milestones=\($0.milestones.count)" } ?? "none")",
                     "capture: permission=\(CaptureService.hasScreenPermission) items=\(CaptureService.shared.items.count) recording=\(CaptureService.shared.isRecording) starting=\(CaptureService.shared.isStartingRecording) stopping=\(CaptureService.shared.isStoppingRecording) notice=\(CaptureService.shared.notice.map { "\($0)" } ?? "-") quickLook=\(QLPreviewPanel.sharedPreviewPanelExists() && QLPreviewPanel.shared().isVisible)",
                     String(format: "pointer events: %.1f/s", ScreenManager.shared.debugPointerRate()),
                 ]
@@ -151,6 +169,7 @@ enum DebugHooks {
         lines.append("notes: \(NotesService.shared.notes.count) notes")
         lines += captureSelfTest()
         lines += lifeSelfTest()
+        lines += await lifeUISelfTest()
 
         // Phase 5
         if #available(macOS 15.4, *) {
@@ -325,6 +344,101 @@ enum DebugHooks {
         return lines
     }
 
+    /// Makes a real arc, keeps a habit, ticks a real task, then clears up —
+    /// the same calls the buttons make, so a broken save shows up here.
+    @MainActor
+    private static func lifeRoundTrip() -> [String] {
+        let life = LifeService.shared
+        let arcsBefore = life.arcs.count, tasksBefore = life.tasks.count
+        var arc = Arc(name: "Self-test arc", colour: RGBA(hex: 0x4FA3FF), intent: "Deleted straight away")
+        arc.habits = [Habit(title: "Self-test habit", cadence: .daily)]
+        arc.milestones = [Milestone(title: "Self-test milestone")]
+        life.save(arc)
+        let saved = life.arcs.contains { $0.id == arc.id }
+        guard let stored = life.arcs.first(where: { $0.id == arc.id }), let habit = stored.habits.first else {
+            return ["life round trip: FAILED to save the arc"]
+        }
+        life.toggleCheckIn(habit, in: stored)
+        let kept = life.isKept(habit)
+        let task = life.add("Self-test task", on: LifeService.today, arcID: stored.id)
+        let added = task != nil
+        var ticked = false
+        if let task {
+            life.toggle(task)
+            ticked = life.tasks.first { $0.id == task.id }?.isDone ?? false
+            life.delete(task)
+        }
+        let commits = life.commits(on: LifeService.today)
+        if kept { life.toggleCheckIn(habit, in: stored) }
+        life.delete(stored)
+        let cleaned = life.arcs.count == arcsBefore && life.tasks.count == tasksBefore
+        return ["life round trip: saved=\(saved) checkedIn=\(kept) taskAdded=\(added) taskTicked=\(ticked) commitsSeen=\(commits) cleanedUp=\(cleaned) (all expect true)"]
+    }
+
+    /// Drives Life's buttons with real clicks, the way a person would.
+    ///
+    /// This pass exists because the designer once looked perfect and did
+    /// nothing: a filled overlay ate every click, and once that was fixed,
+    /// saving an arc killed the app on a force-unwrapped binding. Neither
+    /// showed up in a data-layer test.
+    @MainActor
+    private static func lifeUISelfTest() async -> [String] {
+        let life = LifeService.shared
+        let screen = ScreenManager.shared
+        let arcsBefore = life.arcs.count
+        let tasksBefore = life.tasks.count
+        let name = "UI self-test \(Int(Date().timeIntervalSince1970) % 10_000)"
+        func settle() async { try? await Task.sleep(for: .milliseconds(450)) }
+
+        screen.debugOpen(moduleID: "life")
+        await settle()
+        screen.debugClick(named: "life.tab.arcs")
+        await settle()
+        let onArcs = LifeService.debugCurrentTab == "Arcs"
+
+        screen.debugClick(named: "life.newArc")
+        await settle()
+        let opened = life.draft != nil
+
+        // The name field takes focus when the designer appears.
+        screen.debugType(name)
+        await settle()
+        let typed = life.draft?.name == name
+
+        screen.debugClick(named: "life.lockItIn")
+        await settle()
+        let saved = life.arcs.contains { $0.name == name }
+        let closed = life.draft == nil
+
+        // Open one more and back out, which is the other way the draft is
+        // cleared — the path that used to trap.
+        screen.debugClick(named: "life.newArc")
+        await settle()
+        screen.debugClick(named: "life.cancel")
+        await settle()
+        let cancelled = life.draft == nil
+
+        // The week is a planner, not just a view: typing into a column has to
+        // put the to-do on that column's day.
+        screen.debugClick(named: "life.tab.week")
+        await settle()
+        let note = "Week self-test \(Int(Date().timeIntervalSince1970) % 10_000)"
+        let thursday = life.week()[3]
+        screen.debugClick(named: "life.week.add.3")
+        await settle()
+        screen.debugType(note + "\n")
+        await settle()
+        let planned = life.tasks(on: thursday).contains { $0.title == note }
+
+        if let made = life.arcs.first(where: { $0.name == name }) { life.delete(made) }
+        if let made = life.tasks.first(where: { $0.title == note }) { life.delete(made) }
+        let cleaned = life.arcs.count == arcsBefore && life.tasks.count == tasksBefore
+        let passed = onArcs && opened && typed && saved && closed && cancelled && planned && cleaned
+        return ["life ui: arcsTab=\(onArcs) designerOpened=\(opened) typed=\(typed) saved=\(saved) " +
+                "closed=\(closed) cancelled=\(cancelled) weekPlanned=\(planned) cleanedUp=\(cleaned) " +
+                "→ \(passed ? "PASS" : "FAILED")"]
+    }
+
     /// Scoring, streaks, weeks, rollover and the reminder schedule, on sample
     /// data only: no task titles or arcs of your own are read.
     @MainActor
@@ -355,6 +469,7 @@ enum DebugHooks {
             let again = LifeReminders.plans(arcs: life.liveArcs, eveningNudge: 21 * 60)
             lines.append("life reminders stable: \(Set(plans.map(\.identifier)) == Set(again.map(\.identifier)) && plans.count == again.count) (expect true)")
         }
+        lines += lifeRoundTrip()
         let renamed = UserDefaults.standard.bool(forKey: "migration.renamedFromBrim")
         let oldFolder = FileManager.default.fileExists(atPath: FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent("Brim").path)
         lines.append("rename: migrated=\(renamed) oldFolderLeft=\(oldFolder) oldSettings=\(Migration.oldSettings()?.count ?? 0) keys, support=\(Storage.directory.lastPathComponent), hook=\(ClaudeHookInstaller.marker)")
@@ -578,6 +693,9 @@ enum DebugHooks {
                 $0.selectedModuleID = "life"
             }
             LifeService.debugDesigner = false
+            // The designer render left a draft behind, and a draft takes the
+            // module over — without this the day shot draws the designer again.
+            LifeService.shared.draft = nil
             LifeService.debugTab = "Today"
             LifeService.debugSelectedDay = LifeService.calendar.date(byAdding: .day, value: -9, to: LifeService.today)
             render("4-open-life-day") {

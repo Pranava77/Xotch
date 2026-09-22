@@ -32,6 +32,9 @@ final class NotchViewModel {
 
     var closedSize: CGSize { geometry.notchSize }
 
+    /// False when the notch is drawn rather than cut out of the display.
+    var hasHardwareNotch: Bool { geometry.hasHardwareNotch }
+
     /// The selected module's room, kept inside the screen so a wide module
     /// still fits a small display.
     var openSize: CGSize {

@@ -26,14 +26,19 @@ enum Layout {
     /// Size of the open notch body, not counting its shoulders. A module can
     /// ask for more room (see `NotchModule.openSize`); Life does.
     static let openSize = CGSize(width: 600, height: 300)
-    /// Room for a year of squares, the week's columns and an arc beside them.
-    static let wideOpenSize = CGSize(width: 880, height: 460)
+    /// Room for a year of squares, the week's seven columns with their own add
+    /// fields, and an arc card beside the day panel. At 880x460 the graph and
+    /// the day panel together needed 20pt more than they had, and were clipped.
+    static let wideOpenSize = CGSize(width: 1120, height: 580)
     /// Default width of each "ear" beside the hardware notch in the activity state.
     static let earWidth: CGFloat = 78
     /// How much the closed notch grows while the pointer rests on it.
     static let peekGrowth = CGSize(width: 18, height: 6)
-    /// Size of the drawn notch on displays that don't have one.
+    /// Size of the drawn notch on displays that don't have one. A flat width
+    /// looks lost on an ultra-wide, so it's a share of the screen between these.
     static let virtualNotchWidth: CGFloat = 186
+    static let virtualNotchMaxWidth: CGFloat = 280
+    static let virtualNotchShare: CGFloat = 0.09
     static let openShoulder: CGFloat = 14
     static let closedShoulder: CGFloat = 6
     static let dockHeight: CGFloat = 40

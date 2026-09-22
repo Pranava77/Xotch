@@ -21,15 +21,16 @@ private enum LifeTab: String, CaseIterable {
 private struct LifeView: View {
     @State private var tab: LifeTab
     @State private var selectedDay: Date?
-    @State private var editing: Arc?
-    private var life: LifeService { .shared }
+    /// How much room the graph row has, so the squares can fill it.
+    @State private var rowWidth: CGFloat = 0
+    @Bindable private var life = LifeService.shared
 
     init() {
         #if DEBUG
         // Snapshots can open on another tab, with the designer or a past day up.
         _tab = State(initialValue: LifeTab(rawValue: LifeService.debugTab) ?? .today)
         _selectedDay = State(initialValue: LifeService.debugSelectedDay)
-        _editing = State(initialValue: LifeService.debugDesigner ? LifeService.shared.liveArcs.first : nil)
+        if LifeService.debugDesigner { LifeService.shared.draft = LifeService.shared.liveArcs.first }
         #else
         _tab = State(initialValue: .today)
         #endif
@@ -39,18 +40,29 @@ private struct LifeView: View {
         VStack(alignment: .leading, spacing: 10) {
             header
             Group {
-                switch tab {
-                case .today: TodayPane()
-                case .week: WeekPane()
-                case .arcs: ArcsPane(editing: $editing)
+                // The designer takes the module over rather than floating on top
+                // of it: an overlay looked right but never received the clicks.
+                if life.draft != nil {
+                    ArcDesigner(draft: life.draftBinding) { saved in
+                        if let saved { life.save(saved) }
+                        withAnimation(Motion.switchModule) { life.draft = nil }
+                    }
+                } else {
+                    switch tab {
+                    case .today: TodayPane()
+                    case .week: WeekPane()
+                    case .arcs: ArcsPane()
+                    }
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
 
+            if life.draft == nil {
             HStack(alignment: .top, spacing: 16) {
                 LifeGraph(columns: life.graphColumns(),
                           commits: { life.commits(on: $0) },
-                          selected: $selectedDay)
+                          selected: $selectedDay,
+                          cell: graphCell)
                 if let selectedDay {
                     LifeDayPanel(day: selectedDay) {
                         withAnimation(Motion.switchModule) { self.selectedDay = nil }
@@ -59,18 +71,32 @@ private struct LifeView: View {
                 }
                 Spacer(minLength: 0)
             }
-            .frame(height: 100, alignment: .topLeading)
-        }
-        .overlay {
-            if let arc = editing {
-                ArcDesigner(arc: arc) { saved in
-                    if let saved { life.save(saved) }
-                    withAnimation(Motion.switchModule) { editing = nil }
-                }
-                .transition(.scale(scale: 0.97).combined(with: .opacity))
+            // Exactly as tall as the graph draws at this square size.
+            .frame(height: LifeGraph.height(cell: graphCell), alignment: .topLeading)
+            .background(GeometryReader { geometry in
+                Color.clear
+                    .allowsHitTesting(false)
+                    .onAppear { rowWidth = geometry.size.width }
+                    .onChange(of: geometry.size.width) { _, width in rowWidth = width }
+            })
             }
         }
-        .onAppear { life.rolloverIfNeeded() }
+        .onAppear {
+            life.rolloverIfNeeded()
+            #if DEBUG
+            LifeService.debugUI = "appeared tab=\(tab.rawValue)"
+            LifeService.debugCurrentTab = tab.rawValue
+            #endif
+        }
+        #if DEBUG
+        .onChange(of: tab) { _, now in
+            LifeService.debugUI = "tab=\(now.rawValue) at \(Date().formatted(date: .omitted, time: .standard))"
+            LifeService.debugCurrentTab = now.rawValue
+        }
+        .onChange(of: life.draft?.name) { _, now in
+            LifeService.debugUI = "designing “\(now ?? "-")” at \(Date().formatted(date: .omitted, time: .standard))"
+        }
+        #endif
     }
 
     private var header: some View {
@@ -90,9 +116,18 @@ private struct LifeView: View {
                         withAnimation(Motion.switchModule) { tab = item }
                     }
                     .buttonStyle(PillButtonStyle(tint: Theme.ink, prominent: tab == item))
+                    #if DEBUG
+                    .debugFrame("life.tab.\(item.rawValue.lowercased())")
+                    #endif
                 }
             }
         }
+    }
+
+    /// Square size for the graph: as big as the room allows, minus the day
+    /// panel when one is open, so selecting a day doesn't reflow the year.
+    private var graphCell: CGFloat {
+        LifeGraph.cell(fitting: rowWidth - (LifeDayPanel.width + 16), columns: LifeService.graphWeeks)
     }
 
     private var summary: String {
@@ -240,6 +275,7 @@ private struct TaskRow: View {
         .background(RoundedRectangle(cornerRadius: 8).fill(hovering ? Theme.fill : .clear))
         .onHover { hovering = $0 }
         .modifier(TaskDragger(task: task))
+        .contextMenu { TaskMenu(task: task) }
         .accessibilityElement(children: .combine)
         .accessibilityAction(named: "Delete") { life.delete(task) }
     }
@@ -318,8 +354,8 @@ private struct WeekPane: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: 6) {
-            ForEach(life.week(), id: \.self) { day in
-                DayColumn(day: day)
+            ForEach(Array(life.week().enumerated()), id: \.element) { index, day in
+                DayColumn(day: day, index: index)
             }
         }
     }
@@ -327,6 +363,7 @@ private struct WeekPane: View {
 
 private struct DayColumn: View {
     let day: Date
+    let index: Int
     @State private var targeted = false
     private var life: LifeService { .shared }
 
@@ -347,16 +384,26 @@ private struct DayColumn: View {
                     .frame(width: 8, height: 8)
             }
             ForEach(tasks.prefix(6)) { task in
-                HStack(spacing: 4) {
-                    Circle()
-                        .fill(life.arc(id: task.arcID)?.colour.color ?? Theme.tertiaryInk)
-                        .frame(width: 5, height: 5)
-                    Text(task.title)
-                        .font(.system(size: 10))
-                        .strikethrough(task.isDone, color: Theme.tertiaryInk)
-                        .foregroundStyle(task.isDone ? Theme.tertiaryInk : Theme.ink)
-                        .lineLimit(1)
+                Button {
+                    life.toggle(task)
+                } label: {
+                    HStack(spacing: 4) {
+                        Circle()
+                            .fill(life.arc(id: task.arcID)?.colour.color ?? Theme.tertiaryInk)
+                            .frame(width: 5, height: 5)
+                        Text(task.title)
+                            .font(.system(size: 10))
+                            .strikethrough(task.isDone, color: Theme.tertiaryInk)
+                            .foregroundStyle(task.isDone ? Theme.tertiaryInk : Theme.ink)
+                            .lineLimit(1)
+                        Spacer(minLength: 0)
+                    }
+                    .contentShape(Rectangle())
                 }
+                .buttonStyle(.plain)
+                .help("Click to tick off. Right-click to move it.")
+                .modifier(TaskDragger(task: task))
+                .contextMenu { TaskMenu(task: task) }
             }
             if tasks.count > 6 {
                 Text("+\(tasks.count - 6) more")
@@ -364,6 +411,7 @@ private struct DayColumn: View {
                     .foregroundStyle(Theme.tertiaryInk)
             }
             Spacer(minLength: 0)
+            DayAddField(day: day, index: index)
         }
         .padding(6)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -399,6 +447,81 @@ private struct DayColumn: View {
         formatter.dateFormat = "d"
         return formatter
     }()
+}
+
+/// Typing a to-do straight into a day, so the week is something you plan and
+/// not only something you look at. `life.add` reads "#arc" here exactly as it
+/// does on Today, and focus stays put so you can list a day out in one go.
+private struct DayAddField: View {
+    let day: Date
+    let index: Int
+    @State private var typed = ""
+    @State private var hovering = false
+    @FocusState private var focused: Bool
+    @Environment(\.snapshotMode) private var snapshotMode
+    private var life: LifeService { .shared }
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Image(systemName: "plus")
+                .font(.system(size: 9, weight: .bold))
+                .foregroundStyle(awake ? Theme.secondaryInk : Theme.tertiaryInk)
+            if snapshotMode {
+                Text("Add")
+                    .foregroundStyle(Theme.tertiaryInk)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            } else {
+                TextField("Add", text: $typed)
+                    .textFieldStyle(.plain)
+                    .focused($focused)
+                    .onSubmit {
+                        life.add(typed, on: day)
+                        typed = ""
+                        focused = true
+                    }
+            }
+        }
+        .font(.system(size: 10))
+        .padding(.horizontal, 5)
+        .frame(height: 22)
+        .background(RoundedRectangle(cornerRadius: 7).fill(awake ? Theme.raisedFill : .clear))
+        .onHover { hovering = $0 }
+        .help("Add a to-do on \(day.formatted(.dateTime.weekday(.wide))). Type #arc to file it.")
+        .accessibilityLabel("Add a to-do on \(day.formatted(.dateTime.weekday(.wide)))")
+        #if DEBUG
+        .debugFrame("life.week.add.\(index)")
+        #endif
+    }
+
+    /// Quiet until you mean it: seven visible fields would shout over the week.
+    private var awake: Bool { focused || hovering || !typed.isEmpty }
+}
+
+/// Moving a task without dragging: right-click any task, in Today or in the
+/// week's columns. Dragging works too, but this doesn't depend on it.
+private struct TaskMenu: View {
+    let task: LifeTask
+    private var life: LifeService { .shared }
+
+    var body: some View {
+        Button(task.isDone ? "Mark as not done" : "Tick it off") { life.toggle(task) }
+        Divider()
+        ForEach(life.week(), id: \.self) { day in
+            Button(Self.label(for: day)) { life.move(task, to: day) }
+                .disabled(task.day.map { LifeService.day($0) == day } ?? false)
+        }
+        Button("Someday") { life.move(task, to: nil) }
+            .disabled(task.day == nil)
+        Divider()
+        Button("Delete", role: .destructive) { life.delete(task) }
+    }
+
+    private static func label(for day: Date) -> String {
+        let today = LifeService.today
+        if day == today { return "Move to today" }
+        if day == LifeService.calendar.date(byAdding: .day, value: 1, to: today) { return "Move to tomorrow" }
+        return "Move to " + day.formatted(.dateTime.weekday(.wide))
+    }
 }
 
 /// Dragging a task to another day, and a column that takes one. Both are
@@ -446,20 +569,22 @@ private struct DayDropTarget: ViewModifier {
 // MARK: - Arcs
 
 private struct ArcsPane: View {
-    @Binding var editing: Arc?
     private var life: LifeService { .shared }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                SectionLabel(life.liveArcs.isEmpty ? "Arcs" : "\(life.liveArcs.count) arcs running")
+                SectionLabel(life.liveArcs.isEmpty ? "Arcs" : "\(life.liveArcs.count) arc\(life.liveArcs.count == 1 ? "" : "s") running")
                 Spacer()
                 Button {
-                    withAnimation(Motion.switchModule) { editing = Arc(name: "", colour: RGBA(hex: 0xFF9F0A)) }
+                    withAnimation(Motion.switchModule) { life.draft = Arc(name: "", colour: RGBA(hex: 0xFF9F0A)) }
                 } label: {
                     Label("New arc", systemImage: "plus")
                 }
                 .buttonStyle(PillButtonStyle())
+                #if DEBUG
+                .debugFrame("life.newArc")
+                #endif
             }
             if life.liveArcs.isEmpty {
                 EmptyStateView(symbol: "target",
@@ -470,7 +595,7 @@ private struct ArcsPane: View {
                 NotchScroll(axis: .horizontal) {
                     HStack(alignment: .top, spacing: 10) {
                         ForEach(life.liveArcs) { arc in
-                            ArcCard(arc: arc, edit: { withAnimation(Motion.switchModule) { editing = arc } })
+                            ArcCard(arc: arc, edit: { withAnimation(Motion.switchModule) { life.draft = arc } })
                         }
                     }
                 }
@@ -565,7 +690,8 @@ private struct ArcCard: View {
         .frame(maxHeight: .infinity, alignment: .topLeading)
         .clipped()
         .background(RoundedRectangle(cornerRadius: 14).fill(Theme.fill))
-        .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(arc.colour.color.opacity(hovering ? 0.5 : 0.18)))
+        .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(arc.colour.color.opacity(hovering ? 0.5 : 0.18))
+            .allowsHitTesting(false))
         .onHover { hovering = $0 }
     }
 }

@@ -28,8 +28,11 @@ struct ShellView: View {
 
             ZStack(alignment: .top) {
                 if let glow {
+                    // Reaches the far corner whatever the module asked for; a
+                    // fixed radius left a dark corner once the notch grew.
                     RadialGradient(colors: [glow.opacity(palette.glowStrength), glow.opacity(0)],
-                                   center: .topLeading, startRadius: 10, endRadius: 520)
+                                   center: .topLeading, startRadius: 10,
+                                   endRadius: max(520, width * 0.62))
                         .transition(.opacity)
                 }
                 if model.showsActivity, let activity = model.activities.current {
@@ -140,8 +143,10 @@ private struct OpenContent: View {
                 .contentTransition(.opacity)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
+            // Room for the camera housing, which sits over the open notch's
+            // header. A drawn notch has nothing there, so it only needs a gap.
             Color.clear
-                .frame(width: model.closedSize.width)
+                .frame(width: model.hasHardwareNotch ? model.closedSize.width : 24)
 
             HStack(spacing: 2) {
                 Spacer(minLength: 0)

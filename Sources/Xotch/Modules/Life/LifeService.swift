@@ -66,6 +66,10 @@ struct Milestone: Codable, Identifiable, Equatable {
 
 /// A season of your life you've committed to.
 struct Arc: Codable, Identifiable, Equatable {
+    /// Stands in for a draft that has just been cleared. One shared value, so
+    /// the view's identity doesn't churn during that last update.
+    static let placeholder = Arc(name: "", colour: RGBA(hex: 0xFF9F0A))
+
     var id = UUID()
     var name: String
     var colour: RGBA
@@ -126,6 +130,22 @@ final class LifeService {
     /// A year of squares, plus the current part-week.
     static let graphWeeks = 53
 
+    /// The arc being designed. Kept here rather than in the view, so shutting
+    /// the notch mid-edit doesn't throw away what's been typed.
+    var draft: Arc?
+
+    /// A non-optional binding onto `draft`, for the designer.
+    ///
+    /// `Binding($life.draft)` looks like the natural way to do this, but it
+    /// force-unwraps: SwiftUI updates the designer's subtree once more after
+    /// the draft is cleared, and that update traps and kills the app. Saving
+    /// or cancelling an arc did exactly that. This one falls back to a
+    /// placeholder for that last update, and refuses writes once the draft is
+    /// gone so a stray one can't bring it back.
+    var draftBinding: Binding<Arc> {
+        Binding(get: { self.draft ?? Arc.placeholder },
+                set: { if self.draft != nil { self.draft = $0 } })
+    }
     private(set) var tasks: [LifeTask]
     private(set) var arcs: [Arc]
     private(set) var checkIns: [CheckIn]
@@ -516,7 +536,13 @@ final class LifeService {
     #if DEBUG
     /// Snapshot state: which tab opens, whether the designer shows, and a
     /// day picked in the graph.
+    /// What the module is showing, for `scripts/debug.sh status` — the only way
+    /// to see whether a click on a tab or a button actually arrived.
+    nonisolated(unsafe) static var debugUI = "not shown"
     nonisolated(unsafe) static var debugTab = "Today"
+    /// The tab actually on screen, for the UI self-test. `debugTab` above is
+    /// the other direction: which tab a snapshot should open on.
+    nonisolated(unsafe) static var debugCurrentTab = "-"
     nonisolated(unsafe) static var debugDesigner = false
     nonisolated(unsafe) static var debugSelectedDay: Date?
 

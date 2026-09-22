@@ -3,14 +3,23 @@
 # Usage: scripts/debug.sh open [module] | close | activity | activity-media | activity-timer |
 #        activity-claude | activity-download | clear-activities [module] | celebrate | palette | ripple |
 #        theme <id> | mood <mood> | rebuild <count> | status <file> | snapshot <folder> |
-#        effects <folder> | marketing <folder> | selftest <report file>
+#        effects <folder> | marketing <folder> | selftest <report file> |
+#        click <x,y | control name> | type <text> | probe <file>
+#
+# click, type and probe drive the notch's own UI: the events are synthesised
+# inside the app, so no Accessibility permission is involved. A control name
+# comes from `.debugFrame(_:)` — "life.newArc", "life.lockItIn" and so on.
 set -euo pipefail
 
-COMMAND="${1:?usage: scripts/debug.sh open [module]|close|activity|activity-media|activity-timer|activity-claude|activity-download|clear-activities|celebrate|palette|ripple|theme <id>|mood <mood>|rebuild <n>|status <file>|snapshot <folder>|effects <folder>|marketing <folder>|selftest <file>}"
+COMMAND="${1:?usage: scripts/debug.sh open [module]|close|activity|activity-media|activity-timer|activity-claude|activity-download|clear-activities|celebrate|palette|ripple|theme <id>|mood <mood>|rebuild <n>|status <file>|snapshot <folder>|effects <folder>|marketing <folder>|selftest <file>|click <x,y|name>|type <text>|probe <file>}"
 if [[ "$COMMAND" == "open" && -n "${2:-}" ]]; then
   COMMAND="open:$2"
 elif [[ "$COMMAND" == "rebuild" ]]; then
   COMMAND="rebuild:${2:-1}"
+elif [[ "$COMMAND" == "probe" ]]; then
+  REPORT="${2:?probe needs a file path}"
+  mkdir -p "$(dirname "$REPORT")"
+  COMMAND="probe:$(cd "$(dirname "$REPORT")" && pwd)/$(basename "$REPORT")"
 elif [[ "$COMMAND" == "status" ]]; then
   REPORT="${2:?status needs a file path}"
   mkdir -p "$(dirname "$REPORT")"

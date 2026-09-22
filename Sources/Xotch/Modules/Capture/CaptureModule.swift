@@ -311,7 +311,7 @@ private struct CaptureTile: View {
                 }
                 .frame(width: 104, height: 62)
                 .clipShape(RoundedRectangle(cornerRadius: 8))
-                .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(Theme.hairline))
+                .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(Theme.hairline).allowsHitTesting(false))
 
                 HStack(spacing: 4) {
                     Image(systemName: item.isVideo ? "video.fill" : (item.fromMac ? "command" : "camera.fill"))
