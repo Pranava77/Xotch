@@ -94,14 +94,17 @@ If more than one thing is live, the most important shows, and small dots tell yo
 
 <img src="docs/images/module-life.jpg" alt="Life: today's to-dos on the left, today's habits on the right, and a year of squares that darken with what you got done">
 
-Today's to-dos, the week at a glance, and a square for every day that darkens with what you got done — a commit graph, for your life.
+Today's to-dos, a week you can plan a day at a time, and a square for every day that darkens with what you got done — a commit graph, for your life.
 
 **Arcs** are the stretches you're committing to: a name, an end date, the habits you'll keep and the milestones that prove it. A finished to-do counts as one commit, a habit kept as two, a milestone as five, and the streak counts the days you kept going.
 
 - Type a to-do straight into the notch, or press ⌘K anywhere and say what you're doing.
+- Plan the week in the week: every day takes its own to-do, and you can drag one to another day or right-click to move it.
 - Habits can remind you at a time you pick, and you can check in from the notification without opening anything.
 - Unfinished to-dos carry over to the next day rather than quietly disappearing.
 - Click any square to see what you finished that day.
+
+<img src="docs/images/module-life-week.jpg" alt="Life's week: seven day columns, each with its own to-dos and an Add field, above a year of squares">
 
 The notch grows when you open Life, and shrinks back for everything else.
 
@@ -267,6 +270,12 @@ Open Clipboard and choose **Allow**. Then set Xotch to always allow under **Past
 <summary><b>The music bars don't follow the music.</b></summary>
 
 Allow Xotch under **System Settings › Privacy & Security › Screen & System Audio Recording**, or turn real sound off in Settings to keep the built-in animation.
+</details>
+
+<details>
+<summary><b>I don't have a notch.</b></summary>
+
+Then Xotch draws one. On a Mac without a notch — an iMac, a Mac mini, a Studio, an older MacBook — and on any external monitor, it draws a notch in that screen's menu bar, sized to the screen, and everything works the same. By default every display gets one; **Settings › Display** can narrow that to a single screen.
 </details>
 
 <details>

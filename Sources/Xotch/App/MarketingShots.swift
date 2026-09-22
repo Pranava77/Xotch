@@ -66,6 +66,10 @@ enum MarketingShots {
                 }
                 // Life asks for a bigger notch, so its shot needs a bigger scene.
                 save("module-life", open("life"), size: CGSize(width: 1250, height: 650), scale: 1.2)
+                // The week is where Life is planned, so it gets its own shot.
+                LifeService.debugTab = "Week"
+                save("module-life-week", open("life"), size: CGSize(width: 1250, height: 650), scale: 1.2)
+                LifeService.debugReset()
                 let palette = open("home")
                 palette.isPinned = true
                 palette.palette.isOpen = true
