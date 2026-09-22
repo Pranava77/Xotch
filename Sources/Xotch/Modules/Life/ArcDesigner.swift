@@ -4,7 +4,7 @@ import SwiftUI
 /// keep and the milestones that prove it. Sits over the module like the
 /// command palette does, so it never leaves the notch.
 struct ArcDesigner: View {
-    @State private var draft: Arc
+    @Binding var draft: Arc
     @State private var newHabit = ""
     @State private var newMilestone = ""
     @FocusState private var nameFocused: Bool
@@ -12,11 +12,6 @@ struct ArcDesigner: View {
     let done: (Arc?) -> Void
     @Environment(\.snapshotMode) private var snapshotMode
     private var life: LifeService { .shared }
-
-    init(arc: Arc, done: @escaping (Arc?) -> Void) {
-        _draft = State(initialValue: arc)
-        self.done = done
-    }
 
     private static let colours: [UInt32] = [0xFF9F0A, 0x30C26A, 0x4FA3FF, 0xFF5E9C, 0x9B6BFF, 0xFFD60A]
 
@@ -36,9 +31,15 @@ struct ArcDesigner: View {
                 }
                 Button("Cancel") { done(nil) }
                     .buttonStyle(PillButtonStyle(prominent: false))
+                    #if DEBUG
+                    .debugFrame("life.cancel")
+                    #endif
                 Button("Lock it in") { done(draft.name.isEmpty ? nil : draft) }
                     .buttonStyle(PillButtonStyle(tint: draft.colour.color))
                     .disabled(draft.name.trimmingCharacters(in: .whitespaces).isEmpty)
+                    #if DEBUG
+                    .debugFrame("life.lockItIn")
+                    #endif
             }
 
             HStack(alignment: .top, spacing: 14) {
@@ -117,12 +118,19 @@ struct ArcDesigner: View {
         }
         .padding(16)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(Theme.surface))
-        .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(Theme.fill))
-        .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).strokeBorder(Theme.hairline))
-        .shadow(color: .black.opacity(0.45), radius: 20, y: 8)
+        // All of this goes behind the content. As an overlay, the filled shape
+        // sat on top and swallowed every click in the designer — a filled shape
+        // takes hits even at 7% opacity.
+        .background {
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(Theme.surface)
+                .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(Theme.fill))
+                .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).strokeBorder(Theme.hairline))
+        }
+
         // Start in the name field, so you can just type.
         .onAppear { nameFocused = true }
+
     }
 }
 

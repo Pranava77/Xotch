@@ -51,6 +51,22 @@ final class NotchWindowController: NotchActions {
         panel.contentView = host
         panel.orderFrontRegardless()
 
+        // Pressing a button in a module counts as meaning to stay: without this
+        // the notch closes as soon as the pointer drifts off, and whatever was
+        // being filled in — a new arc, a note — goes with it.
+        panel.onClickInside = { [weak self] in
+            MainActor.assumeIsolated {
+                guard let self, self.model.phase == .open else { return }
+                self.closeTask?.cancel()
+                if !self.model.isPinned {
+                    self.model.isPinned = true
+                    #if DEBUG
+                    NotchPanel.debugPins += 1
+                    #endif
+                }
+            }
+        }
+
         // Clicking into a text field makes the panel key: keep it open while typing.
         keyObserver = NotificationCenter.default.addObserver(
             forName: NSWindow.didBecomeKeyNotification, object: panel, queue: .main
@@ -450,6 +466,78 @@ final class NotchWindowController: NotchActions {
     }
 
     #if DEBUG
+    /// Clicks a control that tagged itself with `.debugFrame(_:)`, so a test
+    /// doesn't carry coordinates that go stale the next time the layout moves.
+    @discardableResult
+    func debugClick(named name: String) -> String {
+        guard let frame = DebugFrames.frame(name) else { return "\(name): never laid out" }
+        guard let content = panel.contentView else { return "\(name): no content view" }
+        debugClick(at: CGPoint(x: frame.midX, y: content.bounds.height - frame.midY))
+        return "\(name): clicked"
+    }
+
+    /// Clicks the notch from inside the app: the event never leaves the
+    /// process, so this needs no Accessibility permission and nothing moves
+    /// the pointer on screen.
+    func debugClick(at point: CGPoint) {
+        let time = ProcessInfo.processInfo.systemUptime
+        // Posted to the queue, not handed to `sendEvent`. A text view's
+        // `mouseDown` sits in `nextEventMatchingMask` until the mouse comes
+        // back up, and only pulls from the queue — a mouse-up delivered by
+        // `sendEvent` never reaches it, and the app hangs there with every
+        // later keystroke eaten.
+        for type in [NSEvent.EventType.leftMouseDown, .leftMouseUp] {
+            guard let event = NSEvent.mouseEvent(with: type, location: point, modifierFlags: [],
+                                                 timestamp: time, windowNumber: panel.windowNumber,
+                                                 context: nil, eventNumber: 0, clickCount: 1, pressure: 1) else { continue }
+            NSApp.postEvent(event, atStart: false)
+        }
+    }
+
+    /// Types into the notch from inside the app, to test whether the panel's
+    /// text fields actually receive the keyboard.
+    func debugType(_ text: String) {
+        let time = ProcessInfo.processInfo.systemUptime
+        for character in text {
+            // A newline stands for Return, so a self-test can submit a field.
+            let isReturn = character == "\n"
+            let string = isReturn ? "\r" : String(character)
+            for type in [NSEvent.EventType.keyDown, .keyUp] {
+                guard let event = NSEvent.keyEvent(with: type, location: .zero, modifierFlags: [],
+                                                   timestamp: time, windowNumber: panel.windowNumber,
+                                                   context: nil, characters: string,
+                                                   charactersIgnoringModifiers: string,
+                                                   isARepeat: false, keyCode: isReturn ? 36 : 0) else { continue }
+                NSApp.postEvent(event, atStart: false)
+            }
+        }
+    }
+
+    /// Whoever is taking the keyboard in the notch right now.
+    var debugResponder: String {
+        let responder = panel.firstResponder
+        return responder.map { String(describing: type(of: $0)) } ?? "none"
+    }
+
+    /// What AppKit finds at points down the open notch, to tell "AppKit is
+    /// swallowing the click" apart from "SwiftUI isn't listening".
+    func debugProbe() -> [String] {
+        guard let content = panel.contentView else { return ["no content view"] }
+        let body = model.bodySize
+        let left = (panel.frame.width - body.width) / 2
+        var lines = ["probe: panel \(Int(panel.frame.width))x\(Int(panel.frame.height)) body \(Int(body.width))x\(Int(body.height)) phase=\(model.phase) module=\(model.selectedModuleID)"]
+        for fromTop in stride(from: 10, through: Int(body.height), by: 30) {
+            let y = panel.frame.height - CGFloat(fromTop)
+            let columns = [left + body.width * 0.25, left + body.width * 0.5, left + body.width * 0.92]
+            let found = columns.map { x -> String in
+                let view = content.hitTest(NSPoint(x: x, y: y))
+                return view.map { String(describing: type(of: $0)) } ?? "nil"
+            }
+            lines.append("  \(fromTop)pt from top: \(found.joined(separator: " | "))")
+        }
+        return lines
+    }
+
     var debugBehaviour: String {
         var names: [String] = []
         let behaviour = panel.collectionBehavior
@@ -463,7 +551,7 @@ final class NotchWindowController: NotchActions {
         for (flag, name) in flags where behaviour.contains(flag) {
             names.append(name)
         }
-        return "key=\(panel.isKeyWindow) mouse=\(panel.ignoresMouseEvents ? "ignored" : "taken") level=\(panel.level.rawValue) alpha=\(panel.alphaValue) behaviour=[\(names.joined(separator: ","))] raw=\(behaviour.rawValue)"
+        return "responder=\(debugResponder) clicks=\(NotchPanel.debugClicks)@\(NotchPanel.debugLastClick) pins=\(NotchPanel.debugPins) key=\(panel.isKeyWindow) pinned=\(model.isPinned) mouse=\(panel.ignoresMouseEvents ? "ignored" : "taken") level=\(panel.level.rawValue) alpha=\(panel.alphaValue) behaviour=[\(names.joined(separator: ","))] raw=\(behaviour.rawValue)"
     }
 
     var debugFrames: String {

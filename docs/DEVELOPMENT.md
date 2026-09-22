@@ -34,7 +34,29 @@ With a debug build running:
 ./scripts/debug.sh selftest ~/Desktop/xotch-selftest.txt  # check the real services, write a report
 ./scripts/debug.sh status ~/Desktop/xotch-status.txt      # notch state per display, pointer event rate
 ./scripts/debug.sh rebuild 30        # rebuild the notch windows, for leak checks
+./scripts/debug.sh click life.newArc # click a control by name, or by "x,y" in window coordinates
+./scripts/debug.sh type "Ship it"    # type into whatever has focus; \n is Return
+./scripts/debug.sh probe ~/Desktop/xotch-probe.txt  # hit-test a grid down the open notch
 ```
+
+### Clicking the notch yourself
+
+`click` and `type` synthesise real events and post them to the app's own event
+queue, so a debug build can drive its own UI with no Accessibility permission
+and no robot moving your cursor. Controls tagged with `.debugFrame("life.newArc")`
+can be clicked by name, which survives layout changes; coordinates are a
+fallback, in window points from the bottom left.
+
+Two things to know:
+
+- Post the events, never `panel.sendEvent`. A text view's `mouseDown` waits in
+  `nextEventMatchingMask` for the mouse to come back up and only reads the
+  queue, so a mouse-up handed straight to `sendEvent` never arrives: the app
+  sits in that loop and swallows every later keystroke. It looks exactly like a
+  hang you didn't cause.
+- `selftest` runs a UI pass (`life ui: … → PASS`) that clicks Life's tabs, makes
+  an arc, saves it, opens another and cancels. That pass exists because of the
+  two bugs below.
 
 The project lives on the Desktop, which macOS protects, and every rebuild resets the debug build's permissions. So render product images into a folder outside Desktop, Documents and Downloads, then copy them into `docs/images`. Writing there directly makes Xotch wait for the "access files in your Desktop folder" prompt.
 
@@ -100,8 +122,10 @@ Captures are saved to `~/Pictures/Xotch` by default. Pictures is one of the few 
 `Modules/Life` holds to-dos, arcs and the commit graph in one `life.json`, saved through `Storage` like Notes.
 
 - **Scoring:** a finished to-do is worth 1, a habit check-in 2, a milestone 5 (`LifeScore`). Day totals are cached in `LifeService` and thrown away whenever something changes, so the graph never recomputes a year of history while you type.
+- **The week plans, not just reports:** each day column carries its own add field (`DayAddField`), so a to-do can be typed straight into Thursday; it goes through the same `LifeService.add(_:on:)` as Today, "#arc" filing included, and keeps focus so a day can be listed out in one go. The fields stay quiet — no fill, dimmed plus — until hovered or focused, because seven lit fields would shout over the week.
 - **The graph** is a single SwiftUI `Canvas`: 53 columns × 7 days drawn in one pass, with hit-testing worked out from the point rather than a view per square.
 - **Reminders** (`LifeReminders`) are repeating `UNCalendarNotificationTrigger`s with stable identifiers, so rescheduling replaces them instead of piling up. `plans(arcs:eveningNudge:)` is pure, which is what the self-test checks. The notification carries a **Check in** button, handled without opening the notch.
+- **Clicks in the designer, twice broken:** the arc designer painted its own card with `.overlay(RoundedRectangle(…).fill(Theme.fill))`. A filled SwiftUI shape takes hit tests even at 7% opacity, so the overlay sat on top of the designer and ate every click in it — the tabs above still worked, which made it look like only "the arc" was broken. It's a `.background` now, and decorative strokes elsewhere carry `.allowsHitTesting(false)`. With clicks restored, saving an arc then killed the app outright: the designer was handed `Binding($life.draft)`, and that force-unwrapping binding traps when SwiftUI updates the subtree once more after the draft is cleared (`BindingOperations.ForceUnwrapping.get` in the crash report). `LifeService.draftBinding` falls back to a placeholder for that last update instead. Both are covered by the self-test's UI pass.
 - **A wider notch:** `NotchModule.openSize` lets a module ask for more room; Life asks for `Layout.wideOpenSize` (880×460) and everything else keeps 600×300. The panel is sized once from `Layout.maxOpenSize`, and `NotchViewModel.openSize` clamps to the screen so a small display still fits.
 
 ### Claude Code live status

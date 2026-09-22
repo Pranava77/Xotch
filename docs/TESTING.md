@@ -93,6 +93,7 @@ These need hardware or situations a script can't create. Tick them before a beta
 - [ ] Check in on a habit, then finish a milestone: confetti falls and the mascot cheers.
 - [ ] Set a habit reminder a minute ahead: macOS asks for notifications the first time, the reminder arrives, and **Check in** on it ticks the habit off without opening the notch.
 - [ ] Life › Week: drag a to-do onto another day; it moves and stays there after a relaunch.
+- [ ] Life › Week: type into a day's Add field (try "Ship it #arc"); the to-do lands on that day, filed to the arc, and the field stays focused for the next one.
 - [ ] Leave an unfinished to-do overnight: the next morning it's on today, with "1 carried over" beside the notch.
 - [ ] Click an old square in the graph: it lists what you finished that day, and the × goes back to today.
 - [ ] Switching to Life grows the notch and switching away shrinks it, with no flicker in other modules.

@@ -313,6 +313,25 @@ final class ScreenManager {
         rebuild()
     }
 
+    /// Clicks the notch at a point in the panel's own coordinates.
+    func debugClick(at point: CGPoint) {
+        primary?.debugClick(at: point)
+    }
+
+    @discardableResult
+    func debugClick(named name: String) -> String {
+        primary?.debugClick(named: name) ?? "no notch"
+    }
+
+    func debugType(_ text: String) {
+        primary?.debugType(text)
+    }
+
+    func debugProbe(writingTo path: String) {
+        let lines = primary?.debugProbe() ?? ["no notch"]
+        try? (lines.joined(separator: "\n") + "\n").write(toFile: path, atomically: true, encoding: .utf8)
+    }
+
     func debugPalette() {
         primary?.openPalette(focus: false)
     }
