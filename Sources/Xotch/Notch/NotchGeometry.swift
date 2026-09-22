@@ -17,11 +17,15 @@ struct NotchGeometry {
             notchSize = CGSize(width: screen.frame.width - left.width - right.width,
                                height: topInset)
         } else {
-            // No notch: draw one as tall as the menu bar.
+            // No notch: draw one as tall as the menu bar, so it sits inside it
+            // rather than over the windows below. A fixed width looks right on a
+            // laptop and lost on an ultra-wide, so take a share of the screen.
             hasHardwareNotch = false
             let menuBar = screen.frame.maxY - screen.visibleFrame.maxY
             let height = menuBar > 0 ? menuBar : NSStatusBar.system.thickness
-            notchSize = CGSize(width: Layout.virtualNotchWidth, height: max(height, 24))
+            let width = min(max(screen.frame.width * Layout.virtualNotchShare, Layout.virtualNotchWidth),
+                            Layout.virtualNotchMaxWidth)
+            notchSize = CGSize(width: width.rounded(), height: max(height, 24))
         }
     }
 

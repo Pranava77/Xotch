@@ -147,7 +147,7 @@ Add the hook, and each session shows whether it's working, needs you, or is done
 - **Your modules, your way:**
   - Reorder or hide any module.
   - Choose how the notch opens: hover or click.
-  - Choose which display it appears on. Macs without a notch get one drawn for them.
+  - Choose which display it appears on — every screen by default. A display without a notch gets one drawn in its menu bar, sized to the screen, so an external monitor, an iMac, a Mac mini or a Studio all work.
 
 ## One shortcut for everything
 

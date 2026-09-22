@@ -21,6 +21,8 @@ private enum LifeTab: String, CaseIterable {
 private struct LifeView: View {
     @State private var tab: LifeTab
     @State private var selectedDay: Date?
+    /// How much room the graph row has, so the squares can fill it.
+    @State private var rowWidth: CGFloat = 0
     @Bindable private var life = LifeService.shared
 
     init() {
@@ -59,7 +61,8 @@ private struct LifeView: View {
             HStack(alignment: .top, spacing: 16) {
                 LifeGraph(columns: life.graphColumns(),
                           commits: { life.commits(on: $0) },
-                          selected: $selectedDay)
+                          selected: $selectedDay,
+                          cell: graphCell)
                 if let selectedDay {
                     LifeDayPanel(day: selectedDay) {
                         withAnimation(Motion.switchModule) { self.selectedDay = nil }
@@ -68,7 +71,14 @@ private struct LifeView: View {
                 }
                 Spacer(minLength: 0)
             }
-            .frame(height: 100, alignment: .topLeading)
+            // Exactly as tall as the graph draws at this square size.
+            .frame(height: LifeGraph.height(cell: graphCell), alignment: .topLeading)
+            .background(GeometryReader { geometry in
+                Color.clear
+                    .allowsHitTesting(false)
+                    .onAppear { rowWidth = geometry.size.width }
+                    .onChange(of: geometry.size.width) { _, width in rowWidth = width }
+            })
             }
         }
         .onAppear {
@@ -112,6 +122,12 @@ private struct LifeView: View {
                 }
             }
         }
+    }
+
+    /// Square size for the graph: as big as the room allows, minus the day
+    /// panel when one is open, so selecting a day doesn't reflow the year.
+    private var graphCell: CGFloat {
+        LifeGraph.cell(fitting: rowWidth - (LifeDayPanel.width + 16), columns: LifeService.graphWeeks)
     }
 
     private var summary: String {

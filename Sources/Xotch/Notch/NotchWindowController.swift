@@ -551,7 +551,7 @@ final class NotchWindowController: NotchActions {
         for (flag, name) in flags where behaviour.contains(flag) {
             names.append(name)
         }
-        return "responder=\(debugResponder) clicks=\(NotchPanel.debugClicks)@\(NotchPanel.debugLastClick) pins=\(NotchPanel.debugPins) key=\(panel.isKeyWindow) pinned=\(model.isPinned) mouse=\(panel.ignoresMouseEvents ? "ignored" : "taken") level=\(panel.level.rawValue) alpha=\(panel.alphaValue) behaviour=[\(names.joined(separator: ","))] raw=\(behaviour.rawValue)"
+        return "responder=\(debugResponder) clicks=\(NotchPanel.debugClicks)@\(NotchPanel.debugLastClick) pins=\(NotchPanel.debugPins) key=\(panel.isKeyWindow) visible=\(panel.isVisible) onActiveSpace=\(panel.isOnActiveSpace) pinned=\(model.isPinned) mouse=\(panel.ignoresMouseEvents ? "ignored" : "taken") level=\(panel.level.rawValue) alpha=\(panel.alphaValue) behaviour=[\(names.joined(separator: ","))] raw=\(behaviour.rawValue)"
     }
 
     var debugFrames: String {

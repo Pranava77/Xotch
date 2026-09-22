@@ -8,11 +8,29 @@ struct LifeGraph: View {
     @Binding var selected: Date?
     var tint: Color = Theme.accent
 
-    private let cell: CGFloat = 9
-    private let gap: CGFloat = 2.5
+    /// Square size. The caller sizes it to the room it has, so the year fills
+    /// the notch instead of hugging its left edge.
+    var cell: CGFloat = Self.smallestCell
+
     @State private var hovered: Date?
     @Environment(\.snapshotMode) private var snapshotMode
 
+    static let gap: CGFloat = 2.5
+    static let smallestCell: CGFloat = 9
+    private static let largestCell: CGFloat = 14
+    /// Everything above the squares: the caption row, its spacing, the months.
+    private static let chrome: CGFloat = 12 + 3 + 11
+
+    /// The biggest square that fits a year of weeks in `width`.
+    static func cell(fitting width: CGFloat, columns: Int) -> CGFloat {
+        guard width > 0, columns > 0 else { return smallestCell }
+        return min(max(width / CGFloat(columns) - gap, smallestCell), largestCell)
+    }
+
+    /// How tall the graph draws at that square size.
+    static func height(cell: CGFloat) -> CGFloat { chrome + 7 * (cell + gap) }
+
+    private var gap: CGFloat { Self.gap }
     private var step: CGFloat { cell + gap }
     private var width: CGFloat { CGFloat(columns.count) * step }
     private var height: CGFloat { 7 * step }
@@ -164,6 +182,8 @@ struct LifeGraph: View {
 
 /// What you finished on the day you clicked in the graph.
 struct LifeDayPanel: View {
+    static let width: CGFloat = 230
+
     let day: Date
     let close: () -> Void
     private var life: LifeService { .shared }
@@ -203,7 +223,7 @@ struct LifeDayPanel: View {
                 }
             }
         }
-        .frame(width: 230, alignment: .leading)
+        .frame(width: LifeDayPanel.width, alignment: .leading)
     }
 
     private func row(symbol: String, text: String, tint: Color) -> some View {

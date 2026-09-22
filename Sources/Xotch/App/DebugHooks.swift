@@ -96,7 +96,9 @@ enum DebugHooks {
             } else if command.hasPrefix("probe:") {
                 ScreenManager.shared.debugProbe(writingTo: String(command.dropFirst("probe:".count)))
             } else if command.hasPrefix("open:") {
-                ScreenManager.shared.debugOpen(moduleID: String(command.dropFirst("open:".count)))
+                let target = String(command.dropFirst("open:".count)).split(separator: "@", maxSplits: 1)
+                ScreenManager.shared.debugOpen(moduleID: String(target[0]),
+                                               screen: target.count > 1 ? Int(target[1]) : nil)
             } else if command.hasPrefix("rebuild:") {
                 let count = Int(command.dropFirst("rebuild:".count)) ?? 1
                 for _ in 0..<count {
@@ -691,6 +693,9 @@ enum DebugHooks {
                 $0.selectedModuleID = "life"
             }
             LifeService.debugDesigner = false
+            // The designer render left a draft behind, and a draft takes the
+            // module over — without this the day shot draws the designer again.
+            LifeService.shared.draft = nil
             LifeService.debugTab = "Today"
             LifeService.debugSelectedDay = LifeService.calendar.date(byAdding: .day, value: -9, to: LifeService.today)
             render("4-open-life-day") {

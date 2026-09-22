@@ -81,9 +81,16 @@ final class ScreenManager {
         controllers.values.forEach { $0.select(moduleID: moduleID) }
     }
 
+    /// The notch that ⌘K, `openPrimary()` and the debug commands talk to: the
+    /// built-in one, else the screen carrying the menu bar, else the leftmost.
+    /// Never `controllers.values.first` — a dictionary's order is arbitrary, so
+    /// that picked a different screen after every rebuild.
     private var primary: NotchWindowController? {
-        controllers.values.sorted { $0.screenFrame.minX < $1.screenFrame.minX }
-            .first { $0.hasHardwareNotch } ?? controllers.values.first
+        let byPosition = controllers.values.sorted { $0.screenFrame.minX < $1.screenFrame.minX }
+        if let notched = byPosition.first(where: { $0.hasHardwareNotch }) { return notched }
+        if let menuBar = NSScreen.screens.first,
+           let match = byPosition.first(where: { $0.screenFrame == menuBar.frame }) { return match }
+        return byPosition.first
     }
 
     // MARK: - Displays
@@ -143,7 +150,11 @@ final class ScreenManager {
     /// A display's identity plus its geometry: a resolution change counts as a new display.
     private static func key(for screen: NSScreen) -> String {
         let frame = screen.frame
-        return "\(screen.displayID ?? 0)-\(Int(frame.minX)),\(Int(frame.minY)),\(Int(frame.width))x\(Int(frame.height))-\(Int(screen.safeAreaInsets.top))"
+        // The menu bar's height is in the key too: moving the menu bar to another
+        // display changes neither the frame nor the safe area, but it does change
+        // how tall a drawn notch has to be.
+        let menuBar = frame.maxY - screen.visibleFrame.maxY
+        return "\(screen.displayID ?? 0)-\(Int(frame.minX)),\(Int(frame.minY)),\(Int(frame.width))x\(Int(frame.height))-\(Int(screen.safeAreaInsets.top))-\(Int(menuBar))"
     }
 
     private func targetScreens() -> [NSScreen] {
@@ -346,11 +357,20 @@ final class ScreenManager {
         primary.model.dropCount += 1
     }
 
-    func debugOpen(moduleID: String) {
-        guard let primary else { return }
-        primary.model.selectedModuleID = moduleID
+    /// `open:life` uses the primary notch; `open:life@1` picks a screen by
+    /// position, left to right, so a second display can be tested too.
+    func debugOpen(moduleID: String, screen index: Int? = nil) {
+        let target: NotchWindowController?
+        if let index {
+            let byPosition = controllers.values.sorted { $0.screenFrame.minX < $1.screenFrame.minX }
+            target = index < byPosition.count ? byPosition[index] : nil
+        } else {
+            target = primary
+        }
+        guard let target else { return }
+        target.model.selectedModuleID = moduleID
         // No focus, so measuring doesn't take the keyboard from other apps.
-        primary.open(pinned: true, focus: false)
+        target.open(pinned: true, focus: false)
     }
     #endif
 }

@@ -87,16 +87,21 @@ struct SettingsView: View {
                     .foregroundStyle(.secondary)
             }
 
-            Section("Display") {
+            Section {
                 Picker("Show the notch on", selection: $display) {
-                    Text("Automatic (built-in notch first)").tag(DisplayChoice.automatic)
                     Text("All displays").tag(DisplayChoice.all)
+                    Text("Only the built-in notch").tag(DisplayChoice.automatic)
                     Divider()
                     ForEach(NSScreen.screens.map(\.localizedName), id: \.self) { name in
                         Text(name).tag(DisplayChoice.named(name))
                     }
                 }
                 Toggle("Hide the notch while an app is full screen", isOn: $hideInFullScreen)
+            } header: {
+                Text("Display")
+            } footer: {
+                Text("A display without a notch gets one drawn in its menu bar, sized to the screen — external monitors, an iMac, a Mac mini or a Studio all work.")
+                    .foregroundStyle(.secondary)
             }
 
             Section {
