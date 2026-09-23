@@ -1,5 +1,4 @@
 import SwiftUI
-import UniformTypeIdentifiers
 
 @MainActor
 final class LifeModule: NotchModule {
@@ -14,7 +13,7 @@ final class LifeModule: NotchModule {
 
 private enum LifeTab: String, CaseIterable {
     case today = "Today"
-    case week = "Week"
+    case routine = "Routine"
     case arcs = "Arcs"
 }
 
@@ -50,7 +49,7 @@ private struct LifeView: View {
                 } else {
                     switch tab {
                     case .today: TodayPane()
-                    case .week: WeekPane()
+                    case .routine: RoutinePane()
                     case .arcs: ArcsPane()
                     }
                 }
@@ -274,7 +273,6 @@ private struct TaskRow: View {
         .frame(height: 26)
         .background(RoundedRectangle(cornerRadius: 8).fill(hovering ? Theme.fill : .clear))
         .onHover { hovering = $0 }
-        .modifier(TaskDragger(task: task))
         .contextMenu { TaskMenu(task: task) }
         .accessibilityElement(children: .combine)
         .accessibilityAction(named: "Delete") { life.delete(task) }
@@ -349,91 +347,66 @@ private struct HabitRow: View {
 
 // MARK: - Week
 
-private struct WeekPane: View {
+/// The fixed weekly timetable: the same seven days, every week.
+private struct RoutinePane: View {
     private var life: LifeService { .shared }
 
     var body: some View {
-        HStack(alignment: .top, spacing: 6) {
-            ForEach(Array(life.week().enumerated()), id: \.element) { index, day in
-                DayColumn(day: day, index: index)
+        let days = life.week()
+        let metrics = TimetableMetrics(slots: life.timetable)
+        VStack(spacing: 5) {
+            HStack(spacing: 6) {
+                Color.clear.frame(width: TimetableRuler.width, height: 1)
+                ForEach(days, id: \.self) { day in
+                    DayHeader(day: day)
+                }
+            }
+            NotchScroll {
+                ScrollViewReader { scroll in
+                    HStack(alignment: .top, spacing: 6) {
+                        TimetableRuler(metrics: metrics)
+                        HStack(alignment: .top, spacing: 6) {
+                            ForEach(days, id: \.self) { day in
+                                TimetableLane(day: day, metrics: metrics)
+                            }
+                        }
+                        .background(TimetableHourLines(metrics: metrics))
+                    }
+                    .frame(height: metrics.height, alignment: .top)
+                    .padding(.top, 5)
+                    // Opens where you are in the day, not at seven in the morning.
+                    .onAppear {
+                        let hour = LifeService.calendar.component(.hour, from: Date())
+                        scroll.scrollTo(max(metrics.firstHour, hour - 1), anchor: .top)
+                    }
+                }
+            }
+            HStack(spacing: 6) {
+                Color.clear.frame(width: TimetableRuler.width, height: 1)
+                ForEach(Array(days.enumerated()), id: \.element) { index, day in
+                    DayAddField(day: day, index: index)
+                }
             }
         }
     }
 }
 
-private struct DayColumn: View {
+/// Just the day's name. The routine is the same whichever week you're in, so
+/// there's no date here — only which day is today, to keep you oriented.
+private struct DayHeader: View {
     let day: Date
-    let index: Int
-    @State private var targeted = false
-    private var life: LifeService { .shared }
 
     var body: some View {
         let isToday = day == LifeService.today
-        let tasks = life.tasks(on: day)
-        VStack(alignment: .leading, spacing: 5) {
-            HStack(spacing: 4) {
-                Text(Self.weekday.string(from: day).uppercased())
-                    .font(.system(size: 9, weight: .bold))
-                    .foregroundStyle(isToday ? Theme.accent : Theme.tertiaryInk)
-                Text(Self.dayNumber.string(from: day))
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(isToday ? Theme.ink : Theme.secondaryInk)
-                Spacer(minLength: 0)
-                RoundedRectangle(cornerRadius: 2)
-                    .fill(square(for: life.commits(on: day)))
-                    .frame(width: 8, height: 8)
-            }
-            ForEach(tasks.prefix(6)) { task in
-                Button {
-                    life.toggle(task)
-                } label: {
-                    HStack(spacing: 4) {
-                        Circle()
-                            .fill(life.arc(id: task.arcID)?.colour.color ?? Theme.tertiaryInk)
-                            .frame(width: 5, height: 5)
-                        Text(task.title)
-                            .font(.system(size: 10))
-                            .strikethrough(task.isDone, color: Theme.tertiaryInk)
-                            .foregroundStyle(task.isDone ? Theme.tertiaryInk : Theme.ink)
-                            .lineLimit(1)
-                        Spacer(minLength: 0)
-                    }
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .help("Click to tick off. Right-click to move it.")
-                .modifier(TaskDragger(task: task))
-                .contextMenu { TaskMenu(task: task) }
-            }
-            if tasks.count > 6 {
-                Text("+\(tasks.count - 6) more")
-                    .font(.system(size: 9))
-                    .foregroundStyle(Theme.tertiaryInk)
-            }
-            Spacer(minLength: 0)
-            DayAddField(day: day, index: index)
-        }
-        .padding(6)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .background(RoundedRectangle(cornerRadius: 10)
-            .fill(targeted ? Theme.selection : (isToday ? Theme.fill : Theme.ink.opacity(0.03))))
-        .overlay {
-            if isToday {
-                RoundedRectangle(cornerRadius: 10).strokeBorder(Theme.accent.opacity(0.5))
-            }
-        }
-        .modifier(DayDropTarget(day: day, targeted: $targeted))
-        .accessibilityElement(children: .combine)
-    }
-
-    private func square(for commits: Int) -> Color {
-        switch LifeScore.level(of: commits) {
-        case 0: Theme.ink.opacity(0.1)
-        case 1: Theme.accent.opacity(0.35)
-        case 2: Theme.accent.opacity(0.6)
-        case 3: Theme.accent.opacity(0.8)
-        default: Theme.accent
-        }
+        Text(Self.weekday.string(from: day).uppercased())
+            .font(.system(size: 9, weight: .bold))
+            .foregroundStyle(isToday ? Theme.accent : Theme.tertiaryInk)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 4)
+            .background(RoundedRectangle(cornerRadius: 7)
+                .fill(isToday ? Theme.fill : Theme.ink.opacity(0.03)))
+            .accessibilityLabel(day.formatted(.dateTime.weekday(.wide)) + (isToday ? ", today" : ""))
     }
 
     private static let weekday: DateFormatter = {
@@ -441,17 +414,8 @@ private struct DayColumn: View {
         formatter.dateFormat = "EEE"
         return formatter
     }()
-
-    private static let dayNumber: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "d"
-        return formatter
-    }()
 }
 
-/// Typing a to-do straight into a day, so the week is something you plan and
-/// not only something you look at. `life.add` reads "#arc" here exactly as it
-/// does on Today, and focus stays put so you can list a day out in one go.
 private struct DayAddField: View {
     let day: Date
     let index: Int
@@ -471,11 +435,11 @@ private struct DayAddField: View {
                     .foregroundStyle(Theme.tertiaryInk)
                     .frame(maxWidth: .infinity, alignment: .leading)
             } else {
-                TextField("Add", text: $typed)
+                TextField(awake ? "9:30 Maths" : "Add", text: $typed)
                     .textFieldStyle(.plain)
                     .focused($focused)
                     .onSubmit {
-                        life.add(typed, on: day)
+                        life.addSlot(typed, weekday: LifeService.calendar.component(.weekday, from: day))
                         typed = ""
                         focused = true
                     }
@@ -486,10 +450,10 @@ private struct DayAddField: View {
         .frame(height: 22)
         .background(RoundedRectangle(cornerRadius: 7).fill(awake ? Theme.raisedFill : .clear))
         .onHover { hovering = $0 }
-        .help("Add a to-do on \(day.formatted(.dateTime.weekday(.wide))). Type #arc to file it.")
-        .accessibilityLabel("Add a to-do on \(day.formatted(.dateTime.weekday(.wide)))")
+        .help("Add to every \(day.formatted(.dateTime.weekday(.wide))): a time, then what it is — \"9:30 Maths\", \"14:00-15:30 Lab\", \"#arc\" to file it.")
+        .accessibilityLabel("Add to the routine on \(day.formatted(.dateTime.weekday(.wide)))")
         #if DEBUG
-        .debugFrame("life.week.add.\(index)")
+        .debugFrame("life.routine.add.\(index)")
         #endif
     }
 
@@ -497,9 +461,8 @@ private struct DayAddField: View {
     private var awake: Bool { focused || hovering || !typed.isEmpty }
 }
 
-/// Moving a task without dragging: right-click any task, in Today or in the
-/// week's columns. Dragging works too, but this doesn't depend on it.
-private struct TaskMenu: View {
+/// Moving a task: right-click it on Today and pick a day.
+struct TaskMenu: View {
     let task: LifeTask
     private var life: LifeService { .shared }
 
@@ -521,48 +484,6 @@ private struct TaskMenu: View {
         if day == today { return "Move to today" }
         if day == LifeService.calendar.date(byAdding: .day, value: 1, to: today) { return "Move to tomorrow" }
         return "Move to " + day.formatted(.dateTime.weekday(.wide))
-    }
-}
-
-/// Dragging a task to another day, and a column that takes one. Both are
-/// AppKit underneath, which ImageRenderer can't draw, so snapshots skip them.
-private struct TaskDragger: ViewModifier {
-    let task: LifeTask
-    @Environment(\.snapshotMode) private var snapshotMode
-
-    func body(content: Content) -> some View {
-        if snapshotMode {
-            content
-        } else {
-            content.onDrag { NSItemProvider(object: task.id.uuidString as NSString) }
-        }
-    }
-}
-
-private struct DayDropTarget: ViewModifier {
-    let day: Date
-    @Binding var targeted: Bool
-    @Environment(\.snapshotMode) private var snapshotMode
-
-    func body(content: Content) -> some View {
-        if snapshotMode {
-            content
-        } else {
-            content.onDrop(of: [UTType.text], isTargeted: $targeted) { providers in
-                guard let provider = providers.first else { return false }
-                let day = day
-                _ = provider.loadObject(ofClass: NSString.self) { value, _ in
-                    guard let string = value as? String, let id = UUID(uuidString: string) else { return }
-                    DispatchQueue.main.async {
-                        MainActor.assumeIsolated {
-                            guard let task = LifeService.shared.tasks.first(where: { $0.id == id }) else { return }
-                            LifeService.shared.move(task, to: day)
-                        }
-                    }
-                }
-                return true
-            }
-        }
     }
 }
 

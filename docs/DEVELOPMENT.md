@@ -49,11 +49,19 @@ fallback, in window points from the bottom left.
 
 Two things to know:
 
-- Post the events, never `panel.sendEvent`. A text view's `mouseDown` waits in
-  `nextEventMatchingMask` for the mouse to come back up and only reads the
-  queue, so a mouse-up handed straight to `sendEvent` never arrives: the app
-  sits in that loop and swallows every later keystroke. It looks exactly like a
-  hang you didn't cause.
+- The order is: **queue a mouse-up, send the mouse-down, send a mouse-up.** Each
+  part earns its place. A text view's `mouseDown` sits in
+  `nextEventMatchingMask` until the mouse comes back up and only reads the
+  queue, so without the queued up the app hangs there eating keystrokes.
+  `NSApp.postEvent` alone doesn't work either: the window server maps the
+  location through the window's own geometry and the click lands somewhere else
+  (measured: about 0.9× the panel, so a button at the top right was missed by
+  50pt). And a button whose up arrives anywhere but on it reads the press as
+  dragged off and does nothing, which is why the sent up matters.
+- `.debugFrame(_:)` ignores anything laid out in `snapshotMode`. Snapshots and
+  marketing shots build the whole shell inside an `ImageRenderer`, off screen
+  and in its own coordinate space; recording those frames pointed every later
+  click at a window that wasn't there.
 - `selftest` runs a UI pass (`life ui: … → PASS`) that clicks Life's tabs, makes
   an arc, saves it, opens another and cancels. That pass exists because of the
   two bugs below.
@@ -122,7 +130,9 @@ Captures are saved to `~/Pictures/Xotch` by default. Pictures is one of the few 
 `Modules/Life` holds to-dos, arcs and the commit graph in one `life.json`, saved through `Storage` like Notes.
 
 - **Scoring:** a finished to-do is worth 1, a habit check-in 2, a milestone 5 (`LifeScore`). Day totals are cached in `LifeService` and thrown away whenever something changes, so the graph never recomputes a year of history while you type.
-- **The week plans, not just reports:** each day column carries its own add field (`DayAddField`), so a to-do can be typed straight into Thursday; it goes through the same `LifeService.add(_:on:)` as Today, "#arc" filing included, and keeps focus so a day can be listed out in one go. The fields stay quiet — no fill, dimmed plus — until hovered or focused, because seven lit fields would shout over the week.
+- **Routine is a timetable:** hours down the left, the seven days across, and the fixed weekly slots in between (`TimetableEntry`: a weekday, minutes after midnight, a length — no date, because it is the same every week). `TimetableMetrics` owns the minutes-to-points maths and widens the usual 07:00–23:00 to hold anything outside it; `TimetableGrid.swift` holds the ruler, the hour lines and the blocks. Blocks are ordinary views positioned with `.offset`, not a `Canvas` like `LifeGraph`, because they need context menus and clicks. Only the routine is drawn there: to-dos live on Today, and the tab shows weekday names rather than dates, since the week it describes is every week.
+- **A time is only a time when it says so:** `LifeTime.parse` reads "9:30 Maths", "14:00-15:30 Lab" and "2pm dentist", but a bare number is never a time — "30 push-ups" would be a slot at half past midnight otherwise. It needs two digits after a colon or a dot, or an am/pm. Times are `Int` minutes after midnight, matching `Habit.reminder`; nothing in Life stores a wall-clock `Date`.
+- **Typing builds the routine:** each day carries an add field (`DayAddField`) that writes a weekly slot through `addSlot(_:weekday:)`, "#arc" filing included, and keeps focus so a day can be listed out in one go. The fields stay quiet — no fill, dimmed plus, "Add" rather than the example — until hovered or focused, because seven lit fields would shout over the week. A slot is reference only: never ticked, never a commit, so the graph keeps meaning what it meant.
 - **The graph** is a single SwiftUI `Canvas`: 53 columns × 7 days drawn in one pass, with hit-testing worked out from the point rather than a view per square.
 - **Reminders** (`LifeReminders`) are repeating `UNCalendarNotificationTrigger`s with stable identifiers, so rescheduling replaces them instead of piling up. `plans(arcs:eveningNudge:)` is pure, which is what the self-test checks. The notification carries a **Check in** button, handled without opening the notch.
 - **Clicks in the designer, twice broken:** the arc designer painted its own card with `.overlay(RoundedRectangle(…).fill(Theme.fill))`. A filled SwiftUI shape takes hit tests even at 7% opacity, so the overlay sat on top of the designer and ate every click in it — the tabs above still worked, which made it look like only "the arc" was broken. It's a `.background` now, and decorative strokes elsewhere carry `.allowsHitTesting(false)`. With clicks restored, saving an arc then killed the app outright: the designer was handed `Binding($life.draft)`, and that force-unwrapping binding traps when SwiftUI updates the subtree once more after the draft is cleared (`BindingOperations.ForceUnwrapping.get` in the crash report). `LifeService.draftBinding` falls back to a placeholder for that last update instead. Both are covered by the self-test's UI pass.

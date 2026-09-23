@@ -94,17 +94,17 @@ If more than one thing is live, the most important shows, and small dots tell yo
 
 <img src="docs/images/module-life.jpg" alt="Life: today's to-dos on the left, today's habits on the right, and a year of squares that darken with what you got done">
 
-Today's to-dos, a week you can plan a day at a time, and a square for every day that darkens with what you got done — a commit graph, for your life.
+Today's to-dos, the week you keep every week as a timetable, and a square for every day that darkens with what you got done — a commit graph, for your life.
 
 **Arcs** are the stretches you're committing to: a name, an end date, the habits you'll keep and the milestones that prove it. A finished to-do counts as one commit, a habit kept as two, a milestone as five, and the streak counts the days you kept going.
 
 - Type a to-do straight into the notch, or press ⌘K anywhere and say what you're doing.
-- Plan the week in the week: every day takes its own to-do, and you can drag one to another day or right-click to move it.
+- **Routine** is your week as a timetable: hours down the side, your days across it. Type "9:30 Maths" or "14:00-15:30 Lab" into a day and it's there every week, in its arc's colour. Today is marked, with a line where you are in it.
 - Habits can remind you at a time you pick, and you can check in from the notification without opening anything.
 - Unfinished to-dos carry over to the next day rather than quietly disappearing.
 - Click any square to see what you finished that day.
 
-<img src="docs/images/module-life-week.jpg" alt="Life's week: seven day columns, each with its own to-dos and an Add field, above a year of squares">
+<img src="docs/images/module-life-routine.jpg" alt="Life's routine: hours down the side, the week's fixed slots laid out across seven days, today marked">
 
 The notch grows when you open Life, and shrinks back for everything else.
 

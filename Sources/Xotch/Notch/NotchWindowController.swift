@@ -472,8 +472,11 @@ final class NotchWindowController: NotchActions {
     func debugClick(named name: String) -> String {
         guard let frame = DebugFrames.frame(name) else { return "\(name): never laid out" }
         guard let content = panel.contentView else { return "\(name): no content view" }
-        debugClick(at: CGPoint(x: frame.midX, y: content.bounds.height - frame.midY))
-        return "\(name): clicked"
+        let point = CGPoint(x: frame.midX, y: content.bounds.height - frame.midY)
+        debugClick(at: point)
+        return String(format: "%@: global %.0f,%.0f in %.0fx%.0f → window %.0f,%.0f",
+                      name, frame.midX, frame.midY, content.bounds.width, content.bounds.height,
+                      point.x, point.y)
     }
 
     /// Clicks the notch from inside the app: the event never leaves the
@@ -481,17 +484,29 @@ final class NotchWindowController: NotchActions {
     /// the pointer on screen.
     func debugClick(at point: CGPoint) {
         let time = ProcessInfo.processInfo.systemUptime
-        // Posted to the queue, not handed to `sendEvent`. A text view's
-        // `mouseDown` sits in `nextEventMatchingMask` until the mouse comes
-        // back up, and only pulls from the queue — a mouse-up delivered by
-        // `sendEvent` never reaches it, and the app hangs there with every
-        // later keystroke eaten.
-        for type in [NSEvent.EventType.leftMouseDown, .leftMouseUp] {
-            guard let event = NSEvent.mouseEvent(with: type, location: point, modifierFlags: [],
-                                                 timestamp: time, windowNumber: panel.windowNumber,
-                                                 context: nil, eventNumber: 0, clickCount: 1, pressure: 1) else { continue }
-            NSApp.postEvent(event, atStart: false)
+        // The mouse-up goes in the queue and the mouse-down is handed straight
+        // to the window, in that order, which sounds backwards and isn't:
+        //
+        // - A text view's `mouseDown` sits in `nextEventMatchingMask` until the
+        //   mouse comes back up, and only reads the queue. Give it the up
+        //   through `sendEvent` and it waits there for ever, eating keystrokes.
+        // - Posting the down instead goes through the window server, which maps
+        //   the location through the window's own geometry and lands the click
+        //   somewhere else entirely.
+        //
+        // So: queue the up first, then send the down. Whatever the down starts
+        // finds the up already waiting, and the coordinates stay exact.
+        func event(_ type: NSEvent.EventType) -> NSEvent? {
+            NSEvent.mouseEvent(with: type, location: point, modifierFlags: [], timestamp: time,
+                               windowNumber: panel.windowNumber, context: nil,
+                               eventNumber: 0, clickCount: 1, pressure: type == .leftMouseDown ? 1 : 0)
         }
+        // The queued up is only there to end a tracking loop; the sent one is
+        // what finishes the click. A button needs its up at the same point as
+        // its down or it reads the press as dragged off and does nothing.
+        if let up = event(.leftMouseUp) { NSApp.postEvent(up, atStart: false) }
+        if let down = event(.leftMouseDown) { panel.sendEvent(down) }
+        if let up = event(.leftMouseUp) { panel.sendEvent(up) }
     }
 
     /// Types into the notch from inside the app, to test whether the panel's
@@ -551,7 +566,7 @@ final class NotchWindowController: NotchActions {
         for (flag, name) in flags where behaviour.contains(flag) {
             names.append(name)
         }
-        return "responder=\(debugResponder) clicks=\(NotchPanel.debugClicks)@\(NotchPanel.debugLastClick) pins=\(NotchPanel.debugPins) key=\(panel.isKeyWindow) visible=\(panel.isVisible) onActiveSpace=\(panel.isOnActiveSpace) pinned=\(model.isPinned) mouse=\(panel.ignoresMouseEvents ? "ignored" : "taken") level=\(panel.level.rawValue) alpha=\(panel.alphaValue) behaviour=[\(names.joined(separator: ","))] raw=\(behaviour.rawValue)"
+        return "responder=\(debugResponder) clicks=\(NotchPanel.debugClicks)@\(NotchPanel.debugLastClick) pins=\(NotchPanel.debugPins) content=\(panel.contentView.map { "\(Int($0.frame.width))x\(Int($0.frame.height)) bounds \(Int($0.bounds.width))x\(Int($0.bounds.height))" } ?? "-") backing=\(panel.backingScaleFactor) named=\(NotchPanel.debugNamedClick) key=\(panel.isKeyWindow) visible=\(panel.isVisible) onActiveSpace=\(panel.isOnActiveSpace) pinned=\(model.isPinned) mouse=\(panel.ignoresMouseEvents ? "ignored" : "taken") level=\(panel.level.rawValue) alpha=\(panel.alphaValue) behaviour=[\(names.joined(separator: ","))] raw=\(behaviour.rawValue)"
     }
 
     var debugFrames: String {
