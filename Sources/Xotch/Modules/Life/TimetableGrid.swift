@@ -17,10 +17,10 @@ struct TimetableMetrics: Equatable {
 
     /// Widens the usual 07:00–23:00 to hold anything earlier or later, so a
     /// 06:00 lecture or a midnight shift is never hidden above the scroll.
-    init(slots: [TimetableEntry], tasks: [LifeTask]) {
+    init(slots: [TimetableEntry]) {
         var first = Self.defaultFirstHour
         var last = Self.defaultLastHour
-        for start in slots.map(\.start) + tasks.compactMap(\.time) {
+        for start in slots.map(\.start) {
             first = min(first, start / 60)
             last = max(last, start / 60 + 1)
         }
@@ -88,29 +88,18 @@ struct TimetableHourLines: View {
 struct TimetableLane: View {
     let day: Date
     let metrics: TimetableMetrics
-    /// True while the routine is being edited: the slots come forward and the
-    /// to-dos step back, so what you're changing is what you can see.
-    let routineForward: Bool
     private var life: LifeService { .shared }
 
     var body: some View {
         let isToday = day == LifeService.today
         let slots = life.slots(onDay: day)
-        let timed = life.tasks(on: day).filter { $0.time != nil }
 
         ZStack(alignment: .topLeading) {
             ForEach(slots) { slot in
-                SlotBlock(slot: slot, forward: routineForward)
+                SlotBlock(slot: slot)
                     .frame(height: metrics.height(ofMinutes: slot.length), alignment: .top)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .offset(y: metrics.y(slot.start))
-            }
-            ForEach(timed) { task in
-                TimedTaskBlock(task: task, faded: routineForward)
-                    // Inset, so the routine block it sits on still shows its edge.
-                    .padding(.leading, slots.isEmpty ? 0 : 9)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .offset(y: metrics.y(task.time ?? 0))
             }
             if isToday {
                 NowLine(metrics: metrics)
@@ -146,7 +135,6 @@ private struct NowLine: View {
 /// A fixed weekly slot: the same every week, and never ticked.
 private struct SlotBlock: View {
     let slot: TimetableEntry
-    let forward: Bool
     private var life: LifeService { .shared }
 
     var body: some View {
@@ -163,14 +151,14 @@ private struct SlotBlock: View {
             }
             Spacer(minLength: 0)
         }
-        .foregroundStyle(Theme.ink.opacity(forward ? 0.9 : 0.55))
+        .foregroundStyle(Theme.ink.opacity(0.9))
         .padding(.horizontal, 5)
         .padding(.vertical, 3)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .background(RoundedRectangle(cornerRadius: 6).fill(tint.opacity(forward ? 0.3 : 0.14)))
+        .background(RoundedRectangle(cornerRadius: 6).fill(tint.opacity(0.28)))
         .overlay(alignment: .leading) {
             RoundedRectangle(cornerRadius: 1)
-                .fill(tint.opacity(forward ? 0.9 : 0.5))
+                .fill(tint.opacity(0.9))
                 .frame(width: 2)
                 .padding(.vertical, 2)
                 .allowsHitTesting(false)
@@ -180,38 +168,6 @@ private struct SlotBlock: View {
         .contextMenu { SlotMenu(slot: slot) }
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(slot.title), \(LifeTime.span(start: slot.start, length: slot.length)), every week")
-    }
-}
-
-/// A to-do that happens at a time this week, in front of the routine.
-private struct TimedTaskBlock: View {
-    let task: LifeTask
-    let faded: Bool
-    private var life: LifeService { .shared }
-
-    var body: some View {
-        let tint = life.arc(id: task.arcID)?.colour.color ?? Theme.accent
-        Button { life.toggle(task) } label: {
-            HStack(spacing: 4) {
-                Circle()
-                    .fill(task.isDone ? Theme.tertiaryInk : tint)
-                    .frame(width: 5, height: 5)
-                Text(task.title)
-                    .font(.system(size: 10))
-                    .strikethrough(task.isDone, color: Theme.tertiaryInk)
-                    .lineLimit(1)
-                Spacer(minLength: 0)
-            }
-            .padding(.horizontal, 5)
-            .frame(height: 18)
-            .background(RoundedRectangle(cornerRadius: 5).fill(Theme.raisedFill))
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .opacity(faded ? 0.45 : 1)
-        .help("\(LifeTime.label(task.time ?? 0)) · click to tick off, right-click to move it")
-        .modifier(TaskDragger(task: task))
-        .contextMenu { TaskMenu(task: task) }
     }
 }
 

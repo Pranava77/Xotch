@@ -425,24 +425,12 @@ enum DebugHooks {
         await settle()
         let cancelled = life.draft == nil
 
-        // The week is a planner, not just a view: typing into a column has to
-        // put the to-do on that column's day.
-        screen.debugClick(named: "life.tab.week")
-        await settle()
-        let note = "Week self-test \(Int(Date().timeIntervalSince1970) % 10_000)"
-        let thursday = life.week()[3]
-        screen.debugClick(named: "life.week.add.3")
-        await settle()
-        screen.debugType(note + "\n")
-        await settle()
-        let planned = life.tasks(on: thursday).contains { $0.title == note }
-
         // The routine: a slot typed into Monday is the same every week.
         let slotsBefore = life.timetable.count
-        screen.debugClick(named: "life.routine")
+        screen.debugClick(named: "life.tab.routine")
         await settle()
         let lesson = "Self-test lesson \(Int(Date().timeIntervalSince1970) % 10_000)"
-        screen.debugClick(named: "life.week.add.0")
+        screen.debugClick(named: "life.routine.add.0")
         await settle()
         screen.debugType("9:30 " + lesson + "\n")
         await settle()
@@ -450,17 +438,14 @@ enum DebugHooks {
         let slot = life.timetable.first { $0.title == lesson }
         let scheduled = slot?.weekday == monday && slot?.start == 570 && slot?.length == 60
         if let slot { life.remove(slot) }
-        screen.debugClick(named: "life.routine")
-        await settle()
         let routineClean = life.timetable.count == slotsBefore
 
         if let made = life.arcs.first(where: { $0.name == name }) { life.delete(made) }
-        if let made = life.tasks.first(where: { $0.title == note }) { life.delete(made) }
         let cleaned = life.arcs.count == arcsBefore && life.tasks.count == tasksBefore
-        let passed = onArcs && opened && typed && saved && closed && cancelled && planned
+        let passed = onArcs && opened && typed && saved && closed && cancelled
             && scheduled && routineClean && cleaned
         return ["life ui: arcsTab=\(onArcs) designerOpened=\(opened) typed=\(typed) saved=\(saved) " +
-                "closed=\(closed) cancelled=\(cancelled) weekPlanned=\(planned) " +
+                "closed=\(closed) cancelled=\(cancelled) " +
                 "routineSlot=\(scheduled) routineClean=\(routineClean) cleanedUp=\(cleaned) " +
                 "→ \(passed ? "PASS" : "FAILED")"]
     }
@@ -717,7 +702,7 @@ enum DebugHooks {
             }
         }
         withSampleData {
-            for tab in ["Week", "Arcs"] {
+            for tab in ["Routine", "Arcs"] {
                 LifeService.debugTab = tab
                 render("4-open-life-\(tab.lowercased())") {
                     $0.phase = .open

@@ -15,10 +15,6 @@ struct LifeTask: Codable, Identifiable, Equatable {
     var done: Date?
     var arcID: UUID?
     var created = Date()
-    /// Minutes after midnight, or nil when it's just something to do that day.
-    /// Optional on purpose: an older life.json has no such key, and a
-    /// non-optional would fail decoding and take the whole file with it.
-    var time: Int?
 
     var isDone: Bool { done != nil }
 }
@@ -380,13 +376,7 @@ final class LifeService {
                 text = String(text[..<hash.lowerBound]).trimmingCharacters(in: .whitespaces)
             }
         }
-        // "9:30 dentist" lands at half nine; "30 push-ups" stays 30 push-ups.
-        let reading = LifeTime.parse(text)
-        if reading.start != nil, !reading.rest.isEmpty {
-            text = reading.rest
-        }
-        let task = LifeTask(title: text, day: day.map(Self.day), arcID: arcID,
-                            time: reading.rest.isEmpty ? nil : reading.start)
+        let task = LifeTask(title: text, day: day.map(Self.day), arcID: arcID)
         withAnimation(Motion.switchModule) { tasks.insert(task, at: 0) }
         invalidate()
         saver.schedule()
@@ -447,19 +437,6 @@ final class LifeService {
         // No invalidate(): the routine isn't scored, so no day's total changed.
         withAnimation(Motion.switchModule) { timetable.append(entry) }
         saver.schedule()
-        Haptics.tick()
-        return entry
-    }
-
-    /// Promotes a to-do into the routine: the same thing, every week.
-    @discardableResult
-    func makeWeekly(_ task: LifeTask) -> TimetableEntry? {
-        guard let time = task.time, let day = task.day else { return nil }
-        let entry = TimetableEntry(title: task.title,
-                                   weekday: Self.calendar.component(.weekday, from: day),
-                                   start: time, length: LifeTime.defaultLength, arcID: task.arcID)
-        withAnimation(Motion.switchModule) { timetable.append(entry) }
-        delete(task)
         Haptics.tick()
         return entry
     }
