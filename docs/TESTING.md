@@ -95,6 +95,9 @@ These need hardware or situations a script can't create. Tick them before a beta
 - [ ] Life › Week: drag a to-do onto another day; it moves and stays there after a relaunch.
 - [ ] Two displays: both show a notch, the one without hardware gets a drawn pill in its menu bar sized to that screen, and `scripts/debug.sh status` lists both. Unplug and replug the second display, then move the menu bar between displays in System Settings: both come back correctly sized.
 - [ ] Life on a display without a notch: the open header has no empty gap where the camera housing would be.
+- [ ] Life › Week: turn on Routine, type "9:30 Maths" into Monday and "14:00-15:30 Lab" into Tuesday. Both land at the right hour, the right length, and are still there next week and after a relaunch.
+- [ ] Life › Week with Routine off: "3pm dentist" lands at 15:00 in front of the routine; "buy milk" sits in the day's header strip; "30 push-ups" stays a to-do called "30 push-ups" rather than a slot at half past midnight.
+- [ ] Life › Week: right-click a slot to move it to another day or remove it; right-click a timed to-do and choose "Every week".
 - [ ] Life › Week: type into a day's Add field (try "Ship it #arc"); the to-do lands on that day, filed to the arc, and the field stays focused for the next one.
 - [ ] Leave an unfinished to-do overnight: the next morning it's on today, with "1 carried over" beside the notch.
 - [ ] Click an old square in the graph: it lists what you finished that day, and the × goes back to today.

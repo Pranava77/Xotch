@@ -15,6 +15,10 @@ struct LifeTask: Codable, Identifiable, Equatable {
     var done: Date?
     var arcID: UUID?
     var created = Date()
+    /// Minutes after midnight, or nil when it's just something to do that day.
+    /// Optional on purpose: an older life.json has no such key, and a
+    /// non-optional would fail decoding and take the whole file with it.
+    var time: Int?
 
     var isDone: Bool { done != nil }
 }
@@ -105,6 +109,22 @@ enum LifeScore {
     }
 }
 
+/// One slot in the fixed weekly timetable: the same every week, which is why
+/// it holds a weekday rather than a date. Reference only — it is never ticked
+/// and never scores a commit.
+struct TimetableEntry: Codable, Identifiable, Equatable {
+    var id = UUID()
+    var title: String
+    /// `Calendar` numbering, 1 = Sunday, as `LifeService.calendar` uses.
+    var weekday: Int
+    /// Minutes after midnight, like `Habit.reminder`.
+    var start: Int
+    var length: Int = LifeTime.defaultLength
+    var arcID: UUID?
+
+    var end: Int { start + length }
+}
+
 struct ArcProgress {
     var milestonesDone: Int
     var milestonesTotal: Int
@@ -120,6 +140,7 @@ private struct LifeFile: Codable {
     var tasks: [LifeTask] = []
     var arcs: [Arc] = []
     var checkIns: [CheckIn] = []
+    var timetable: [TimetableEntry] = []
     var lastRollover: Date?
 }
 
@@ -149,13 +170,16 @@ final class LifeService {
     private(set) var tasks: [LifeTask]
     private(set) var arcs: [Arc]
     private(set) var checkIns: [CheckIn]
+    /// The fixed weekly timetable: the shape of a normal week.
+    private(set) var timetable: [TimetableEntry]
     @ObservationIgnored private var lastRollover: Date?
     /// Commits per day, worked out once and kept until something changes.
     @ObservationIgnored private var scoreCache: [Date: Int]?
     @ObservationIgnored private var midnightTask: Task<Void, Never>?
     @ObservationIgnored private lazy var saver = SaveScheduler { [weak self] in
         guard let self else { return }
-        Storage.save(LifeFile(tasks: tasks, arcs: arcs, checkIns: checkIns, lastRollover: lastRollover), to: "life.json")
+        Storage.save(LifeFile(tasks: tasks, arcs: arcs, checkIns: checkIns, timetable: timetable,
+                              lastRollover: lastRollover), to: "life.json")
     }
 
     init() {
@@ -163,6 +187,7 @@ final class LifeService {
         tasks = file.tasks
         arcs = file.arcs
         checkIns = file.checkIns
+        timetable = file.timetable
         lastRollover = file.lastRollover
     }
 
@@ -355,7 +380,13 @@ final class LifeService {
                 text = String(text[..<hash.lowerBound]).trimmingCharacters(in: .whitespaces)
             }
         }
-        let task = LifeTask(title: text, day: day.map(Self.day), arcID: arcID)
+        // "9:30 dentist" lands at half nine; "30 push-ups" stays 30 push-ups.
+        let reading = LifeTime.parse(text)
+        if reading.start != nil, !reading.rest.isEmpty {
+            text = reading.rest
+        }
+        let task = LifeTask(title: text, day: day.map(Self.day), arcID: arcID,
+                            time: reading.rest.isEmpty ? nil : reading.start)
         withAnimation(Motion.switchModule) { tasks.insert(task, at: 0) }
         invalidate()
         saver.schedule()
@@ -382,6 +413,67 @@ final class LifeService {
         withAnimation(Motion.switchModule) { tasks[index].day = day.map(Self.day) }
         saver.schedule()
         Haptics.tick()
+    }
+
+    // MARK: - The fixed weekly timetable
+
+    /// That weekday's slots, earliest first. Weekday is `Calendar` numbering.
+    func slots(on weekday: Int) -> [TimetableEntry] {
+        timetable.filter { $0.weekday == weekday }.sorted { $0.start < $1.start }
+    }
+
+    func slots(onDay day: Date) -> [TimetableEntry] {
+        slots(on: Self.calendar.component(.weekday, from: day))
+    }
+
+    /// "9:30 Maths" or "14:00-15:30 Lab #uni". Without a time there's nothing
+    /// to place, so nothing is added.
+    @discardableResult
+    func addSlot(_ text: String, weekday: Int) -> TimetableEntry? {
+        var title = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !title.isEmpty else { return nil }
+        var arcID: UUID?
+        if let hash = title.range(of: "#", options: .backwards) {
+            let tag = String(title[hash.upperBound...]).trimmingCharacters(in: .whitespaces).lowercased()
+            if !tag.isEmpty, let match = liveArcs.first(where: { $0.name.lowercased().hasPrefix(tag) }) {
+                arcID = match.id
+                title = String(title[..<hash.lowerBound]).trimmingCharacters(in: .whitespaces)
+            }
+        }
+        let reading = LifeTime.parse(title)
+        guard let start = reading.start, !reading.rest.isEmpty else { return nil }
+        let entry = TimetableEntry(title: reading.rest, weekday: weekday, start: start,
+                                   length: reading.length ?? LifeTime.defaultLength, arcID: arcID)
+        // No invalidate(): the routine isn't scored, so no day's total changed.
+        withAnimation(Motion.switchModule) { timetable.append(entry) }
+        saver.schedule()
+        Haptics.tick()
+        return entry
+    }
+
+    /// Promotes a to-do into the routine: the same thing, every week.
+    @discardableResult
+    func makeWeekly(_ task: LifeTask) -> TimetableEntry? {
+        guard let time = task.time, let day = task.day else { return nil }
+        let entry = TimetableEntry(title: task.title,
+                                   weekday: Self.calendar.component(.weekday, from: day),
+                                   start: time, length: LifeTime.defaultLength, arcID: task.arcID)
+        withAnimation(Motion.switchModule) { timetable.append(entry) }
+        delete(task)
+        Haptics.tick()
+        return entry
+    }
+
+    func move(_ entry: TimetableEntry, to weekday: Int) {
+        guard let index = timetable.firstIndex(where: { $0.id == entry.id }) else { return }
+        withAnimation(Motion.switchModule) { timetable[index].weekday = weekday }
+        saver.schedule()
+        Haptics.tick()
+    }
+
+    func remove(_ entry: TimetableEntry) {
+        withAnimation(Motion.switchModule) { timetable.removeAll { $0.id == entry.id } }
+        saver.schedule()
     }
 
     func delete(_ task: LifeTask) {
@@ -553,15 +645,15 @@ final class LifeService {
     }
 
     func withSample(_ body: () -> Void) {
-        let saved = (tasks, arcs, checkIns, scoreCache)
-        (tasks, arcs, checkIns) = Self.sample()
+        let saved = (tasks, arcs, checkIns, timetable, scoreCache)
+        (tasks, arcs, checkIns, timetable) = Self.sample()
         scoreCache = nil
         body()
-        (tasks, arcs, checkIns, scoreCache) = saved
+        (tasks, arcs, checkIns, timetable, scoreCache) = saved
     }
 
     /// A made-up year, so snapshots never show anyone's real life.
-    static func sample() -> ([LifeTask], [Arc], [CheckIn]) {
+    static func sample() -> ([LifeTask], [Arc], [CheckIn], [TimetableEntry]) {
         let calendar = Self.calendar
         let today = Self.today
         func date(_ daysAgo: Int) -> Date { calendar.date(byAdding: .day, value: -daysAgo, to: today) ?? today }
@@ -617,7 +709,19 @@ final class LifeService {
                 tasks.append(LifeTask(title: "Done", day: day, done: day.addingTimeInterval(36_000)))
             }
         }
-        return (tasks, arcs, checkIns)
+        // A week that looks like someone's, for snapshots.
+        let routine: [(Int, Int, Int, String, UUID?)] = [
+            (2, 9 * 60, 60, "Standup", ship.id), (3, 9 * 60, 60, "Standup", ship.id),
+            (4, 9 * 60, 60, "Standup", ship.id), (5, 9 * 60, 60, "Standup", ship.id),
+            (2, 10 * 60 + 30, 120, "Deep work", ship.id), (4, 10 * 60 + 30, 120, "Deep work", ship.id),
+            (3, 14 * 60, 90, "Design review", nil), (6, 11 * 60, 90, "Long run", strong.id),
+            (2, 18 * 60 + 30, 60, "Gym", strong.id), (5, 18 * 60 + 30, 60, "Gym", strong.id),
+            (1, 20 * 60, 60, "Read", read.id),
+        ]
+        let timetable = routine.map {
+            TimetableEntry(title: $0.3, weekday: $0.0, start: $0.1, length: $0.2, arcID: $0.4)
+        }
+        return (tasks, arcs, checkIns, timetable)
     }
     #endif
 }

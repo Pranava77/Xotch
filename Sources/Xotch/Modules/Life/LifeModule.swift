@@ -23,6 +23,8 @@ private struct LifeView: View {
     @State private var selectedDay: Date?
     /// How much room the graph row has, so the squares can fill it.
     @State private var rowWidth: CGFloat = 0
+    /// Editing the routine rather than this week.
+    @State private var routine = false
     @Bindable private var life = LifeService.shared
 
     init() {
@@ -50,7 +52,7 @@ private struct LifeView: View {
                 } else {
                     switch tab {
                     case .today: TodayPane()
-                    case .week: WeekPane()
+                    case .week: WeekPane(routine: routine)
                     case .arcs: ArcsPane()
                     }
                 }
@@ -111,6 +113,18 @@ private struct LifeView: View {
             Spacer(minLength: 8)
             StreakBadge(streak: life.streak)
             HStack(spacing: 4) {
+                if tab == .week {
+                    Button {
+                        withAnimation(Motion.switchModule) { routine.toggle() }
+                    } label: {
+                        Label("Routine", systemImage: "repeat")
+                    }
+                    .buttonStyle(PillButtonStyle(tint: Theme.ink, prominent: routine))
+                    .help("Build the fixed weekly timetable: what happens every week, at the same time.")
+                    #if DEBUG
+                    .debugFrame("life.routine")
+                    #endif
+                }
                 ForEach(LifeTab.allCases, id: \.self) { item in
                     Button(item.rawValue) {
                         withAnimation(Motion.switchModule) { tab = item }
@@ -350,27 +364,72 @@ private struct HabitRow: View {
 // MARK: - Week
 
 private struct WeekPane: View {
+    /// True while the routine is being edited rather than the week itself.
+    let routine: Bool
     private var life: LifeService { .shared }
 
+    /// Room for the day with the most untimed to-dos, so every card matches.
+    private func headerHeight(_ days: [Date]) -> CGFloat {
+        let counts = days.map { life.tasks(on: $0).filter { $0.time == nil }.count }
+        let rows = min(counts.max() ?? 0, 2)
+        let overflow = (counts.max() ?? 0) > 2 ? 12.0 : 0
+        return 22 + CGFloat(rows) * 14 + overflow
+    }
+
     var body: some View {
-        HStack(alignment: .top, spacing: 6) {
-            ForEach(Array(life.week().enumerated()), id: \.element) { index, day in
-                DayColumn(day: day, index: index)
+        let days = life.week()
+        let timed = days.flatMap { life.tasks(on: $0) }.filter { $0.time != nil }
+        let metrics = TimetableMetrics(slots: life.timetable, tasks: timed)
+        VStack(spacing: 5) {
+            // The days, and whatever has no time attached to it.
+            HStack(alignment: .top, spacing: 6) {
+                Color.clear.frame(width: TimetableRuler.width, height: 1)
+                ForEach(days, id: \.self) { day in
+                    DayHeader(day: day, height: headerHeight(days))
+                }
+            }
+            NotchScroll {
+                ScrollViewReader { scroll in
+                    HStack(alignment: .top, spacing: 6) {
+                        TimetableRuler(metrics: metrics)
+                        HStack(alignment: .top, spacing: 6) {
+                            ForEach(days, id: \.self) { day in
+                                TimetableLane(day: day, metrics: metrics, routineForward: routine)
+                            }
+                        }
+                        .background(TimetableHourLines(metrics: metrics))
+                    }
+                    .frame(height: metrics.height, alignment: .top)
+                    .padding(.top, 5)
+                    // Opens where you are in the day, not at seven in the morning.
+                    .onAppear {
+                        let hour = LifeService.calendar.component(.hour, from: Date())
+                        scroll.scrollTo(max(metrics.firstHour, hour - 1), anchor: .top)
+                    }
+                }
+            }
+            HStack(spacing: 6) {
+                Color.clear.frame(width: TimetableRuler.width, height: 1)
+                ForEach(Array(days.enumerated()), id: \.element) { index, day in
+                    DayAddField(day: day, index: index, routine: routine)
+                }
             }
         }
     }
 }
 
-private struct DayColumn: View {
+/// A day's name, what it scored, and the to-dos that aren't at any time.
+private struct DayHeader: View {
     let day: Date
-    let index: Int
+    /// The same for every day of the week, so the row isn't ragged.
+    let height: CGFloat
     @State private var targeted = false
     private var life: LifeService { .shared }
 
     var body: some View {
         let isToday = day == LifeService.today
-        let tasks = life.tasks(on: day)
-        VStack(alignment: .leading, spacing: 5) {
+        let untimed = life.tasks(on: day).filter { $0.time == nil }
+        VStack(alignment: .leading, spacing: 3) {
             HStack(spacing: 4) {
                 Text(Self.weekday.string(from: day).uppercased())
                     .font(.system(size: 9, weight: .bold))
@@ -383,43 +442,25 @@ private struct DayColumn: View {
                     .fill(square(for: life.commits(on: day)))
                     .frame(width: 8, height: 8)
             }
-            ForEach(tasks.prefix(6)) { task in
-                Button {
-                    life.toggle(task)
-                } label: {
-                    HStack(spacing: 4) {
-                        Circle()
-                            .fill(life.arc(id: task.arcID)?.colour.color ?? Theme.tertiaryInk)
-                            .frame(width: 5, height: 5)
-                        Text(task.title)
-                            .font(.system(size: 10))
-                            .strikethrough(task.isDone, color: Theme.tertiaryInk)
-                            .foregroundStyle(task.isDone ? Theme.tertiaryInk : Theme.ink)
-                            .lineLimit(1)
-                        Spacer(minLength: 0)
-                    }
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .help("Click to tick off. Right-click to move it.")
-                .modifier(TaskDragger(task: task))
-                .contextMenu { TaskMenu(task: task) }
+            ForEach(untimed.prefix(2)) { task in
+                UntimedRow(task: task)
             }
-            if tasks.count > 6 {
-                Text("+\(tasks.count - 6) more")
+            if untimed.count > 2 {
+                Text("+\(untimed.count - 2) more")
                     .font(.system(size: 9))
                     .foregroundStyle(Theme.tertiaryInk)
             }
-            Spacer(minLength: 0)
-            DayAddField(day: day, index: index)
         }
-        .padding(6)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .background(RoundedRectangle(cornerRadius: 10)
+        .padding(.horizontal, 5)
+        .padding(.vertical, 4)
+        .frame(maxWidth: .infinity, minHeight: height, alignment: .topLeading)
+        .background(RoundedRectangle(cornerRadius: 8)
             .fill(targeted ? Theme.selection : (isToday ? Theme.fill : Theme.ink.opacity(0.03))))
         .overlay {
             if isToday {
-                RoundedRectangle(cornerRadius: 10).strokeBorder(Theme.accent.opacity(0.5))
+                RoundedRectangle(cornerRadius: 8)
+                    .strokeBorder(Theme.accent.opacity(0.5))
+                    .allowsHitTesting(false)
             }
         }
         .modifier(DayDropTarget(day: day, targeted: $targeted))
@@ -449,12 +490,38 @@ private struct DayColumn: View {
     }()
 }
 
-/// Typing a to-do straight into a day, so the week is something you plan and
-/// not only something you look at. `life.add` reads "#arc" here exactly as it
-/// does on Today, and focus stays put so you can list a day out in one go.
+/// A to-do with no time on it, above the grid rather than in it.
+private struct UntimedRow: View {
+    let task: LifeTask
+    private var life: LifeService { .shared }
+
+    var body: some View {
+        Button { life.toggle(task) } label: {
+            HStack(spacing: 4) {
+                Circle()
+                    .fill(life.arc(id: task.arcID)?.colour.color ?? Theme.tertiaryInk)
+                    .frame(width: 5, height: 5)
+                Text(task.title)
+                    .font(.system(size: 10))
+                    .strikethrough(task.isDone, color: Theme.tertiaryInk)
+                    .foregroundStyle(task.isDone ? Theme.tertiaryInk : Theme.ink)
+                    .lineLimit(1)
+                Spacer(minLength: 0)
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .help("Click to tick off. Right-click to move it, or give it a time.")
+        .modifier(TaskDragger(task: task))
+        .contextMenu { TaskMenu(task: task) }
+    }
+}
+
 private struct DayAddField: View {
     let day: Date
     let index: Int
+    /// Typing builds the fixed weekly routine rather than this week's list.
+    let routine: Bool
     @State private var typed = ""
     @State private var hovering = false
     @FocusState private var focused: Bool
@@ -467,15 +534,19 @@ private struct DayAddField: View {
                 .font(.system(size: 9, weight: .bold))
                 .foregroundStyle(awake ? Theme.secondaryInk : Theme.tertiaryInk)
             if snapshotMode {
-                Text("Add")
+                Text(routine ? "9:30 Maths" : "Add")
                     .foregroundStyle(Theme.tertiaryInk)
                     .frame(maxWidth: .infinity, alignment: .leading)
             } else {
-                TextField("Add", text: $typed)
+                TextField(routine ? "9:30 Maths" : "Add", text: $typed)
                     .textFieldStyle(.plain)
                     .focused($focused)
                     .onSubmit {
-                        life.add(typed, on: day)
+                        if routine {
+                            life.addSlot(typed, weekday: LifeService.calendar.component(.weekday, from: day))
+                        } else {
+                            life.add(typed, on: day)
+                        }
                         typed = ""
                         focused = true
                     }
@@ -486,8 +557,12 @@ private struct DayAddField: View {
         .frame(height: 22)
         .background(RoundedRectangle(cornerRadius: 7).fill(awake ? Theme.raisedFill : .clear))
         .onHover { hovering = $0 }
-        .help("Add a to-do on \(day.formatted(.dateTime.weekday(.wide))). Type #arc to file it.")
-        .accessibilityLabel("Add a to-do on \(day.formatted(.dateTime.weekday(.wide)))")
+        .help(routine
+              ? "Add to every \(day.formatted(.dateTime.weekday(.wide))): a time, then what it is — \"9:30 Maths\", \"14:00-15:30 Lab\"."
+              : "Add a to-do on \(day.formatted(.dateTime.weekday(.wide))). Type a time to place it, #arc to file it.")
+        .accessibilityLabel(routine
+                            ? "Add to the routine on \(day.formatted(.dateTime.weekday(.wide)))"
+                            : "Add a to-do on \(day.formatted(.dateTime.weekday(.wide)))")
         #if DEBUG
         .debugFrame("life.week.add.\(index)")
         #endif
@@ -499,12 +574,15 @@ private struct DayAddField: View {
 
 /// Moving a task without dragging: right-click any task, in Today or in the
 /// week's columns. Dragging works too, but this doesn't depend on it.
-private struct TaskMenu: View {
+struct TaskMenu: View {
     let task: LifeTask
     private var life: LifeService { .shared }
 
     var body: some View {
         Button(task.isDone ? "Mark as not done" : "Tick it off") { life.toggle(task) }
+        if task.time != nil, task.day != nil {
+            Button("Every week") { life.makeWeekly(task) }
+        }
         Divider()
         ForEach(life.week(), id: \.self) { day in
             Button(Self.label(for: day)) { life.move(task, to: day) }
@@ -526,7 +604,7 @@ private struct TaskMenu: View {
 
 /// Dragging a task to another day, and a column that takes one. Both are
 /// AppKit underneath, which ImageRenderer can't draw, so snapshots skip them.
-private struct TaskDragger: ViewModifier {
+struct TaskDragger: ViewModifier {
     let task: LifeTask
     @Environment(\.snapshotMode) private var snapshotMode
 
@@ -539,7 +617,7 @@ private struct TaskDragger: ViewModifier {
     }
 }
 
-private struct DayDropTarget: ViewModifier {
+struct DayDropTarget: ViewModifier {
     let day: Date
     @Binding var targeted: Bool
     @Environment(\.snapshotMode) private var snapshotMode

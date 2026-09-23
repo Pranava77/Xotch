@@ -16,11 +16,27 @@ enum Storage {
         return url
     }
 
+    /// Files that were there but wouldn't decode, kept for the status report.
+    nonisolated(unsafe) private(set) static var damaged: [String] = []
+
     static func load<Value: Decodable>(_ type: Value.Type, from name: String) -> Value? {
-        guard let data = try? Data(contentsOf: directory.appendingPathComponent(name)) else { return nil }
+        let url = directory.appendingPathComponent(name)
+        guard let data = try? Data(contentsOf: url) else { return nil }
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .secondsSince1970
-        return try? decoder.decode(Value.self, from: data)
+        if let value = try? decoder.decode(Value.self, from: data) { return value }
+
+        // The file is there and won't decode. Returning nil on its own would
+        // be quiet data loss: the app starts empty and the first save writes
+        // that emptiness over the top. Move it aside instead, so whatever went
+        // wrong costs a rename rather than everything you'd written.
+        let stamp = Int(Date().timeIntervalSince1970)
+        let aside = url.deletingPathExtension()
+            .appendingPathExtension("damaged-\(stamp)")
+            .appendingPathExtension(url.pathExtension)
+        try? FileManager.default.moveItem(at: url, to: aside)
+        damaged.append(aside.lastPathComponent)
+        return nil
     }
 
     static func save<Value: Encodable>(_ value: Value, to name: String) {

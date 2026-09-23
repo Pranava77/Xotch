@@ -89,7 +89,7 @@ enum DebugHooks {
                 if parts.count == 2 {
                     ScreenManager.shared.debugClick(at: CGPoint(x: parts[0], y: parts[1]))
                 } else {
-                    ScreenManager.shared.debugClick(named: target)
+                    NotchPanel.debugNamedClick = ScreenManager.shared.debugClick(named: target)
                 }
             } else if command.hasPrefix("type:") {
                 ScreenManager.shared.debugType(String(command.dropFirst("type:".count)))
@@ -113,6 +113,13 @@ enum DebugHooks {
                     "audio levels: \(AudioLevels.shared.status)",
                     "clipboard access: \(ClipboardService.shared.access)",
                     "life ui: \(LifeService.debugUI) tasksToday=\(LifeService.shared.openToday) arcs=\(LifeService.shared.liveArcs.count)",
+                    Storage.damaged.isEmpty ? "store: all files read cleanly"
+                        : "store: DAMAGED, kept as \(Storage.damaged.joined(separator: ", "))",
+                    "life routine: \(LifeService.shared.timetable.count) slots" +
+                    (LifeService.shared.timetable.isEmpty ? "" : " [" + LifeService.shared.timetable
+                        .sorted { ($0.weekday, $0.start) < ($1.weekday, $1.start) }
+                        .map { "\($0.weekday)@\(LifeTime.label($0.start))+\($0.length)" }
+                        .joined(separator: " ") + "]"),
                     "life draft: \(LifeService.shared.draft.map { "\($0.name.isEmpty ? "untitled" : $0.name) colour=\(String(format: "%02X%02X%02X", Int($0.colour.red * 255), Int($0.colour.green * 255), Int($0.colour.blue * 255))) habits=\($0.habits.count) milestones=\($0.milestones.count)" } ?? "none")",
                     "capture: permission=\(CaptureService.hasScreenPermission) items=\(CaptureService.shared.items.count) recording=\(CaptureService.shared.isRecording) starting=\(CaptureService.shared.isStartingRecording) stopping=\(CaptureService.shared.isStoppingRecording) notice=\(CaptureService.shared.notice.map { "\($0)" } ?? "-") quickLook=\(QLPreviewPanel.sharedPreviewPanelExists() && QLPreviewPanel.shared().isVisible)",
                     String(format: "pointer events: %.1f/s", ScreenManager.shared.debugPointerRate()),
@@ -430,12 +437,31 @@ enum DebugHooks {
         await settle()
         let planned = life.tasks(on: thursday).contains { $0.title == note }
 
+        // The routine: a slot typed into Monday is the same every week.
+        let slotsBefore = life.timetable.count
+        screen.debugClick(named: "life.routine")
+        await settle()
+        let lesson = "Self-test lesson \(Int(Date().timeIntervalSince1970) % 10_000)"
+        screen.debugClick(named: "life.week.add.0")
+        await settle()
+        screen.debugType("9:30 " + lesson + "\n")
+        await settle()
+        let monday = LifeService.calendar.component(.weekday, from: life.week()[0])
+        let slot = life.timetable.first { $0.title == lesson }
+        let scheduled = slot?.weekday == monday && slot?.start == 570 && slot?.length == 60
+        if let slot { life.remove(slot) }
+        screen.debugClick(named: "life.routine")
+        await settle()
+        let routineClean = life.timetable.count == slotsBefore
+
         if let made = life.arcs.first(where: { $0.name == name }) { life.delete(made) }
         if let made = life.tasks.first(where: { $0.title == note }) { life.delete(made) }
         let cleaned = life.arcs.count == arcsBefore && life.tasks.count == tasksBefore
-        let passed = onArcs && opened && typed && saved && closed && cancelled && planned && cleaned
+        let passed = onArcs && opened && typed && saved && closed && cancelled && planned
+            && scheduled && routineClean && cleaned
         return ["life ui: arcsTab=\(onArcs) designerOpened=\(opened) typed=\(typed) saved=\(saved) " +
-                "closed=\(closed) cancelled=\(cancelled) weekPlanned=\(planned) cleanedUp=\(cleaned) " +
+                "closed=\(closed) cancelled=\(cancelled) weekPlanned=\(planned) " +
+                "routineSlot=\(scheduled) routineClean=\(routineClean) cleanedUp=\(cleaned) " +
                 "→ \(passed ? "PASS" : "FAILED")"]
     }
 
@@ -448,6 +474,18 @@ enum DebugHooks {
         let levels = [0, 1, 2, 3, 5, 6, 9, 10, 40].map { "\($0)→\(LifeScore.level(of: $0))" }
         lines.append("life levels: \(levels.joined(separator: " ")) (expect 0→0 1→1 2→1 3→2 5→2 6→3 9→3 10→4 40→4)")
         lines.append("life weights: task=\(LifeScore.task) checkIn=\(LifeScore.checkIn) milestone=\(LifeScore.milestone)")
+
+        // Reading a time off the front of what you typed, and — just as
+        // important — not reading one where there isn't one.
+        let readings = ["9:30 standup", "14:00-15:30 deep work", "2pm dentist", "9.30 lab",
+                        "30 push-ups", "9:30", "9amazing idea"].map { text -> String in
+            let reading = LifeTime.parse(text)
+            return "\(text)→\(reading.start.map(String.init) ?? "-")/\(reading.length.map(String.init) ?? "-")/\(reading.rest)"
+        }
+        lines.append("life times: \(readings.joined(separator: " "))")
+        lines.append("life times expect: 9:30 standup→570/-/standup 14:00-15:30 deep work→840/90/deep work " +
+                     "2pm dentist→840/-/dentist 9.30 lab→570/-/lab 30 push-ups→-/-/30 push-ups " +
+                     "9:30→570/-/ 9amazing idea→-/-/9amazing idea")
 
         life.withSample {
             let today = LifeService.today

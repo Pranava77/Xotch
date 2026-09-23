@@ -39,6 +39,7 @@ final class NotchPanel: NSPanel {
     /// Counted so `scripts/debug.sh status` can show whether clicks arrive here at all.
     nonisolated(unsafe) static var debugClicks = 0
     nonisolated(unsafe) static var debugLastClick = "-"
+    nonisolated(unsafe) static var debugNamedClick = "-"
     nonisolated(unsafe) static var debugPins = 0
     #endif
 
