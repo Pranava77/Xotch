@@ -19,11 +19,6 @@ enum SettingsKey {
     static let haptics = "hapticsEnabled"
     static let retroSounds = "retroSounds"
     static let mediaKeysHUD = "mediaKeysHUD"
-    static let hudEnabled = "hudEnabled"
-    static let hudCPU = "hudCPU"
-    static let hudMemory = "hudMemory"
-    static let hudNetwork = "hudNetwork"
-    static let hudBattery = "hudBattery"
     static let retroSoundVolume = "retroSoundVolume"
     static let display = "displayChoice"
     static let moduleOrder = "moduleOrder"
@@ -33,7 +28,6 @@ enum SettingsKey {
     static let shelfExpiryHours = "shelfExpiryHours"
     static let hideInFullScreen = "hideInFullScreen"
     static let scrollForVolume = "scrollForVolume"
-    static let showMascot = "showMascot"
     static let adiyogiEar = "adiyogiEar"
     static let celebrateFocus = "celebrateFocus"
     static let realAudioLevels = "realAudioLevels"
@@ -72,11 +66,6 @@ enum AppSettings {
             SettingsKey.haptics: true,
             SettingsKey.retroSounds: false,
             SettingsKey.mediaKeysHUD: false,
-            SettingsKey.hudEnabled: false,
-            SettingsKey.hudCPU: true,
-            SettingsKey.hudMemory: true,
-            SettingsKey.hudNetwork: true,
-            SettingsKey.hudBattery: true,
             SettingsKey.retroSoundVolume: 0.5,
             SettingsKey.display: DisplayChoice.all,
             SettingsKey.moduleOrder: "",
@@ -86,7 +75,6 @@ enum AppSettings {
             SettingsKey.shelfExpiryHours: 24,
             SettingsKey.hideInFullScreen: true,
             SettingsKey.scrollForVolume: true,
-            SettingsKey.showMascot: true,
             SettingsKey.adiyogiEar: true,
             SettingsKey.celebrateFocus: true,
             SettingsKey.realAudioLevels: false,

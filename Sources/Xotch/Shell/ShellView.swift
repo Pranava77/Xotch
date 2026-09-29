@@ -37,7 +37,6 @@ struct ShellView: View {
                 }
                 if model.showsActivity {
                     LiveActivityBar(activity: model.activities.current,
-                                    gauges: model.activities.gauges,
                                     adiyogi: model.activities.showsAdiyogi,
                                     earWidth: model.earWidth,
                                     notchSize: model.closedSize,
@@ -96,6 +95,7 @@ private struct OpenContent: View {
     let selected: any NotchModule
     let actions: any NotchActions
     let namespace: Namespace.ID
+    @State private var showsMore = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -107,21 +107,36 @@ private struct OpenContent: View {
                     .id(selected.id)
                     .transition(.push(from: model.switchEdge))
             }
-            // minHeight 0: a tall module is clipped instead of pushing the dock away.
+            // minHeight 0: a tall module is clipped instead of growing the notch.
             .frame(maxWidth: .infinity, minHeight: 0, maxHeight: .infinity, alignment: .topLeading)
             .offset(x: model.rubberBand)
             .padding(.horizontal, 22)
             .padding(.top, 10)
-            .padding(.bottom, 8)
+            .padding(.bottom, 14)
             .clipped()
-
-            ModuleDock(modules: modules.map { $0.info },
-                       selectedID: selected.id,
-                       namespace: namespace) { actions.select(moduleID: $0) }
-                .frame(height: Layout.dockHeight)
-                .padding(.bottom, 6)
         }
         .foregroundStyle(Theme.ink)
+        .overlay(alignment: .topLeading) {
+            if showsMore {
+                ZStack(alignment: .topLeading) {
+                    Theme.surface.opacity(0.55)
+                        .contentShape(Rectangle())
+                        .onTapGesture { withAnimation(Motion.press) { showsMore = false } }
+                        .transition(.opacity)
+                    MoreModules(modules: moreModules.map(\.info), selectedID: selected.id) { id in
+                        withAnimation(Motion.press) { showsMore = false }
+                        actions.select(moduleID: id)
+                    }
+                    .padding(.top, model.closedSize.height + 2)
+                    .padding(.leading, 18)
+                    .transition(.scale(scale: 0.96, anchor: .topLeading).combined(with: .opacity))
+                }
+                .foregroundStyle(Theme.ink)
+            }
+        }
+        .onChange(of: model.palette.isOpen) { _, isOpen in
+            if isOpen { showsMore = false }
+        }
         .overlay(alignment: .top) {
             if model.palette.isOpen {
                 ZStack(alignment: .top) {
@@ -138,7 +153,22 @@ private struct OpenContent: View {
         }
     }
 
-    /// Title left of the camera housing; palette and pin on the right.
+    /// The first few modules get a tab beside the camera. One you reach through
+    /// "more" or ⌘K takes the last tab's place while it's open.
+    private var tabModules: [any NotchModule] {
+        var tabs = Array(modules.prefix(Layout.headerTabs))
+        if !tabs.contains(where: { $0.id == selected.id }) {
+            tabs[tabs.count - 1] = selected
+        }
+        return tabs
+    }
+
+    private var moreModules: [any NotchModule] {
+        let shown = Set(tabModules.map(\.id))
+        return modules.filter { !shown.contains($0.id) }
+    }
+
+    /// Tabs left of the camera housing; palette and pin on the right.
     private var topRow: some View {
         HStack(spacing: 0) {
             // While a volume or brightness key is held, the header shows the
@@ -148,9 +178,16 @@ private struct OpenContent: View {
                     KeyLevelPill(symbol: hud.symbol, value: value)
                         .transition(.opacity)
                 } else {
-                    Text(selected.title)
-                        .font(.system(size: 13, weight: .semibold, design: Theme.fontDesign))
-                        .contentTransition(.opacity)
+                    HeaderTabs(tabs: tabModules.map(\.info),
+                               hasMore: !moreModules.isEmpty,
+                               showsMore: showsMore,
+                               selectedID: selected.id,
+                               namespace: namespace,
+                               select: { id in
+                                   showsMore = false
+                                   actions.select(moduleID: id)
+                               },
+                               toggleMore: { withAnimation(Motion.press) { showsMore.toggle() } })
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -247,76 +284,6 @@ private struct RecordingPill: View {
     }
 }
 
-private struct ModuleDock: View {
-    let modules: [ModuleInfo]
-    let selectedID: String
-    let namespace: Namespace.ID
-    let select: (String) -> Void
-    @Environment(\.snapshotMode) private var snapshotMode
-
-    var body: some View {
-        if #available(macOS 26.0, *), glassAvailable(snapshot: snapshotMode) {
-            // One glass capsule holds the row, and the selected icon is a lens
-            // that slides between them like a system segmented control.
-            GlassEffectContainer(spacing: 4) {
-                row(highlight: { isSelected in
-                    if isSelected {
-                        Capsule()
-                            .fill(Color.clear)
-                            .glassEffect(.regular.tint(highlightTint).interactive(), in: Capsule())
-                            .xotchGloss(Capsule())
-                            .glassEffectID("dock-highlight", in: namespace)
-                    }
-                })
-                .padding(4)
-                .glassEffect(.regular, in: Capsule())
-                .xotchGloss(Capsule(), strength: 0.6)
-            }
-        } else {
-            row(highlight: { isSelected in
-                if isSelected {
-                    Capsule()
-                        .fill(Theme.isRetro ? highlightTint : Theme.selection)
-                        .xotchGloss(Capsule())
-                        .matchedGeometryEffect(id: "dock-highlight", in: namespace)
-                }
-            })
-            .padding(4)
-            .background(Theme.fill, in: Capsule())
-            .xotchGloss(Capsule(), strength: 0.6)
-        }
-    }
-
-    /// The lit button under the selected icon: accent-tinted in retro themes.
-    private var highlightTint: Color {
-        Theme.isRetro ? Theme.accent.opacity(0.55) : Theme.ink.opacity(0.14)
-    }
-
-    private func row<Highlight: View>(@ViewBuilder highlight: @escaping (Bool) -> Highlight) -> some View {
-        HStack(spacing: 4) {
-            ForEach(Array(modules.enumerated()), id: \.element.id) { index, module in
-                let isSelected = module.id == selectedID
-                Button {
-                    select(module.id)
-                } label: {
-                    Image(systemName: module.symbol)
-                        .symbolVariant(isSelected ? .fill : .none)
-                        .font(.system(size: 13, weight: .semibold))
-                        .matchedGeometryEffect(id: "icon-\(module.id)", in: namespace)
-                        .frame(width: 38, height: 30)
-                        .foregroundStyle(isSelected ? Theme.ink : Theme.secondaryInk)
-                        .background { highlight(isSelected) }
-                        .contentShape(Capsule())
-                }
-                .buttonStyle(.plain)
-                .help(index < 9 ? "\(module.title)  ⌘\(index + 1)" : module.title)
-                .accessibilityLabel(module.title)
-                .accessibilityAddTraits(isSelected ? .isSelected : [])
-            }
-        }
-    }
-}
-
 private struct PinButton: View {
     let isPinned: Bool
     let action: () -> Void
@@ -342,9 +309,7 @@ private struct PinButton: View {
 /// Live content in the "ears" either side of the camera housing.
 private struct LiveActivityBar: View {
     let activity: LiveActivity?
-    /// The system HUD's bars, which take the left ear when on.
-    let gauges: [Gauge]?
-    /// Keeps the left ear's outer edge; an activity's icon moves right for him.
+    /// Holds the left ear; an activity's icon then moves to the right ear.
     let adiyogi: Bool
     let earWidth: CGFloat
     let notchSize: CGSize
@@ -353,15 +318,11 @@ private struct LiveActivityBar: View {
 
     var body: some View {
         HStack(spacing: 0) {
-            HStack(spacing: AdiyogiMark.spacing) {
+            Group {
                 if adiyogi {
                     AdiyogiMark()
                         .transition(.opacity)
-                }
-                if let gauges {
-                    GaugeBars(gauges: gauges, tint: Theme.accent)
-                        .transition(.opacity)
-                } else if let activity, !adiyogi {
+                } else if let activity {
                     icon(activity)
                         .matchedGeometryEffect(id: "icon-\(activity.moduleID)", in: namespace)
                 }
@@ -374,7 +335,7 @@ private struct LiveActivityBar: View {
 
             HStack(spacing: 6) {
                 if let activity {
-                    if gauges != nil || adiyogi {
+                    if adiyogi {
                         // The left ear is taken, so the icon sits by its content.
                         icon(activity)
                             .scaleEffect(0.85)
@@ -615,5 +576,120 @@ extension AnyTransition {
     static var blurFade: AnyTransition {
         .modifier(active: BlurModifier(radius: 6), identity: BlurModifier(radius: 0))
             .combined(with: .opacity)
+    }
+}
+
+// MARK: - Header tabs
+
+/// Module tabs in one capsule beside the camera. The chosen one widens to show
+/// its name; if there isn't room for the name, it stays an icon.
+private struct HeaderTabs: View {
+    let tabs: [ModuleInfo]
+    let hasMore: Bool
+    let showsMore: Bool
+    let selectedID: String
+    let namespace: Namespace.ID
+    let select: (String) -> Void
+    let toggleMore: () -> Void
+
+    var body: some View {
+        ViewThatFits(in: .horizontal) {
+            strip(showsTitle: true)
+            strip(showsTitle: false)
+        }
+    }
+
+    private func strip(showsTitle: Bool) -> some View {
+        HStack(spacing: 0) {
+            ForEach(tabs) { tab in
+                let isSelected = tab.id == selectedID
+                Button { select(tab.id) } label: {
+                    HStack(spacing: 5) {
+                        Image(systemName: tab.symbol)
+                            .symbolVariant(isSelected ? .fill : .none)
+                            .font(.system(size: 11.5, weight: .semibold))
+                        if isSelected && showsTitle {
+                            Text(tab.title)
+                                .font(.system(size: 12, weight: .semibold, design: Theme.fontDesign))
+                                .lineLimit(1)
+                                .fixedSize()
+                        }
+                    }
+                    .foregroundStyle(isSelected ? Theme.ink : Theme.secondaryInk)
+                    .padding(.horizontal, isSelected && showsTitle ? 8 : 0)
+                    .frame(minWidth: 23, minHeight: 22)
+                    .background {
+                        if isSelected {
+                            Capsule()
+                                .fill(Theme.isRetro ? Theme.accent.opacity(0.55) : Theme.selection)
+                                .xotchGloss(Capsule())
+                                .matchedGeometryEffect(id: "tab-highlight", in: namespace)
+                        }
+                    }
+                    .contentShape(Capsule())
+                }
+                .buttonStyle(.plain)
+                .help(tab.title)
+                .accessibilityLabel(tab.title)
+                .accessibilityAddTraits(isSelected ? .isSelected : [])
+                .debugFrame("tab.\(tab.id)")
+                .animation(Motion.switchModule, value: selectedID)
+            }
+            if hasMore {
+                Button(action: toggleMore) {
+                    Image(systemName: "ellipsis")
+                        .font(.system(size: 11.5, weight: .bold))
+                        .foregroundStyle(showsMore ? Theme.ink : Theme.secondaryInk)
+                        .frame(width: 23, height: 22)
+                        .background {
+                            if showsMore { Capsule().fill(Theme.selection) }
+                        }
+                        .contentShape(Capsule())
+                }
+                .buttonStyle(.plain)
+                .help("More modules")
+                .accessibilityLabel("More modules")
+                .debugFrame("tab.more")
+            }
+        }
+        .padding(2)
+        .background(Theme.fill, in: Capsule())
+        .xotchGloss(Capsule(), strength: 0.5)
+        .fixedSize()
+    }
+}
+
+/// The modules without a tab, as a small grid under the header.
+private struct MoreModules: View {
+    let modules: [ModuleInfo]
+    let selectedID: String
+    let select: (String) -> Void
+
+    var body: some View {
+        LazyVGrid(columns: Array(repeating: GridItem(.fixed(84), spacing: 6), count: 3), spacing: 6) {
+            ForEach(modules) { module in
+                Button { select(module.id) } label: {
+                    VStack(spacing: 5) {
+                        Image(systemName: module.symbol)
+                            .font(.system(size: 15, weight: .semibold))
+                        Text(module.title)
+                            .font(.system(size: 11, weight: .medium))
+                            .lineLimit(1)
+                    }
+                    .foregroundStyle(module.id == selectedID ? Theme.ink : Theme.secondaryInk)
+                    .frame(width: 84, height: 56)
+                    .contentShape(RoundedRectangle(cornerRadius: 10))
+                }
+                .buttonStyle(HoverButtonStyle())
+                .accessibilityLabel(module.title)
+                .debugFrame("more.\(module.id)")
+            }
+        }
+        .padding(8)
+        .fixedSize()
+        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .xotchGlass(RoundedRectangle(cornerRadius: 16, style: .continuous), gloss: 0.4)
+        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(Theme.raisedFill))
+        .shadow(color: .black.opacity(0.4), radius: 14, y: 6)
     }
 }

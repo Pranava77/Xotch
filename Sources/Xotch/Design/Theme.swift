@@ -30,11 +30,12 @@ enum Theme {
 enum Layout {
     /// Size of the open notch body, not counting its shoulders. A module can
     /// ask for more room (see `NotchModule.openSize`).
-    static let openSize = CGSize(width: 600, height: 300)
+    /// Wide and short: it spreads along the menu bar rather than down the screen.
+    static let openSize = CGSize(width: 740, height: 260)
     /// Default width of each "ear" beside the hardware notch in the activity state.
     static let earWidth: CGFloat = 78
-    /// Room for an activity's icon when it moves into the right ear, because the
-    /// HUD's bars have the left one.
+    /// Room for an activity's icon when it moves into the right ear, because
+    /// Adiyogi has the left one.
     static let inlineIconWidth: CGFloat = 28
     /// A left ear holding just an activity's icon and the edge padding.
     static let leftIconEarWidth: CGFloat = 52
@@ -47,7 +48,8 @@ enum Layout {
     static let virtualNotchShare: CGFloat = 0.09
     static let openShoulder: CGFloat = 14
     static let closedShoulder: CGFloat = 6
-    static let dockHeight: CGFloat = 40
+    /// How many modules get a tab beside the camera; the rest are under "more".
+    static let headerTabs = 5
     /// Room around the open notch for its shadow.
     static let shadowMargin: CGFloat = 44
 

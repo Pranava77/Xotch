@@ -262,59 +262,6 @@ struct LevelBar: View {
     }
 }
 
-/// The system HUD: one thin bar per reading, always in the same place. A bar
-/// only changes colour when something needs attention.
-struct GaugeBars: View {
-    let gauges: [Gauge]
-    let tint: Color
-
-    static let barWidth: CGFloat = 5
-    static let spacing: CGFloat = 3
-
-    /// An ear just wide enough for `count` bars and the ear's edge padding.
-    static func earWidth(count: Int) -> CGFloat {
-        let bars = CGFloat(count) * barWidth + CGFloat(max(count - 1, 0)) * spacing
-        return bars + 12 + 14
-    }
-
-    var body: some View {
-        HStack(spacing: Self.spacing) {
-            ForEach(gauges) { gauge in
-                GaugeBar(gauge: gauge, tint: tint)
-            }
-        }
-        .frame(height: 16)
-        .accessibilityElement()
-        .accessibilityLabel("System gauges")
-        .accessibilityValue(gauges.map { "\($0.label) \($0.spoken)" }.joined(separator: ", "))
-    }
-}
-
-private struct GaugeBar: View {
-    let gauge: Gauge
-    let tint: Color
-
-    private var colour: Color {
-        switch gauge.level {
-        case .normal: tint
-        case .warn: Color(red: 1, green: 0.69, blue: 0.13)
-        case .alert: Theme.negative
-        }
-    }
-
-    var body: some View {
-        ZStack(alignment: .bottom) {
-            Capsule().fill(Theme.raisedFill)
-            Capsule()
-                .fill(colour)
-                .frame(height: max(3, 16 * gauge.value))
-                .xotchGloss(Capsule(), strength: 0.5)
-        }
-        .frame(width: GaugeBars.barWidth, height: 16)
-        .animation(Motion.press, value: gauge.value)
-    }
-}
-
 // MARK: - Adiyogi
 
 /// Adiyogi, at the outer edge of the left ear: the jata with
@@ -322,21 +269,21 @@ private struct GaugeBar: View {
 /// and never animated, so an idle notch stays idle.
 struct AdiyogiMark: View {
     static let side: CGFloat = 22
-    /// Between him and the bars or icon beside him.
-    static let spacing: CGFloat = 8
     /// Wide enough for the figure and the ear's edge padding.
     static let earWidth: CGFloat = 40
-    /// What he adds to a left ear that already holds something.
-    static let inlineWidth: CGFloat = side + spacing
     /// Saffron, whatever the theme.
     static let thirdEye = Color(red: 1, green: 0.56, blue: 0.2)
 
+    var size: CGFloat = side
+    /// The figure's colour: the theme's ink unless set, as for the app icon.
+    var ink: Color?
+
     var body: some View {
-        let ink = Theme.ink
+        let ink = ink ?? Theme.ink
         Canvas { context, size in
             Self.draw(in: &context, size: size, ink: ink)
         }
-        .frame(width: Self.side, height: Self.side)
+        .frame(width: size, height: size)
         .accessibilityElement()
         .accessibilityLabel("Adiyogi")
     }

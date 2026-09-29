@@ -55,7 +55,7 @@ enum MarketingShots {
             try? jpeg.write(to: folder.appendingPathComponent("\(name).jpg"))
         }
 
-        let openSize = CGSize(width: 700, height: 340)
+        let openSize = CGSize(width: 840, height: 300)
         let earSize = CGSize(width: 520, height: 50)
 
         withSampleData {
@@ -101,32 +101,9 @@ enum MarketingShots {
                     save("ears-\(name)", model { _ in }, size: earSize, scale: 2)
                     center.setOngoing(nil, for: activity.moduleID)
                 }
-                // The HUD's bars on the left, beside a live Claude session on the right.
-                center.debugShowGauges(GaugesHUD.gauges(
-                    from: StatsSnapshot(cpu: 0.34, memoryUsed: 11.2e9, memoryTotal: 18e9, download: 1_250_000,
-                                        upload: 84_000, diskFree: 1, diskTotal: 2,
-                                        battery: BatteryInfo(percent: 76, isCharging: false, onPower: false)),
-                    selection: HUDSelection()))
-                let claude = LiveActivity(moduleID: "claude", symbol: "sparkle", content: .text("Editing"),
-                                          tint: ClaudeLiveService.tint, earWidth: 110, pulse: .calm)
-                center.setOngoing(claude, for: "claude")
-                save("ears-hud", model { _ in }, size: earSize, scale: 2)
-                center.setOngoing(nil, for: "claude")
-                center.debugShowGauges(nil)
                 // Adiyogi resting in the left ear of an otherwise quiet notch.
                 center.debugShowAdiyogi(true)
                 save("ears-adiyogi", model { _ in }, size: earSize, scale: 2)
-                // Beside the HUD's bars, with Claude live on the right.
-                center.debugShowGauges(GaugesHUD.gauges(
-                    from: StatsSnapshot(cpu: 0.34, memoryUsed: 11.2e9, memoryTotal: 18e9, download: 1_250_000,
-                                        upload: 84_000, diskFree: 1, diskTotal: 2,
-                                        battery: BatteryInfo(percent: 76, isCharging: false, onPower: false)),
-                    selection: HUDSelection()))
-                center.setOngoing(claude, for: "claude")
-                save("ears-adiyogi-hud", model { _ in }, size: earSize, scale: 2)
-                center.setOngoing(nil, for: "claude")
-                center.debugShowGauges(nil)
-                center.debugShowAdiyogi(false)
             }
             center.debugRestore(samples)
         }
@@ -134,7 +111,7 @@ enum MarketingShots {
         saveIcon(to: folder.appendingPathComponent("icon.png"))
     }
 
-    /// The mascot on a rounded square, as the README's app icon.
+    /// Adiyogi on a rounded square, as the README's app icon.
     private static func saveIcon(to url: URL) {
         let side: CGFloat = 256
         let icon = ZStack {
@@ -143,10 +120,8 @@ enum MarketingShots {
                                      startPoint: .top, endPoint: .bottom))
             RoundedRectangle(cornerRadius: side * 0.225, style: .continuous)
                 .strokeBorder(Color.white.opacity(0.12), lineWidth: 2)
-            if let mascot = MascotView.image(mood: .idle, side: side * 0.86) {
-                Image(nsImage: mascot)
-                    .offset(y: side * 0.04)
-            }
+            AdiyogiMark(size: side * 0.72, ink: .white)
+                .offset(y: side * 0.06)
         }
         .frame(width: side, height: side)
         let renderer = ImageRenderer(content: icon)

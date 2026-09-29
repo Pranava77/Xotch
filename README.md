@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/images/icon.png" width="112" alt="Xotch's icon: a small notch-shaped face with glowing eyes">
+  <img src="docs/images/icon.png" width="112" alt="Xotch's icon: Adiyogi, with a topknot, crescent moon, closed eyes and a glowing third eye, on a dark rounded square">
 </p>
 
 <h1 align="center">Xotch</h1>
@@ -29,14 +29,14 @@
 </p>
 
 <p align="center">
-  <img src="docs/images/hero.jpg" alt="The Xotch notch open at the top of a Mac screen, showing the time, the mascot, the next meeting with a Join button, and the song playing">
+  <img src="docs/images/hero.jpg" alt="The Xotch notch open at the top of a Mac screen: module tabs beside the camera, and Home's tiles for the song playing, the next meeting with a Join button, a focus timer, to-dos and Claude Code">
 </p>
 
 ## Features
 
 | | |
 |---|---|
-| **Home** | The time, your next meeting and what's playing |
+| **Home** | Live tiles: what's playing (or the time), the next meeting, the focus timer, to-dos and Claude |
 | **To-dos** | Today and someday lists; unfinished ones carry over to tomorrow |
 | **Now Playing** | Artwork, a dot-matrix track display and controls for any app playing audio |
 | **Calendar** | The next 7 days, one-click Join for Zoom, Meet and Teams, and reminders |
@@ -47,7 +47,7 @@
 | **Notes** | A scratchpad and notes that save as you type |
 | **System** | CPU, memory, network, disk and battery health |
 | **Claude Code** | Today's tokens, your streak, and live session status |
-| **Beside the notch** | Timers, music, Claude, recordings, downloads, volume and system gauges, shown without opening |
+| **Beside the notch** | Timers, music, Claude, recordings, downloads and volume, shown without opening |
 | **Adiyogi** | A small Adiyogi bust in the left ear of the closed notch |
 | **Command palette** | ⌘K to open a module, start a timer, pause music or add a to-do |
 | **Themes** | Aero Glass, Midnight, Smoke Glass, Aurora, or your own colours |
@@ -56,7 +56,7 @@
 
 ## Quiet until you need it
 
-Move the pointer to the notch and it grows a little. Keep it there and Xotch opens. Click, and it stays open until you press Esc or click somewhere else.
+Move the pointer to the notch and it grows a little. Keep it there and Xotch opens, wide and short along the menu bar, with tabs for your first five modules beside the camera and the rest under ···. Click, and it stays open until you press Esc or click somewhere else.
 
 When the notch is closed and nothing is happening, Xotch uses no processor time at all.
 
@@ -67,19 +67,15 @@ When something is going on, the notch grows two small ears to show it without op
 <table>
   <tr>
     <td align="center" width="50%"><img src="docs/images/ears-adiyogi.jpg" alt="Adiyogi, a small bust with a topknot, crescent moon, closed eyes and a glowing third eye, in the left ear of the closed notch"><br><sub><b>Adiyogi</b> rests in the left ear, eyes closed, third eye glowing</sub></td>
-    <td align="center" width="50%"><img src="docs/images/ears-adiyogi-hud.jpg" alt="Adiyogi and four system gauge bars on the left of the notch, with Claude Code's status on the right"><br><sub>With the system gauges on and Claude working</sub></td>
+    <td align="center" width="50%"><img src="docs/images/ears-timer.jpg" alt="A focus timer beside the notch, with a ring around its icon"><br><sub><b>Focus timer:</b> a ring fills as time passes</sub></td>
   </tr>
   <tr>
-    <td align="center"><img src="docs/images/ears-timer.jpg" alt="A focus timer beside the notch, with a ring around its icon"><br><sub><b>Focus timer:</b> a ring fills as time passes</sub></td>
     <td align="center"><img src="docs/images/ears-music.jpg" alt="Album art and music bars beside the notch"><br><sub><b>Music:</b> artwork, and bars that can follow the real sound</sub></td>
-  </tr>
-  <tr>
     <td align="center"><img src="docs/images/ears-claude.jpg" alt="Claude Code status beside the notch, reading Editing"><br><sub><b>Claude Code:</b> a soft pulse while it works, a faster one when it needs you</sub></td>
-    <td align="center"><img src="docs/images/ears-recording.jpg" alt="A red dot and 2 minutes 14 seconds beside the notch, showing a screen recording in progress"><br><sub><b>Screen recording:</b> the time so far; click it to stop</sub></td>
   </tr>
   <tr>
+    <td align="center"><img src="docs/images/ears-recording.jpg" alt="A red dot and 2 minutes 14 seconds beside the notch, showing a screen recording in progress"><br><sub><b>Screen recording:</b> the time so far; click it to stop</sub></td>
     <td align="center"><img src="docs/images/ears-download.jpg" alt="Download progress at 62 percent beside the notch"><br><sub><b>Downloads:</b> how far along they are</sub></td>
-    <td align="center"><img src="docs/images/ears-hud.jpg" alt="Four small bars on the left of the notch showing CPU, memory, network and battery, with Claude Code's status on the right"><br><sub><b>System gauges:</b> CPU, memory, network and battery as bars</sub></td>
   </tr>
   <tr>
     <td align="center"><img src="docs/images/ears-volume.jpg" alt="A volume bar beside the notch"><br><sub><b>Volume and brightness:</b> scroll on the notch, or use the keys once you turn on the setting</sub></td>
@@ -89,7 +85,7 @@ When something is going on, the notch grows two small ears to show it without op
 
 Adiyogi keeps the outer edge of the left ear. When something else is live, its icon moves to the right, next to its status. If several things are live at once, the most important one shows and small dots tell you how many others are waiting. You can hide Adiyogi in Settings › Appearance.
 
-The system gauges are off by default (Settings › System HUD). While they're on, Xotch reads the stats every 2 seconds, and stops when a full-screen app hides the notch or your displays sleep. The volume and brightness keys are off by default too, because they need Accessibility permission. When the notch is open, the level shows in its header.
+The volume and brightness keys are off by default, because they need Accessibility permission. When the notch is open, the level shows in its header.
 
 ## Everything you reach for, in one place
 
@@ -116,7 +112,7 @@ The system gauges are off by default (Settings › System HUD). While they're on
   </tr>
 </table>
 
-Home shows the time, your next meeting and what's playing. Notes gives you a scratchpad that can sit beside the notch, plus notes that save as you type.
+Home is a set of live tiles: what's playing (or the time when nothing is), the next meeting with its Join button, the focus timer, what's left to do today and Claude's status. Click a tile to open its module. Notes gives you a scratchpad that can sit beside the notch, plus notes that save as you type.
 
 ## To-dos
 
@@ -167,8 +163,6 @@ Add the hook and every session shows whether it's working, needs you, or is done
 
 **Arcade sound effects** are short 8-bit blips for opening and closing the notch, switching modules, adding, finishing and deleting to-dos, and pinning, with a jingle for a finished timer or a celebration. They're generated in code, so no sound files ship with the app. They're off by default; turn them on in Settings, where there's a volume slider.
 
-**The mascot** lives on Home. It naps when things are quiet, thinks while you work, and jumps for joy when you finish a focus session.
-
 You can also reorder or hide any module, choose whether the notch opens on hover or on click, and pick which displays it appears on. Every screen gets one by default. A display without a notch gets one drawn in its menu bar, sized to the screen, so an external monitor, an iMac, a Mac mini or a Studio all work.
 
 ## One shortcut for everything
@@ -218,9 +212,9 @@ The budget is under 0.5% CPU and under 80 MB of memory while idle, with nothing 
 | Open on System | 0.60% | 38 MB |
 | Command palette | 0.10% | 54 MB |
 
-Measured on a 14-inch MacBook Pro with an M5 Pro chip, macOS 26.6.2, averaged over about 10 seconds per state. Recording the screen with system audio costs Xotch about 1% more; macOS does the video encoding in its own processes, so that part doesn't count against Xotch. The system gauges haven't been measured yet. Adiyogi is drawn once and never animates, so leaving it on doesn't wake Xotch up.
+Measured on a 14-inch MacBook Pro with an M5 Pro chip, macOS 26.6.2, averaged over about 10 seconds per state. Recording the screen with system audio costs Xotch about 1% more; macOS does the video encoding in its own processes, so that part doesn't count against Xotch. Adiyogi is drawn once and never animates, so leaving it on doesn't wake Xotch up.
 
-The timer ring, the Claude pulse, the music bars, the mascot and the confetti are Core Animation layers. The window server animates them, and Xotch itself stays idle. Each extra display gets its own notch, so memory goes up per screen: about 80 MB with a second, ultra-wide monitor attached. The full numbers, the fixes behind them and how to reproduce them are in [docs/PERFORMANCE.md](docs/PERFORMANCE.md).
+The timer ring, the Claude pulse, the music bars and the confetti are Core Animation layers. The window server animates them, and Xotch itself stays idle. Each extra display gets its own notch, so memory goes up per screen: about 80 MB with a second, ultra-wide monitor attached. The full numbers, the fixes behind them and how to reproduce them are in [docs/PERFORMANCE.md](docs/PERFORMANCE.md).
 
 ## Private by design
 

@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Sends a command to a running debug build of Xotch.
-# Usage: scripts/debug.sh settings <file> | settings-scroll <y> | settings-close | key volup|voldown|mute|brightup|brightdown | hud on|off | sound <cue> | open [module] | close | activity | activity-media | activity-timer |
+# Usage: scripts/debug.sh settings <file> | settings-scroll <y> | settings-close | key volup|voldown|mute|brightup|brightdown | sound <cue> | open [module] | close | activity | activity-media | activity-timer |
 #        activity-claude | activity-download | clear-activities [module] | celebrate | palette | ripple |
-#        theme <id> | mood <mood> | rebuild <count> | status <file> | snapshot <folder> |
+#        theme <id> | rebuild <count> | status <file> | snapshot <folder> |
 #        effects <folder> | marketing <folder> | selftest <report file> |
 #        click <x,y | control name> | type <text> | probe <file>
 #
@@ -11,7 +11,7 @@
 # comes from `.debugFrame(_:)` — "todos.add" and so on.
 set -euo pipefail
 
-COMMAND="${1:?usage: scripts/debug.sh open [module]|close|activity|activity-media|activity-timer|activity-claude|activity-download|clear-activities|celebrate|palette|ripple|theme <id>|mood <mood>|rebuild <n>|status <file>|snapshot <folder>|effects <folder>|marketing <folder>|selftest <file>|click <x,y|name>|type <text>|probe <file>}"
+COMMAND="${1:?usage: scripts/debug.sh open [module]|close|activity|activity-media|activity-timer|activity-claude|activity-download|clear-activities|celebrate|palette|ripple|theme <id>|rebuild <n>|status <file>|snapshot <folder>|effects <folder>|marketing <folder>|selftest <file>|click <x,y|name>|type <text>|probe <file>}"
 if [[ "$COMMAND" == "open" && -n "${2:-}" ]]; then
   COMMAND="open:$2"
 elif [[ "$COMMAND" == "rebuild" ]]; then

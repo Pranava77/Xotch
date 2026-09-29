@@ -53,11 +53,6 @@ struct LiveActivity: Identifiable, Equatable {
     }
 }
 
-/// How Xotch's mascot feels, from what's going on.
-enum MascotMood: String, CaseIterable {
-    case idle, working, celebrating, sleeping
-}
-
 /// Three kinds of activity:
 /// - a HUD, shown straight away while you adjust something (volume)
 /// - banners, shown one at a time for a few seconds ("Saved", "Copied")
@@ -70,32 +65,18 @@ final class ActivityCenter {
 
     /// Which ongoing activity wins when several are live.
     private static let priority = ["capture", "claude", "timers", "downloads", "media", "notes"]
-    /// Ongoing activities that count as "working" for the mascot.
-    private static let busyModules: Set<String> = ["capture", "claude", "timers", "downloads"]
-    private static let sleepAfter: Duration = .seconds(10 * 60)
 
     private(set) var hud: LiveActivity?
     private(set) var banner: LiveActivity?
     private(set) var ongoing: [String: LiveActivity] = [:]
-    /// The system HUD's bars. They have the left ear to themselves, so they show
-    /// alongside whatever activity is live instead of waiting behind it.
-    private(set) var gauges: [Gauge]?
-    /// Adiyogi rests in the left ear while nothing else needs it.
+    /// Adiyogi at the outer edge of the left ear.
     private(set) var showsAdiyogi = false
     /// Goes up by one for each celebration; views watch it to play one.
     private(set) var celebrations = 0
-    private(set) var isCelebrating = false
-    private(set) var isDrowsy = false
     @ObservationIgnored private var queue: [LiveActivity] = []
     @ObservationIgnored private var bannerTask: Task<Void, Never>?
     @ObservationIgnored private var hudTask: Task<Void, Never>?
-    @ObservationIgnored private var celebrationTask: Task<Void, Never>?
-    @ObservationIgnored private var drowsyTask: Task<Void, Never>?
     @ObservationIgnored private var demoIndex = 0
-
-    init() {
-        noteActivity()
-    }
 
     var current: LiveActivity? {
         if let hud { return hud }
@@ -117,21 +98,8 @@ final class ActivityCenter {
         }
     }
 
-    var mood: MascotMood {
-        if isCelebrating { return .celebrating }
-        let busy = ongoing.values.contains { activity in
-            guard Self.busyModules.contains(activity.moduleID) else { return false }
-            // A paused timer isn't work.
-            if case .text = activity.content, activity.moduleID == "timers" { return false }
-            return true
-        }
-        if busy { return .working }
-        return isDrowsy ? .sleeping : .idle
-    }
-
     func post(_ activity: LiveActivity) {
         queue.append(activity)
-        noteActivity()
         if banner == nil {
             advance()
         }
@@ -163,7 +131,6 @@ final class ActivityCenter {
         guard var activity else {
             if ongoing[moduleID] != nil {
                 withAnimation(Motion.activity) { ongoing[moduleID] = nil }
-                noteActivity()
             }
             return
         }
@@ -174,26 +141,6 @@ final class ActivityCenter {
             }
         } else {
             withAnimation(Motion.activity) { ongoing[moduleID] = activity }
-            noteActivity()
-        }
-    }
-
-    /// Shows the system HUD's bars, or hides them with nil. Only appearing and
-    /// disappearing animate; each reading's bars animate on their own.
-    func setGauges(_ new: [Gauge]?) {
-        let new = new?.isEmpty == true ? nil : new
-        #if DEBUG
-        // Snapshots have set the live bars aside: keep the latest for afterwards.
-        if isStashed {
-            stashedGauges = new
-            return
-        }
-        #endif
-        guard new != gauges else { return }
-        if (new == nil) != (gauges == nil) {
-            withAnimation(Motion.activity) { gauges = new }
-        } else {
-            gauges = new
         }
     }
 
@@ -212,30 +159,9 @@ final class ActivityCenter {
 
     /// Confetti and a haptic, e.g. for a finished focus session.
     func celebrate() {
-        noteActivity()
         celebrations += 1
-        withAnimation(Motion.activity) { isCelebrating = true }
         Haptics.celebrate()
         RetroSound.play(.celebrate)
-        celebrationTask?.cancel()
-        celebrationTask = Task { [weak self] in
-            try? await Task.sleep(for: .seconds(4))
-            guard !Task.isCancelled else { return }
-            withAnimation(Motion.activity) { self?.isCelebrating = false }
-        }
-    }
-
-    /// Something happened: the mascot wakes up, and dozes off after a quiet while.
-    private func noteActivity() {
-        if isDrowsy {
-            withAnimation(Motion.activity) { isDrowsy = false }
-        }
-        drowsyTask?.cancel()
-        drowsyTask = Task { [weak self] in
-            try? await Task.sleep(for: Self.sleepAfter)
-            guard !Task.isCancelled, let self else { return }
-            withAnimation(Motion.activity) { self.isDrowsy = true }
-        }
     }
 
     private func advance() {
@@ -271,24 +197,16 @@ final class ActivityCenter {
     }
 
     #if DEBUG
-    func debugSet(celebrating: Bool? = nil, drowsy: Bool? = nil) {
-        if let celebrating { isCelebrating = celebrating }
-        if let drowsy { isDrowsy = drowsy }
-    }
-
     /// Which ongoing activities are live, for `scripts/debug.sh status`.
     var debugOngoingIDs: String { ongoing.keys.sorted().joined(separator: ",") }
 
-    @ObservationIgnored private var stashedGauges: [Gauge]?
     @ObservationIgnored private var stashedAdiyogi = false
     @ObservationIgnored private var isStashed = false
 
-    /// Sets live activities (and the HUD's bars) aside for snapshots, and returns them.
+    /// Sets live activities (and Adiyogi) aside for snapshots, and returns them.
     func debugStash() -> [String: LiveActivity] {
         let saved = ongoing
         ongoing = [:]
-        stashedGauges = gauges
-        gauges = nil
         stashedAdiyogi = showsAdiyogi
         showsAdiyogi = false
         isStashed = true
@@ -296,10 +214,6 @@ final class ActivityCenter {
     }
 
     /// Snapshots set bars of their own; this goes around the stash.
-    func debugShowGauges(_ shown: [Gauge]?) {
-        gauges = shown
-    }
-
     func debugShowAdiyogi(_ shown: Bool) {
         showsAdiyogi = shown
     }
@@ -309,8 +223,6 @@ final class ActivityCenter {
             ongoing[moduleID] = activity
         }
         isStashed = false
-        gauges = stashedGauges
-        stashedGauges = nil
         showsAdiyogi = stashedAdiyogi
     }
     #endif
