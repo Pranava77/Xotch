@@ -6,13 +6,15 @@
 
 <p align="center">
   <strong>Your MacBook's notch, put to work.</strong><br>
-  Your to-dos, music, calendar, timers, screenshots and Claude Code, all one hover away.
+  To-dos, music, calendar, timers, screenshots and Claude Code, one hover away.
 </p>
 
 <p align="center">
   <a href="#get-the-beta"><strong>Get the beta</strong></a>
   &nbsp;·&nbsp;
-  <a href="#everything-you-reach-for-in-one-place">Features</a>
+  <a href="#features">Features</a>
+  &nbsp;·&nbsp;
+  <a href="#light-on-your-battery">Performance</a>
   &nbsp;·&nbsp;
   <a href="#private-by-design">Privacy</a>
   &nbsp;·&nbsp;
@@ -27,43 +29,67 @@
 </p>
 
 <p align="center">
-  <img src="docs/images/hero.jpg" alt="The Xotch notch open at the top of a Mac screen, showing the time, the next meeting with a Join button, and the song playing">
+  <img src="docs/images/hero.jpg" alt="The Xotch notch open at the top of a Mac screen, showing the time, the mascot, the next meeting with a Join button, and the song playing">
 </p>
+
+## Features
+
+| | |
+|---|---|
+| **Home** | The time, your next meeting and what's playing |
+| **To-dos** | Today and someday lists; unfinished ones carry over to tomorrow |
+| **Now Playing** | Artwork, a dot-matrix track display and controls for any app playing audio |
+| **Calendar** | The next 7 days, one-click Join for Zoom, Meet and Teams, and reminders |
+| **Timers** | Focus sessions with breaks, countdowns, and a stopwatch with laps |
+| **Clipboard** | Searchable, pinnable history that skips password managers |
+| **Shelf** | Drop files on the notch, then drag them out or AirDrop them |
+| **Capture** | Screenshots and screen recordings with sound, kept on a shelf |
+| **Notes** | A scratchpad and notes that save as you type |
+| **System** | CPU, memory, network, disk and battery health |
+| **Claude Code** | Today's tokens, your streak, and live session status |
+| **Beside the notch** | Timers, music, Claude, recordings, downloads, volume and system gauges, shown without opening |
+| **Adiyogi** | A small Adiyogi bust in the left ear of the closed notch |
+| **Command palette** | ⌘K to open a module, start a timer, pause music or add a to-do |
+| **Themes** | Aero Glass, Midnight, Smoke Glass, Aurora, or your own colours |
+| **Sounds** | Optional 8-bit blips and jingles, generated in code |
+| **Any display** | Monitors without a notch get one drawn in the menu bar |
 
 ## Quiet until you need it
 
-Xotch lives in the notch and doesn't get in your way.
+Move the pointer to the notch and it grows a little. Keep it there and Xotch opens. Click, and it stays open until you press Esc or click somewhere else.
 
-- **Peek:** move the pointer to the notch and it grows slightly.
-- **Open:** keep the pointer there and Xotch opens.
-- **Keep it open:** click, and it stays open until you press Esc or click somewhere else.
+When the notch is closed and nothing is happening, Xotch uses no processor time at all.
 
-When the notch is closed and nothing's happening, Xotch uses no processor time at all.
+## Beside the camera
 
-## Live, right beside the camera
-
-When something's happening, the notch grows two small "ears" to show it, without opening.
+When something is going on, the notch grows two small ears to show it without opening.
 
 <table>
   <tr>
-    <td align="center" width="50%"><img src="docs/images/ears-timer.jpg" alt="A focus timer beside the notch, with a ring around its icon"><br><sub><b>Focus timer:</b> a ring fills as time passes</sub></td>
-    <td align="center" width="50%"><img src="docs/images/ears-music.jpg" alt="Album art and music bars beside the notch"><br><sub><b>Music:</b> artwork and bars that can follow the real sound</sub></td>
+    <td align="center" width="50%"><img src="docs/images/ears-adiyogi.jpg" alt="Adiyogi, a small bust with a topknot, crescent moon, closed eyes and a glowing third eye, in the left ear of the closed notch"><br><sub><b>Adiyogi</b> rests in the left ear, eyes closed, third eye glowing</sub></td>
+    <td align="center" width="50%"><img src="docs/images/ears-adiyogi-hud.jpg" alt="Adiyogi and four system gauge bars on the left of the notch, with Claude Code's status on the right"><br><sub>With the system gauges on and Claude working</sub></td>
   </tr>
   <tr>
-    <td align="center"><img src="docs/images/ears-claude.jpg" alt="Claude Code status beside the notch, reading Editing"><br><sub><b>Claude Code:</b> a soft pulse while it works; a faster one when it needs you</sub></td>
+    <td align="center"><img src="docs/images/ears-timer.jpg" alt="A focus timer beside the notch, with a ring around its icon"><br><sub><b>Focus timer:</b> a ring fills as time passes</sub></td>
+    <td align="center"><img src="docs/images/ears-music.jpg" alt="Album art and music bars beside the notch"><br><sub><b>Music:</b> artwork, and bars that can follow the real sound</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/images/ears-claude.jpg" alt="Claude Code status beside the notch, reading Editing"><br><sub><b>Claude Code:</b> a soft pulse while it works, a faster one when it needs you</sub></td>
     <td align="center"><img src="docs/images/ears-recording.jpg" alt="A red dot and 2 minutes 14 seconds beside the notch, showing a screen recording in progress"><br><sub><b>Screen recording:</b> the time so far; click it to stop</sub></td>
   </tr>
   <tr>
     <td align="center"><img src="docs/images/ears-download.jpg" alt="Download progress at 62 percent beside the notch"><br><sub><b>Downloads:</b> how far along they are</sub></td>
-    <td align="center"><img src="docs/images/ears-hud.jpg" alt="Four small bars on the left of the notch showing CPU, memory, network and battery, with Claude Code's status on the right"><br><sub><b>System HUD:</b> CPU, memory, network and battery as bars in the left ear, beside whatever else is live</sub></td>
+    <td align="center"><img src="docs/images/ears-hud.jpg" alt="Four small bars on the left of the notch showing CPU, memory, network and battery, with Claude Code's status on the right"><br><sub><b>System gauges:</b> CPU, memory, network and battery as bars</sub></td>
   </tr>
   <tr>
-    <td align="center"><img src="docs/images/ears-volume.jpg" alt="A volume bar beside the notch"><br><sub><b>Volume and brightness:</b> scroll on the notch, or press the keys once you turn on the setting. The bar shows in the header if the notch is open</sub></td>
+    <td align="center"><img src="docs/images/ears-volume.jpg" alt="A volume bar beside the notch"><br><sub><b>Volume and brightness:</b> scroll on the notch, or use the keys once you turn on the setting</sub></td>
     <td></td>
   </tr>
 </table>
 
-If more than one thing is live, the most important shows, and small dots tell you others are waiting. The **system HUD** (Settings › System HUD, off by default) has the left ear to itself, so it shows alongside a timer, a song or Claude, whose icon moves next to its status on the right. It reads the stats every 2 seconds while it's on, and stops when a full-screen app hides the notch or your displays sleep. **Adiyogi** keeps the outer edge of the left ear, eyes closed, third eye glowing, and an activity's icon moves right beside its status (hide it in Settings › Appearance).
+Adiyogi keeps the outer edge of the left ear. When something else is live, its icon moves to the right, next to its status. If several things are live at once, the most important one shows and small dots tell you how many others are waiting. You can hide Adiyogi in Settings › Appearance.
+
+The system gauges are off by default (Settings › System HUD). While they're on, Xotch reads the stats every 2 seconds, and stops when a full-screen app hides the notch or your displays sleep. The volume and brightness keys are off by default too, because they need Accessibility permission. When the notch is open, the level shows in its header.
 
 ## Everything you reach for, in one place
 
@@ -90,29 +116,23 @@ If more than one thing is live, the most important shows, and small dots tell yo
   </tr>
 </table>
 
-**Also inside:**
-- **Home:** the time, your next meeting and what's playing.
-- **Notes:** a scratchpad that can sit beside the notch, and notes that save as you type.
+Home shows the time, your next meeting and what's playing. Notes gives you a scratchpad that can sit beside the notch, plus notes that save as you type.
 
 ## To-dos
 
-<img src="docs/images/module-todos.jpg" alt="To-dos: today's list under an add field">
+<img src="docs/images/module-todos.jpg" alt="To-dos: today's list under an add field, with a someday list below">
 
-Today's to-dos, and a someday list for the rest.
-
-- Type a to-do straight into the notch, or press ⌘K anywhere and say what you're doing.
-- Right-click a to-do to move it to today, tomorrow or someday.
-- Unfinished to-dos carry over to the next day rather than quietly disappearing.
+Today's to-dos, and a someday list for everything else. Type one straight into the notch, or press ⌘K anywhere and say what you're doing. Right-click a to-do to move it to today, tomorrow or someday. Anything you don't finish carries over to the next day instead of quietly disappearing.
 
 ## Screenshots and recordings
 
 <img src="docs/images/module-capture.jpg" alt="Capture: Screenshot and Record buttons for an area, a window or the screen, with recent captures below" align="right" width="46%">
 
-Take a screenshot of an area, a window or the whole screen, or record your screen with sound. It all lands on a shelf in the notch, ready to drag into a message.
+Take a screenshot of an area, a window or the whole screen, or record your screen with sound. Everything lands on a shelf in the notch, ready to drag into a message.
 
-The shelf picks up the screenshots you take with **⌘⇧3**, **⌘⇧4** and **⌘⇧5** too, so everything is in one place. Drag one out, AirDrop it, or flick it away.
+The shelf also picks up screenshots you take with **⌘⇧3**, **⌘⇧4** and **⌘⇧5**. Drag one out, AirDrop it, or flick it away.
 
-Screenshots are copied to your clipboard as they're taken, and saved in **Pictures › Xotch**. Recording needs macOS 15.
+Screenshots go to your clipboard as you take them, and are saved in **Pictures › Xotch**. Recording needs macOS 15.
 
 <br clear="right">
 
@@ -122,7 +142,7 @@ Screenshots are copied to your clipboard as they're taken, and saved in **Pictur
 
 See today's tokens, replies and streak, read from Claude Code's logs on your Mac.
 
-Add the hook, and each session shows whether it's working, needs you, or is done, right beside the camera. That means you can leave Claude running and get back to something else.
+Add the hook and every session shows whether it's working, needs you, or is done, right next to the camera. You can leave Claude running and get on with something else.
 
 <br clear="right">
 
@@ -143,14 +163,13 @@ Add the hook, and each session shows whether it's working, needs you, or is done
   </tr>
 </table>
 
-- **Aero Glass** is Frutiger Aero, the glossy look of Windows Aero and early Mac OS X: a bright band across the top of every button, bevelled edges, aqua-green accents and rounded type, on top of Liquid Glass. The other themes stay flat, and a custom theme can turn the gloss on or off.
-- **Arcade sound effects:** short 8-bit blips for opening and closing the notch, switching modules, adding, finishing and deleting to-dos, pinning, and a jingle for a finished timer or a celebration. They're generated in code, so nothing is bundled. Off by default: turn them on in Settings, with a volume slider.
-- **Your own theme:** pick the background, text, accent and glow colours. The closed notch always stays black, so it blends in with the camera.
-- **The mascot:** Xotch's little mascot lives on Home. It naps when things are quiet, thinks while you work, and jumps for joy when you finish a focus session.
-- **Your modules, your way:**
-  - Reorder or hide any module.
-  - Choose how the notch opens: hover or click.
-  - Choose which display it appears on — every screen by default. A display without a notch gets one drawn in its menu bar, sized to the screen, so an external monitor, an iMac, a Mac mini or a Studio all work.
+**Aero Glass** is Frutiger Aero, the glossy look of Windows Aero and early Mac OS X: a bright band across the top of every button, bevelled edges, aqua-green accents and rounded type, on top of Liquid Glass. The other themes stay flat. A custom theme lets you pick the background, text, accent and glow colours, and turn the gloss on or off. The closed notch always stays black so it blends in with the camera.
+
+**Arcade sound effects** are short 8-bit blips for opening and closing the notch, switching modules, adding, finishing and deleting to-dos, and pinning, with a jingle for a finished timer or a celebration. They're generated in code, so no sound files ship with the app. They're off by default; turn them on in Settings, where there's a volume slider.
+
+**The mascot** lives on Home. It naps when things are quiet, thinks while you work, and jumps for joy when you finish a focus session.
+
+You can also reorder or hide any module, choose whether the notch opens on hover or on click, and pick which displays it appears on. Every screen gets one by default. A display without a notch gets one drawn in its menu bar, sized to the screen, so an external monitor, an iMac, a Mac mini or a Studio all work.
 
 ## One shortcut for everything
 
@@ -164,9 +183,9 @@ Press **⌘K** in the open notch and type:
 | `10 min` | Start a 10-minute timer |
 | `pause` | Pause the music |
 | `shot` | Take a screenshot |
-| Anything else | Add it to today's to-dos |
 | `aurora` | Switch theme |
 | Something you copied | Copy it again |
+| Anything else | Add it to today's to-dos |
 
 <br clear="right">
 
@@ -174,19 +193,40 @@ Press **⌘K** in the open notch and type:
 
 | To | Do this |
 |---|---|
-| Switch module | ⌘1–⌘9, or swipe sideways with two fingers |
+| Switch module | ⌘1 to ⌘9, or swipe sideways with two fingers |
 | Change the volume | Scroll on the closed notch |
 | Remove a file from the Shelf | Flick it upwards |
 | Close | Esc, or click anywhere else |
 
+## Light on your battery
+
+The budget is under 0.5% CPU and under 80 MB of memory while idle, with nothing working in the background while the notch is closed. Anything that only matters on screen, like system stats, pauses when you can't see it.
+
+| State | CPU | Memory |
+|---|---|---|
+| Closed, nothing live | 0.00% | 18 MB |
+| Closed, music bars | 0.00% | 41 MB |
+| Closed, music bars following the real sound | 0.17% | 41 MB |
+| Closed, Claude working | 0.00% | 42 MB |
+| Closed, download progress | 0.00% | 47 MB |
+| Closed, timer counting down | 0.44% | 42 MB |
+| Closed, recording indicator | 0.42% | |
+| Open on Home | 0.00% | 32 MB |
+| Open on Now Playing | 0.10% | 38 MB |
+| Open on Calendar, Clipboard or Shelf | 0.00% | 36 to 37 MB |
+| Open on Timers | 0.10% | 44 MB |
+| Open on System | 0.60% | 38 MB |
+| Command palette | 0.10% | 54 MB |
+
+Measured on a 14-inch MacBook Pro with an M5 Pro chip, macOS 26.6.2, averaged over about 10 seconds per state. Recording the screen with system audio costs Xotch about 1% more; macOS does the video encoding in its own processes, so that part doesn't count against Xotch. The system gauges haven't been measured yet. Adiyogi is drawn once and never animates, so leaving it on doesn't wake Xotch up.
+
+The timer ring, the Claude pulse, the music bars, the mascot and the confetti are Core Animation layers. The window server animates them, and Xotch itself stays idle. Each extra display gets its own notch, so memory goes up per screen: about 80 MB with a second, ultra-wide monitor attached. The full numbers, the fixes behind them and how to reproduce them are in [docs/PERFORMANCE.md](docs/PERFORMANCE.md).
+
 ## Private by design
 
-- **No tracking:** no account, no analytics.
-- **Stays on your Mac:** your clipboard history, notes, to-dos and files never leave your Mac.
-- **Offline:** Xotch doesn't connect to any online service.
-- **Screenshots and recordings:** saved on your Mac, in Pictures › Xotch unless you choose another folder. Nothing is uploaded.
-- **Audio:** when the music bars follow the real sound, Xotch only measures how loud it is. Nothing is recorded.
-- **Crash reports:** never sent automatically. If you choose to keep them, you decide whether to email one.
+Xotch has no account and no analytics, and it doesn't connect to any online service. Your clipboard history, notes, to-dos and files stay on your Mac.
+
+Screenshots and recordings are saved in Pictures › Xotch unless you choose another folder, and nothing is uploaded. When the music bars follow the real sound, Xotch only measures how loud it is and records nothing. Crash reports are never sent automatically: if you choose to keep them, you decide whether to email one.
 
 <details>
 <summary><b>What Xotch asks permission for, and when</b></summary>
@@ -203,23 +243,13 @@ Xotch asks only when you use something that needs it.
 | System audio recording | You turn on real sound for the music bars | Measuring how loud the music is |
 | Screen Recording | Your first screenshot or recording in Capture | Taking the picture. Choosing a window to record uses macOS's own picker instead, which needs no permission |
 | Microphone | Only if you turn on Capture › Microphone | Recording your voice with the screen |
-| Desktop folder (may be asked) | Opening Capture, if it's listing your ⌘⇧3 and ⌘⇧4 screenshots | Finding those screenshots. macOS saves them to Desktop unless you've changed it |
+| Desktop folder (may be asked) | Opening Capture, if it's listing your ⌘⇧3 and ⌘⇧4 screenshots | Finding those screenshots, which macOS saves to Desktop unless you've changed it |
 | Downloads folder | macOS may ask when you turn on download progress | Showing how far downloads have got |
-| Accessibility | Only if you turn on **Settings › Show volume and brightness in the notch** | Reading the volume, mute and brightness keys so the notch can show the level in place of macOS's popup. It is off by default; Xotch reads only those keys and nothing else you type |
+| Accessibility | Only if you turn on **Settings › Show volume and brightness in the notch** | Reading the volume, mute and brightness keys so the notch can show the level in place of macOS's popup. Xotch reads only those keys and nothing else you type |
 
 Without that one setting, Xotch never asks for Accessibility or Input Monitoring.
 
 </details>
-
-## Light on your battery
-
-| When | Processor use |
-|---|---|
-| Closed, nothing happening | 0% |
-| Closed, with music, Claude Code or a download beside it | 0% |
-| Open, on any module | 0.6% or less |
-
-Measured on a 14-inch MacBook Pro with an M5 Pro chip. Anything that only matters on screen, like system stats, pauses when you can't see it.
 
 ## Get the beta
 
@@ -229,20 +259,16 @@ Xotch is in private beta. If you have an invite:
 2. Open Xotch. If macOS says it can't check the app, open **System Settings › Privacy & Security** and choose **Open Anyway**. Beta builds aren't signed yet; releases will be.
 3. Move the pointer to the notch. Xotch lives in the menu bar and has no Dock icon.
 
-**Requirements:**
-- macOS 14 Sonoma or later, on Apple silicon or Intel. It's best on a MacBook with a notch.
-- Liquid Glass needs macOS 26.
-- Music bars that follow the real sound need macOS 14.2.
-- Screen recording needs macOS 15. Screenshots work on all of them.
+Xotch needs macOS 14 Sonoma or later, on Apple silicon or Intel, and it's at its best on a MacBook with a notch. A few features need newer versions: Liquid Glass needs macOS 26, music bars that follow the real sound need macOS 14.2, and screen recording needs macOS 15. Screenshots work on all of them.
 
 <details>
 <summary><b>Connect Claude Code</b></summary>
 
 <br>
 
-- Usage stats work straight away, from Claude Code's logs on your Mac.
-- For live status, press **Add hook** in the Claude Code module. Xotch backs up `~/.claude/settings.json`, then adds a small entry so Claude Code can tell Xotch what it's doing.
-- **Remove hook** takes that entry out again.
+Usage stats work straight away, from Claude Code's logs on your Mac.
+
+For live status, press **Add hook** in the Claude Code module. Xotch backs up `~/.claude/settings.json`, then adds a small entry so Claude Code can tell Xotch what it's doing. **Remove hook** takes that entry out again.
 
 </details>
 
@@ -252,6 +278,12 @@ Xotch is in private beta. If you have an invite:
 <summary><b>The notch disappeared.</b></summary>
 
 Xotch steps aside while an app is full screen. To keep it, turn off **Settings › Display › Hide the notch while an app is full screen**.
+</details>
+
+<details>
+<summary><b>I can't see Adiyogi.</b></summary>
+
+Check that **Settings › Appearance › Show Adiyogi beside the closed notch** is on. Adiyogi shows in the left ear whenever the notch is closed.
 </details>
 
 <details>
@@ -275,15 +307,15 @@ Allow Xotch under **System Settings › Privacy & Security › Screen & System A
 <details>
 <summary><b>I don't have a notch.</b></summary>
 
-Then Xotch draws one. On a Mac without a notch — an iMac, a Mac mini, a Studio, an older MacBook — and on any external monitor, it draws a notch in that screen's menu bar, sized to the screen, and everything works the same. By default every display gets one; **Settings › Display** can narrow that to a single screen.
+Then Xotch draws one. On a Mac without a notch (an iMac, a Mac mini, a Studio, an older MacBook) and on any external monitor, it draws a notch in that screen's menu bar, sized to the screen, and everything works the same. By default every display gets one; **Settings › Display** can narrow that to a single screen.
 </details>
 
 <details>
 <summary><b>The notch slides across when I change desktop.</b></summary>
 
-macOS slides every window sideways as desktops change, and it won't let an app opt a window out — the notch is pinned to all desktops, and it still gets moved. It lands back in place when the animation finishes.
+macOS slides every window sideways as desktops change, and it won't let an app opt a window out. The notch is pinned to all desktops and still gets moved; it lands back in place when the animation finishes.
 
-To stop it, turn on **System Settings › Accessibility › Display › Reduce motion**: desktops then change without the sliding animation.
+To stop it, turn on **System Settings › Accessibility › Display › Reduce motion**. Desktops then change without the sliding animation.
 </details>
 
 <details>
@@ -305,7 +337,7 @@ Turn on **Settings › Show download progress**. Progress appears for apps that 
 </details>
 
 <details>
-<summary><b>⌘K or ⌘1–9 does nothing.</b></summary>
+<summary><b>⌘K or ⌘1 to ⌘9 does nothing.</b></summary>
 
 Click the notch first, so Xotch receives your keyboard input.
 </details>
@@ -321,8 +353,7 @@ Beta builds aren't signed yet, so macOS can ask again. Signed releases won't.
 
 1. If you added the Claude Code hook, press **Remove hook** in the Claude Code module.
 2. Quit Xotch from the menu bar icon and move it to the Trash.
-3. To remove everything else as well:
-   - delete `~/Library/Application Support/Xotch` and `~/Library/Preferences/com.pranava.xotch.plist`
+3. To remove everything else, delete `~/Library/Application Support/Xotch` and `~/Library/Preferences/com.pranava.xotch.plist`.
 </details>
 
 ## Feedback
