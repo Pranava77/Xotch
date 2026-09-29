@@ -236,9 +236,11 @@ final class NotchWindowController: NotchActions {
         }
         withAnimation(animation) { model.phase = phase }
         switch phase {
-        case .open: Haptics.open()
+        case .open:
+            Haptics.open()
+            RetroSound.play(.open)
         case .peek: Haptics.tick()
-        case .closed: break
+        case .closed: RetroSound.play(.close)
         }
     }
 
@@ -276,6 +278,7 @@ final class NotchWindowController: NotchActions {
 
     func togglePin() {
         model.isPinned.toggle()
+        RetroSound.play(.pin)
         if model.isPinned {
             panel.makeKey()
         } else if !isHovering {
@@ -291,6 +294,7 @@ final class NotchWindowController: NotchActions {
         model.switchEdge = to >= from ? .trailing : .leading
         withAnimation(Motion.switchModule) { model.selectedModuleID = moduleID }
         Haptics.tick()
+        RetroSound.play(.switchModule)
     }
 
     // MARK: - Keyboard and trackpad

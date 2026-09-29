@@ -17,6 +17,8 @@ enum SettingsKey {
     static let openBehavior = "openBehavior"
     static let hoverDelay = "hoverDelayMs"
     static let haptics = "hapticsEnabled"
+    static let retroSounds = "retroSounds"
+    static let retroSoundVolume = "retroSoundVolume"
     static let display = "displayChoice"
     static let moduleOrder = "moduleOrder"
     static let hiddenModules = "hiddenModules"
@@ -61,6 +63,8 @@ enum AppSettings {
             SettingsKey.openBehavior: OpenBehavior.hover.rawValue,
             SettingsKey.hoverDelay: 150.0,
             SettingsKey.haptics: true,
+            SettingsKey.retroSounds: false,
+            SettingsKey.retroSoundVolume: 0.5,
             SettingsKey.display: DisplayChoice.all,
             SettingsKey.moduleOrder: "",
             SettingsKey.hiddenModules: "",
@@ -97,6 +101,15 @@ enum AppSettings {
 
     static var hapticsEnabled: Bool {
         UserDefaults.standard.bool(forKey: SettingsKey.haptics)
+    }
+
+    /// Arcade sound effects. Off until asked for.
+    static var retroSounds: Bool {
+        UserDefaults.standard.bool(forKey: SettingsKey.retroSounds)
+    }
+
+    static var retroSoundVolume: Double {
+        UserDefaults.standard.double(forKey: SettingsKey.retroSoundVolume)
     }
 
     static var displayChoice: String {

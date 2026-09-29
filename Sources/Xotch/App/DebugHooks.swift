@@ -119,6 +119,11 @@ enum DebugHooks {
                     String(format: "pointer events: %.1f/s", ScreenManager.shared.debugPointerRate()),
                 ]
                 try? (lines.joined(separator: "\n") + "\n").write(toFile: path, atomically: true, encoding: .utf8)
+            } else if command.hasPrefix("sound:") {
+                // Plays one cue whether or not sounds are switched on: `debug.sh sound complete`.
+                if let cue = RetroCue(rawValue: String(command.dropFirst("sound:".count))) {
+                    RetroSound.play(cue, force: true)
+                }
             } else if command.hasPrefix("theme:") {
                 ThemeStore.shared.select(String(command.dropFirst("theme:".count)))
             } else if command.hasPrefix("mood:") {
@@ -170,6 +175,7 @@ enum DebugHooks {
         lines.append("notes: \(NotesService.shared.notes.count) notes")
         lines += captureSelfTest()
         lines += todoSelfTest()
+        lines += retroSoundSelfTest()
 
         // Phase 5
         if #available(macOS 15.4, *) {
@@ -342,6 +348,26 @@ enum DebugHooks {
         lines.append(String(format: "ring: timed 30 s of 120 s = %.2f (expect 0.25)", ringNow))
         lines.append("cleanup: done=\(UserDefaults.standard.bool(forKey: "cleanup.removedConnectedModules")) module list \"home,revenue,media,weather,analytics,stats\" → \"\(LegacyCleanup.strippingRemoved(from: "home,revenue,media,weather,analytics,stats"))\" (expect home,media,stats)")
         return lines
+    }
+
+    /// Renders every cue and checks it is audible, not clipped, short, and
+    /// starts and ends at silence (a click is a jump at either edge).
+    @MainActor
+    private static func retroSoundSelfTest() -> [String] {
+        var problems: [String] = []
+        var summary: [String] = []
+        for cue in RetroCue.allCases {
+            let samples = RetroSynth.render(cue)
+            let peak = samples.map(abs).max() ?? 0
+            let ms = Int(Double(samples.count) / RetroSynth.sampleRate * 1000)
+            let edge = max(abs(samples.first ?? 1), abs(samples.last ?? 1))
+            summary.append("\(cue.rawValue)=\(ms)ms/\(String(format: "%.2f", peak))")
+            if peak < 0.2 { problems.append("\(cue.rawValue) is nearly silent") }
+            if peak > RetroSynth.peak + 0.001 { problems.append("\(cue.rawValue) clips") }
+            if ms > 900 { problems.append("\(cue.rawValue) is too long") }
+            if edge > 0.05 { problems.append("\(cue.rawValue) would click at its edge") }
+        }
+        return ["retro sounds: \(summary.joined(separator: " ")) enabled=\(AppSettings.retroSounds) engineRunning=\(RetroSound.shared.isEngineRunning) → \(problems.isEmpty ? "PASS" : "FAILED: " + problems.joined(separator: "; "))"]
     }
 
     /// Adds a real to-do, ticks it, moves it and deletes it: the same calls the

@@ -179,6 +179,7 @@ final class ActivityCenter {
         celebrations += 1
         withAnimation(Motion.activity) { isCelebrating = true }
         Haptics.celebrate()
+        RetroSound.play(.celebrate)
         celebrationTask?.cancel()
         celebrationTask = Task { [weak self] in
             try? await Task.sleep(for: .seconds(4))

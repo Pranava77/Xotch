@@ -138,6 +138,7 @@ final class TodoService {
         saver.schedule()
         updateActivity()
         Haptics.tick()
+        RetroSound.play(.tick)
         return todo
     }
 
@@ -148,7 +149,10 @@ final class TodoService {
         if nowDone, todos[index].day == nil { todos[index].day = Self.today }
         saver.schedule()
         updateActivity()
-        if nowDone { Haptics.tick() }
+        if nowDone {
+            Haptics.tick()
+            RetroSound.play(.complete)
+        }
     }
 
     func move(_ todo: Todo, to day: Date?) {
@@ -157,12 +161,14 @@ final class TodoService {
         saver.schedule()
         updateActivity()
         Haptics.tick()
+        RetroSound.play(.tick)
     }
 
     func delete(_ todo: Todo) {
         withAnimation(Motion.switchModule) { todos.removeAll { $0.id == todo.id } }
         saver.schedule()
         updateActivity()
+        RetroSound.play(.delete)
     }
 
     // MARK: - Housekeeping

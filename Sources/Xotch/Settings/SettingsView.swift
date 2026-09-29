@@ -5,6 +5,8 @@ struct SettingsView: View {
     @AppStorage(SettingsKey.openBehavior) private var openBehavior: OpenBehavior = .hover
     @AppStorage(SettingsKey.hoverDelay) private var hoverDelay: Double = 150
     @AppStorage(SettingsKey.haptics) private var haptics = true
+    @AppStorage(SettingsKey.retroSounds) private var retroSounds = false
+    @AppStorage(SettingsKey.retroSoundVolume) private var retroSoundVolume = 0.5
     @AppStorage(SettingsKey.display) private var display = DisplayChoice.automatic
     @AppStorage(SettingsKey.moduleOrder) private var moduleOrder = ""
     @AppStorage(SettingsKey.hiddenModules) private var hiddenModules = ""
@@ -50,6 +52,18 @@ struct SettingsView: View {
                 }
 
                 Toggle("Haptic feedback", isOn: $haptics)
+                Toggle("Arcade sound effects", isOn: $retroSounds)
+                    .onChange(of: retroSounds) { _, on in
+                        if on { RetroSound.play(.complete, force: true) }
+                    }
+                if retroSounds {
+                    LabeledContent("Volume") {
+                        Slider(value: $retroSoundVolume, in: 0.05...1, onEditingChanged: { editing in
+                            if !editing { RetroSound.play(.tick, force: true) }
+                        })
+                        .frame(maxWidth: 180)
+                    }
+                }
             }
 
             Section {
