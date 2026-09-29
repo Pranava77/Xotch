@@ -19,25 +19,29 @@ private struct HomeView: View {
     var body: some View {
         HStack(alignment: .top, spacing: 14) {
             VStack(alignment: .leading, spacing: 10) {
-                HStack(alignment: .top, spacing: 0) {
-                    TimelineView(.everyMinute) { context in
-                        let date = snapshotDate ?? context.date
-                        VStack(alignment: .leading, spacing: 0) {
+                TimelineView(.everyMinute) { context in
+                    let date = snapshotDate ?? context.date
+                    VStack(alignment: .leading, spacing: 0) {
+                        // The mascot shares a row with the time only, so the
+                        // date below gets the column's full width.
+                        HStack(alignment: .top, spacing: 0) {
                             Text(date, format: .dateTime.hour().minute())
                                 .font(.system(size: 46, weight: .semibold, design: .rounded))
                                 .monospacedDigit()
                                 .lineLimit(1)
                                 .minimumScaleFactor(0.6)
-                            Text(date, format: .dateTime.weekday(.wide).month(.wide).day())
-                                .font(.system(size: 13, weight: .medium))
-                                .foregroundStyle(Theme.secondaryInk)
+                            Spacer(minLength: 4)
+                            if showMascot {
+                                MascotBadge(mood: ActivityCenter.shared.mood, size: 48)
+                                    .padding(.top, 6)
+                                    .transition(.scale.combined(with: .opacity))
+                            }
                         }
-                    }
-                    Spacer(minLength: 4)
-                    if showMascot {
-                        MascotBadge(mood: ActivityCenter.shared.mood, size: 48)
-                            .padding(.top, 6)
-                            .transition(.scale.combined(with: .opacity))
+                        Text(date, format: .dateTime.weekday(.wide).month(.wide).day())
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundStyle(Theme.secondaryInk)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
                     }
                 }
                 Spacer(minLength: 0)
