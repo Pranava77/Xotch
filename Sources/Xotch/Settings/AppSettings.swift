@@ -34,6 +34,7 @@ enum SettingsKey {
     static let hideInFullScreen = "hideInFullScreen"
     static let scrollForVolume = "scrollForVolume"
     static let showMascot = "showMascot"
+    static let adiyogiEar = "adiyogiEar"
     static let celebrateFocus = "celebrateFocus"
     static let realAudioLevels = "realAudioLevels"
     static let downloadProgress = "downloadProgress"
@@ -86,6 +87,7 @@ enum AppSettings {
             SettingsKey.hideInFullScreen: true,
             SettingsKey.scrollForVolume: true,
             SettingsKey.showMascot: true,
+            SettingsKey.adiyogiEar: true,
             SettingsKey.celebrateFocus: true,
             SettingsKey.realAudioLevels: false,
             SettingsKey.downloadProgress: false,
@@ -156,6 +158,11 @@ enum AppSettings {
 
     static var scrollForVolume: Bool {
         UserDefaults.standard.bool(forKey: SettingsKey.scrollForVolume)
+    }
+
+    /// Adiyogi in the left ear of the closed notch.
+    static var adiyogiEar: Bool {
+        UserDefaults.standard.bool(forKey: SettingsKey.adiyogiEar)
     }
 
     /// 0 means keep shelf items until removed.

@@ -22,6 +22,7 @@ final class ScreenManager {
         installMonitors()
         GaugesHUD.shared.settingsChanged()
         MediaKeys.shared.settingsChanged()
+        ActivityCenter.shared.settingsChanged()
 
         observe(NotificationCenter.default, NSApplication.didChangeScreenParametersNotification) { manager in
             #if DEBUG
@@ -30,7 +31,10 @@ final class ScreenManager {
             manager.scheduleRebuild()
         }
         observe(NotificationCenter.default, UserDefaults.didChangeNotification) { manager in
-            manager.settingsChanged()
+            // This can arrive in the middle of a SwiftUI update (a framework
+            // registering its defaults while a view renders), and changing what
+            // the notch shows there aborts the app. Wait for the next turn.
+            Task { @MainActor [weak manager] in manager?.settingsChanged() }
         }
         let workspace = NSWorkspace.shared.notificationCenter
         observe(workspace, NSWorkspace.willSleepNotification) { manager in
@@ -105,6 +109,7 @@ final class ScreenManager {
         TodoService.shared.updateActivity()
         GaugesHUD.shared.settingsChanged()
         MediaKeys.shared.settingsChanged()
+        ActivityCenter.shared.settingsChanged()
         let hide = AppSettings.hideInFullScreen
         if hide != hideInFullScreen {
             hideInFullScreen = hide

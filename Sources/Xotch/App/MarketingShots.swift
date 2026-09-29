@@ -113,6 +113,20 @@ enum MarketingShots {
                 save("ears-hud", model { _ in }, size: earSize, scale: 2)
                 center.setOngoing(nil, for: "claude")
                 center.debugShowGauges(nil)
+                // Adiyogi resting in the left ear of an otherwise quiet notch.
+                center.debugShowAdiyogi(true)
+                save("ears-adiyogi", model { _ in }, size: earSize, scale: 2)
+                // Beside the HUD's bars, with Claude live on the right.
+                center.debugShowGauges(GaugesHUD.gauges(
+                    from: StatsSnapshot(cpu: 0.34, memoryUsed: 11.2e9, memoryTotal: 18e9, download: 1_250_000,
+                                        upload: 84_000, diskFree: 1, diskTotal: 2,
+                                        battery: BatteryInfo(percent: 76, isCharging: false, onPower: false)),
+                    selection: HUDSelection()))
+                center.setOngoing(claude, for: "claude")
+                save("ears-adiyogi-hud", model { _ in }, size: earSize, scale: 2)
+                center.setOngoing(nil, for: "claude")
+                center.debugShowGauges(nil)
+                center.debugShowAdiyogi(false)
             }
             center.debugRestore(samples)
         }

@@ -38,6 +38,7 @@ struct ShellView: View {
                 if model.showsActivity {
                     LiveActivityBar(activity: model.activities.current,
                                     gauges: model.activities.gauges,
+                                    adiyogi: model.activities.showsAdiyogi,
                                     earWidth: model.earWidth,
                                     notchSize: model.closedSize,
                                     waiting: model.activities.waitingCount,
@@ -343,6 +344,8 @@ private struct LiveActivityBar: View {
     let activity: LiveActivity?
     /// The system HUD's bars, which take the left ear when on.
     let gauges: [Gauge]?
+    /// Keeps the left ear's outer edge; an activity's icon moves right for him.
+    let adiyogi: Bool
     let earWidth: CGFloat
     let notchSize: CGSize
     let waiting: Int
@@ -350,11 +353,15 @@ private struct LiveActivityBar: View {
 
     var body: some View {
         HStack(spacing: 0) {
-            Group {
+            HStack(spacing: AdiyogiMark.spacing) {
+                if adiyogi {
+                    AdiyogiMark()
+                        .transition(.opacity)
+                }
                 if let gauges {
                     GaugeBars(gauges: gauges, tint: Theme.accent)
                         .transition(.opacity)
-                } else if let activity {
+                } else if let activity, !adiyogi {
                     icon(activity)
                         .matchedGeometryEffect(id: "icon-\(activity.moduleID)", in: namespace)
                 }
@@ -367,8 +374,8 @@ private struct LiveActivityBar: View {
 
             HStack(spacing: 6) {
                 if let activity {
-                    if gauges != nil {
-                        // The bars have the left ear, so the icon sits by its content.
+                    if gauges != nil || adiyogi {
+                        // The left ear is taken, so the icon sits by its content.
                         icon(activity)
                             .scaleEffect(0.85)
                             .matchedGeometryEffect(id: "icon-\(activity.moduleID)", in: namespace)

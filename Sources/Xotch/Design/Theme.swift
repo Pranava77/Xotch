@@ -36,6 +36,8 @@ enum Layout {
     /// Room for an activity's icon when it moves into the right ear, because the
     /// HUD's bars have the left one.
     static let inlineIconWidth: CGFloat = 28
+    /// A left ear holding just an activity's icon and the edge padding.
+    static let leftIconEarWidth: CGFloat = 52
     /// How much the closed notch grows while the pointer rests on it.
     static let peekGrowth = CGSize(width: 18, height: 6)
     /// Size of the drawn notch on displays that don't have one. A flat width

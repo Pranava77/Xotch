@@ -24,6 +24,7 @@ struct SettingsView: View {
     @AppStorage(Diagnostics.shareKey) private var shareDiagnostics = false
     @AppStorage(SettingsKey.scrollForVolume) private var scrollForVolume = true
     @AppStorage(SettingsKey.showMascot) private var showMascot = true
+    @AppStorage(SettingsKey.adiyogiEar) private var adiyogiEar = true
     @AppStorage(SettingsKey.celebrateFocus) private var celebrateFocus = true
     @AppStorage(SettingsKey.realAudioLevels) private var realAudioLevels = false
     @AppStorage(SettingsKey.downloadProgress) private var downloadProgress = false
@@ -79,6 +80,7 @@ struct SettingsView: View {
                     CustomThemeEditor()
                 }
                 Toggle("Show Xotch's mascot on Home", isOn: $showMascot)
+                Toggle("Show Adiyogi beside the closed notch", isOn: $adiyogiEar)
                 Toggle("Show the track on a dot-matrix display", isOn: $ledTitle)
             } header: {
                 Text("Appearance")

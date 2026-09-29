@@ -63,7 +63,7 @@ When something's happening, the notch grows two small "ears" to show it, without
   </tr>
 </table>
 
-If more than one thing is live, the most important shows, and small dots tell you others are waiting. The **system HUD** (Settings › System HUD, off by default) has the left ear to itself, so it shows alongside a timer, a song or Claude, whose icon moves next to its status on the right. It reads the stats every 2 seconds while it's on, and stops when a full-screen app hides the notch or your displays sleep.
+If more than one thing is live, the most important shows, and small dots tell you others are waiting. The **system HUD** (Settings › System HUD, off by default) has the left ear to itself, so it shows alongside a timer, a song or Claude, whose icon moves next to its status on the right. It reads the stats every 2 seconds while it's on, and stops when a full-screen app hides the notch or your displays sleep. **Adiyogi** keeps the outer edge of the left ear, eyes closed, third eye glowing, and an activity's icon moves right beside its status (hide it in Settings › Appearance).
 
 ## Everything you reach for, in one place
 

@@ -80,6 +80,8 @@ final class ActivityCenter {
     /// The system HUD's bars. They have the left ear to themselves, so they show
     /// alongside whatever activity is live instead of waiting behind it.
     private(set) var gauges: [Gauge]?
+    /// Adiyogi rests in the left ear while nothing else needs it.
+    private(set) var showsAdiyogi = false
     /// Goes up by one for each celebration; views watch it to play one.
     private(set) var celebrations = 0
     private(set) var isCelebrating = false
@@ -195,6 +197,19 @@ final class ActivityCenter {
         }
     }
 
+    /// Called at launch and whenever a setting changes.
+    func settingsChanged() {
+        let on = AppSettings.adiyogiEar
+        #if DEBUG
+        if isStashed {
+            stashedAdiyogi = on
+            return
+        }
+        #endif
+        guard on != showsAdiyogi else { return }
+        withAnimation(Motion.activity) { showsAdiyogi = on }
+    }
+
     /// Confetti and a haptic, e.g. for a finished focus session.
     func celebrate() {
         noteActivity()
@@ -265,6 +280,7 @@ final class ActivityCenter {
     var debugOngoingIDs: String { ongoing.keys.sorted().joined(separator: ",") }
 
     @ObservationIgnored private var stashedGauges: [Gauge]?
+    @ObservationIgnored private var stashedAdiyogi = false
     @ObservationIgnored private var isStashed = false
 
     /// Sets live activities (and the HUD's bars) aside for snapshots, and returns them.
@@ -273,6 +289,8 @@ final class ActivityCenter {
         ongoing = [:]
         stashedGauges = gauges
         gauges = nil
+        stashedAdiyogi = showsAdiyogi
+        showsAdiyogi = false
         isStashed = true
         return saved
     }
@@ -282,6 +300,10 @@ final class ActivityCenter {
         gauges = shown
     }
 
+    func debugShowAdiyogi(_ shown: Bool) {
+        showsAdiyogi = shown
+    }
+
     func debugRestore(_ saved: [String: LiveActivity]) {
         for (moduleID, activity) in saved where ongoing[moduleID] == nil {
             ongoing[moduleID] = activity
@@ -289,6 +311,7 @@ final class ActivityCenter {
         isStashed = false
         gauges = stashedGauges
         stashedGauges = nil
+        showsAdiyogi = stashedAdiyogi
     }
     #endif
 }

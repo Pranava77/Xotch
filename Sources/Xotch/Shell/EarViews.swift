@@ -315,6 +315,89 @@ private struct GaugeBar: View {
     }
 }
 
+// MARK: - Adiyogi
+
+/// Adiyogi, at the outer edge of the left ear: the jata with
+/// its crescent moon, eyes closed, and a softly glowing third eye. Drawn once
+/// and never animated, so an idle notch stays idle.
+struct AdiyogiMark: View {
+    static let side: CGFloat = 22
+    /// Between him and the bars or icon beside him.
+    static let spacing: CGFloat = 8
+    /// Wide enough for the figure and the ear's edge padding.
+    static let earWidth: CGFloat = 40
+    /// What he adds to a left ear that already holds something.
+    static let inlineWidth: CGFloat = side + spacing
+    /// Saffron, whatever the theme.
+    static let thirdEye = Color(red: 1, green: 0.56, blue: 0.2)
+
+    var body: some View {
+        let ink = Theme.ink
+        Canvas { context, size in
+            Self.draw(in: &context, size: size, ink: ink)
+        }
+        .frame(width: Self.side, height: Self.side)
+        .accessibilityElement()
+        .accessibilityLabel("Adiyogi")
+    }
+
+    /// Drawn in a 64 × 64 box (y down) and scaled to fit.
+    private static func draw(in context: inout GraphicsContext, size: CGSize, ink: Color) {
+        let s = min(size.width, size.height) / 64
+        context.translateBy(x: (size.width - 64 * s) / 2, y: (size.height - 64 * s) / 2)
+        context.scaleBy(x: s, y: s)
+
+        // The jata: a tall knot on top and locks down to the shoulders.
+        var hair = Path(roundedRect: CGRect(x: 22, y: 0, width: 20, height: 19), cornerRadius: 9)
+        hair.addEllipse(in: CGRect(x: 15, y: 10, width: 34, height: 26))
+        for side in [-1.0, 1.0] {
+            func p(_ x: CGFloat, _ y: CGFloat) -> CGPoint { CGPoint(x: 32 + side * x, y: y) }
+            hair.move(to: p(15, 22))
+            hair.addCurve(to: p(18, 56), control1: p(18, 34), control2: p(21, 46))
+            hair.addCurve(to: p(10, 40), control1: p(14, 54), control2: p(10, 48))
+            hair.addLine(to: p(9, 24))
+            hair.closeSubpath()
+        }
+        context.fill(hair, with: .color(ink.opacity(0.45)))
+
+        // Shoulders, a little dimmer than the face.
+        var shoulders = Path()
+        shoulders.move(to: CGPoint(x: 1, y: 64))
+        shoulders.addCurve(to: CGPoint(x: 24, y: 50), control1: CGPoint(x: 2, y: 55), control2: CGPoint(x: 12, y: 51))
+        shoulders.addLine(to: CGPoint(x: 40, y: 50))
+        shoulders.addCurve(to: CGPoint(x: 63, y: 64), control1: CGPoint(x: 52, y: 51), control2: CGPoint(x: 62, y: 55))
+        shoulders.closeSubpath()
+        context.fill(shoulders.subtracting(hair), with: .color(ink.opacity(0.72)))
+
+        // The crescent moon in the jata.
+        let moon = Path(ellipseIn: CGRect(x: 16, y: 3, width: 11, height: 11))
+            .subtracting(Path(ellipseIn: CGRect(x: 19, y: 1.5, width: 10, height: 10)))
+        context.fill(moon, with: .color(ink))
+
+        // Face and neck.
+        var face = Path(roundedRect: CGRect(x: 19, y: 16, width: 26, height: 33), cornerRadius: 12.5)
+        face.addRect(CGRect(x: 26, y: 44, width: 12, height: 8))
+        context.fill(face, with: .color(ink))
+
+        // Closed eyes and a half smile, cut out so the notch's black shows through.
+        var features = Path()
+        features.move(to: CGPoint(x: 22.5, y: 32.5))
+        features.addQuadCurve(to: CGPoint(x: 29.5, y: 32.5), control: CGPoint(x: 26, y: 36.5))
+        features.move(to: CGPoint(x: 34.5, y: 32.5))
+        features.addQuadCurve(to: CGPoint(x: 41.5, y: 32.5), control: CGPoint(x: 38, y: 36.5))
+        features.move(to: CGPoint(x: 28.5, y: 43))
+        features.addQuadCurve(to: CGPoint(x: 35.5, y: 43), control: CGPoint(x: 32, y: 45.5))
+        var cut = context
+        cut.blendMode = .destinationOut
+        cut.stroke(features, with: .color(.black), style: StrokeStyle(lineWidth: 2.6, lineCap: .round))
+
+        // The third eye.
+        var eye = context
+        eye.addFilter(.shadow(color: thirdEye, radius: 3))
+        eye.fill(Path(ellipseIn: CGRect(x: 30.2, y: 20.5, width: 3.6, height: 8)), with: .color(thirdEye))
+    }
+}
+
 /// Up to three dots: how many other live activities are waiting their turn.
 struct WaitingDots: View {
     let count: Int
