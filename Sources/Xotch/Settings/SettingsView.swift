@@ -185,7 +185,7 @@ struct SettingsView: View {
             } header: {
                 Text("Volume and brightness")
             } footer: {
-                Text("Your keyboard's volume, mute and brightness keys show their level in the notch, and macOS's own popup no longer appears. Xotch needs Accessibility permission to do that. It only takes a key when it can act on it: a full-screen app hiding the notch, an output with no volume control, or a display Xotch can't read (external monitors) leaves the key to macOS. Hold Shift+Option for smaller steps. Brightness uses a private macOS framework and covers the built-in display only.")
+                Text("The keys show their level in the notch instead of macOS's popup. Needs Accessibility permission. Brightness works on the built-in display only; Shift+Option gives smaller steps.")
                     .foregroundStyle(.secondary)
             }
             .task {
