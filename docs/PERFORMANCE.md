@@ -17,7 +17,6 @@ Measured on a 14" MacBook Pro (Mac17,9, Apple M5 Pro), macOS 26.6.2, debug build
 | Open on Clipboard | 0.00% | 0.00 | 0.5/s | 37 MB |
 | Open on Shelf | 0.00% | 0.00 | 0.5/s | 37 MB |
 | Open on System | 0.60% | 0.60 | 0.5/s | 38 MB |
-| Open on Life (a year of squares, sample data) | 0.00%* | 0.00* | — | — |
 | Open on Capture | 0.00%* | 0.00* | — | — |
 | Closed, recording indicator (red timer) | 0.42%* | 0.42* | — | — |
 | Recording the screen with system audio | ~1%* | — | — | — |
@@ -36,7 +35,7 @@ Measured on a 14" MacBook Pro (Mac17,9, Apple M5 Pro), macOS 26.6.2, debug build
 
 Every screen gets its own notch and its own panel, so the cost is per screen. On this Mac with the built-in display plus a 3440×1440 ultra-wide — one hardware notch, one drawn in the external's menu bar — a freshly launched debug build sat at **80 MB** with both notches closed, against the 18 MB single-screen figure in the table above. Most of that is the second window's backing store at the panel's full 1236×624, which is allocated whether or not the notch is open.
 
-Life costs nothing while it's open: the graph is one `Canvas` pass over 371 squares, day totals are cached until something changes, and nothing polls. Opening it also grows the notch from 600×300 to 1120×580, which is a window resize the window server handles; the panel behind it is 1236×624 on every screen, whichever module is showing.
+To-dos cost nothing while open: a short list, nothing polls, and the only timer is one sleep until midnight.
 
 Recording a 1800×1169 display at 60 fps with system audio cost about 1 percentage point of CPU in Xotch over a closed-notch baseline of 1.0% on a busy Mac. That is the red timer plus handing frames over; ScreenCaptureKit encodes the H.264 in macOS's own processes, so the rest of the cost doesn't appear against Xotch. The resulting file is about 1.9 MB per second of screen.
 

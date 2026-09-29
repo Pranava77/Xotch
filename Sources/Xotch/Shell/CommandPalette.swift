@@ -59,11 +59,11 @@ enum CommandCatalog {
             // It goes after the real matches: "shot" means the screenshot.
             if text.count >= 3, duration(in: text) == nil {
                 results.append(PaletteCommand(
-                    id: "life-add", title: "Add “\(text)” to today", symbol: "plus.circle",
+                    id: "todo-add", title: "Add “\(text)” to today", symbol: "plus.circle",
                     tint: Theme.accent
                 ) {
-                    LifeService.shared.add(text)
-                    actions.select(moduleID: "life")
+                    TodoService.shared.add(text)
+                    actions.select(moduleID: "todos")
                 })
             }
             results += clipboardMatches(for: text)
@@ -131,26 +131,14 @@ enum CommandCatalog {
             })
         }
 
-        let life = LifeService.shared
-        for (arc, habit) in life.liveArcs.flatMap({ arc in arc.habits.map { (arc, $0) } })
-        where life.isDue(habit) {
-            list.append(PaletteCommand(id: "checkin-\(habit.id)", title: "Check in on \(habit.title)",
-                                       subtitle: arc.name, symbol: "circle.circle",
-                                       tint: arc.colour.color, keywords: "habit arc streak done life") {
-                life.toggleCheckIn(habit, in: arc)
+        let todos = TodoService.shared
+        for todo in todos.todos(on: TodoService.today).filter({ !$0.isDone }).prefix(3) {
+            list.append(PaletteCommand(id: "tick-\(todo.id)", title: "Tick off \(todo.title)",
+                                       subtitle: "Today", symbol: "checkmark.square",
+                                       keywords: "todo task done finish") {
+                todos.toggle(todo)
             })
         }
-        for task in life.tasks(on: LifeService.today).filter({ !$0.isDone }).prefix(3) {
-            list.append(PaletteCommand(id: "tick-\(task.id)", title: "Tick off \(task.title)",
-                                       subtitle: "Today", symbol: "checkmark.circle",
-                                       keywords: "todo task done finish life") {
-                life.toggle(task)
-            })
-        }
-        list.append(PaletteCommand(id: "new-arc", title: "Start a new arc", symbol: "target",
-                                   keywords: "life goal habit milestone lock in") {
-            actions.select(moduleID: "life")
-        })
 
         list.append(PaletteCommand(id: "shot-area", title: "Screenshot an area", symbol: CaptureTarget.area.symbol,
                                    tint: CaptureService.tint, keywords: "capture screen grab snip selection") {
@@ -334,12 +322,20 @@ struct CommandPaletteView: View {
 }
 
 private struct PaletteBackground: View {
+    @Environment(\.snapshotMode) private var snapshotMode
+
     var body: some View {
-        RoundedRectangle(cornerRadius: 16, style: .continuous)
-            .fill(Theme.surface)
-            .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(Theme.fill))
-            .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(Theme.hairline))
-            .shadow(color: .black.opacity(0.5), radius: 18, y: 8)
+        let shape = RoundedRectangle(cornerRadius: 16, style: .continuous)
+        Group {
+            if glassAvailable(snapshot: snapshotMode) {
+                Color.clear.xotchGlass(shape, tint: Theme.surface.opacity(0.3))
+            } else {
+                shape.fill(Theme.surface)
+                    .overlay(shape.fill(Theme.fill))
+                    .overlay(shape.strokeBorder(Theme.hairline))
+            }
+        }
+        .shadow(color: .black.opacity(0.5), radius: 18, y: 8)
     }
 }
 

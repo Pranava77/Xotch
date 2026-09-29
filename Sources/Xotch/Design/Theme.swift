@@ -10,7 +10,8 @@ enum Theme {
     static var surface: Color { palette.surface.color }
     static var ink: Color { palette.ink.color }
     static var secondaryInk: Color { ink.opacity(0.58) }
-    static var tertiaryInk: Color { ink.opacity(0.34) }
+    /// 0.45 keeps hints above 4.5:1 on dark glass; 0.34 measured about 3.1:1.
+    static var tertiaryInk: Color { ink.opacity(0.45) }
     static var fill: Color { ink.opacity(0.07) }
     static var raisedFill: Color { ink.opacity(0.11) }
     static var selection: Color { ink.opacity(0.15) }
@@ -24,12 +25,8 @@ enum Theme {
 
 enum Layout {
     /// Size of the open notch body, not counting its shoulders. A module can
-    /// ask for more room (see `NotchModule.openSize`); Life does.
+    /// ask for more room (see `NotchModule.openSize`).
     static let openSize = CGSize(width: 600, height: 300)
-    /// Room for a year of squares, the week's seven columns with their own add
-    /// fields, and an arc card beside the day panel. At 880x460 the graph and
-    /// the day panel together needed 20pt more than they had, and were clipped.
-    static let wideOpenSize = CGSize(width: 1120, height: 580)
     /// Default width of each "ear" beside the hardware notch in the activity state.
     static let earWidth: CGFloat = 78
     /// How much the closed notch grows while the pointer rests on it.
@@ -46,15 +43,52 @@ enum Layout {
     static let shadowMargin: CGFloat = 44
 
     /// The largest any module asks for; the panel has to hold it.
-    static var maxOpenSize: CGSize {
-        CGSize(width: max(openSize.width, wideOpenSize.width),
-               height: max(openSize.height, wideOpenSize.height))
-    }
+    static var maxOpenSize: CGSize { openSize }
 
     /// The panel never resizes, so it's sized for the largest state.
     static var panelSize: CGSize {
         CGSize(width: maxOpenSize.width + openShoulder * 2 + shadowMargin * 2,
                height: maxOpenSize.height + shadowMargin)
+    }
+}
+
+// MARK: - Glass
+
+extension View {
+    /// Liquid Glass on macOS 26 and later. Earlier systems, snapshots (which
+    /// can't draw glass) and the forced-fallback switch get a flat fill instead.
+    func xotchGlass<S: Shape>(_ shape: S, tint: Color? = nil, interactive: Bool = false,
+                              fallback: Color? = nil) -> some View {
+        modifier(XotchGlass(shape: shape, tint: tint, interactive: interactive, fallback: fallback))
+    }
+}
+
+/// Whether controls can be drawn as real glass right now.
+@MainActor func glassAvailable(snapshot: Bool) -> Bool {
+    if #available(macOS 26.0, *) { return !snapshot && !GlassFallback.forced }
+    return false
+}
+
+private struct XotchGlass<S: Shape>: ViewModifier {
+    let shape: S
+    let tint: Color?
+    let interactive: Bool
+    let fallback: Color?
+    @Environment(\.snapshotMode) private var snapshotMode
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if #available(macOS 26.0, *), !snapshotMode, !GlassFallback.forced {
+            content.glassEffect(glass, in: shape)
+        } else {
+            content.background(tint ?? fallback ?? Theme.fill, in: shape)
+        }
+    }
+
+    @available(macOS 26.0, *)
+    private var glass: Glass {
+        let base = tint.map { Glass.regular.tint($0) } ?? .regular
+        return interactive ? base.interactive() : base
     }
 }
 
@@ -70,7 +104,8 @@ struct PillButtonStyle: ButtonStyle {
             .lineLimit(1)
             .padding(.horizontal, 12)
             .padding(.vertical, 6)
-            .background(prominent ? tint : Theme.raisedFill, in: Capsule())
+            .xotchGlass(Capsule(), tint: prominent ? tint : nil, interactive: true,
+                        fallback: Theme.raisedFill)
             .foregroundStyle(prominent ? RGBA(tint).onColor : Theme.ink)
             .opacity(configuration.isPressed ? 0.75 : 1)
             .scaleEffect(configuration.isPressed ? 0.96 : 1)
@@ -87,6 +122,22 @@ struct IconButtonStyle: ButtonStyle {
         IconButtonBody(configuration: configuration, size: size, prominent: prominent)
     }
 
+    /// The high-emphasis button stays a solid disc; the rest are glass.
+    private struct IconBackground: ViewModifier {
+        let prominent: Bool
+        let hovering: Bool
+
+        @ViewBuilder
+        func body(content: Content) -> some View {
+            if prominent {
+                content.background(Circle().fill(Theme.ink))
+            } else {
+                content.xotchGlass(Circle(), interactive: true,
+                                   fallback: hovering ? Theme.selection : Theme.fill)
+            }
+        }
+    }
+
     private struct IconButtonBody: View {
         let configuration: ButtonStyleConfiguration
         let size: CGFloat
@@ -99,7 +150,7 @@ struct IconButtonStyle: ButtonStyle {
                 .font(.system(size: size * 0.46, weight: .semibold))
                 .foregroundStyle(prominent ? Theme.surface : Theme.ink)
                 .frame(width: size, height: size)
-                .background(Circle().fill(prominent ? Theme.ink : (hovering ? Theme.selection : Theme.fill)))
+                .modifier(IconBackground(prominent: prominent, hovering: hovering))
                 .opacity(isEnabled ? (configuration.isPressed ? 0.7 : 1) : 0.35)
                 .scaleEffect(configuration.isPressed ? 0.92 : 1)
                 .contentShape(Circle())
@@ -156,7 +207,7 @@ struct Tile<Content: View>: View {
         content
             .padding(padding)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            .background(Theme.fill, in: RoundedRectangle(cornerRadius: 14))
+            .xotchGlass(RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 }
 

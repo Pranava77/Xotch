@@ -81,7 +81,7 @@ struct NotchSearchField: View {
         .font(.system(size: 13))
         .padding(.horizontal, 10)
         .frame(height: 30)
-        .background(Theme.fill, in: RoundedRectangle(cornerRadius: 9))
+        .xotchGlass(RoundedRectangle(cornerRadius: 9, style: .continuous))
     }
 }
 

@@ -81,7 +81,7 @@ struct Palette: Codable, Hashable, Sendable, Identifiable {
     static let midnight = Palette(
         id: "midnight", name: "Midnight",
         surface: .black, ink: .white, accent: RGBA(hex: 0xFF9F0A),
-        glow: nil, glowStrength: 0.32, material: .solid
+        glow: nil, glowStrength: 0.32, material: .glass
     )
     static let smoke = Palette(
         id: "smoke", name: "Smoke Glass",
@@ -91,7 +91,7 @@ struct Palette: Codable, Hashable, Sendable, Identifiable {
     static let aurora = Palette(
         id: "aurora", name: "Aurora",
         surface: RGBA(hex: 0x080D1A), ink: RGBA(hex: 0xEAF1FF), accent: RGBA(hex: 0x5EF2C0),
-        glow: RGBA(hex: 0x7B6CFF), glowStrength: 0.42, material: .solid
+        glow: RGBA(hex: 0x7B6CFF), glowStrength: 0.42, material: .glass
     )
 
     static let builtIn = [midnight, smoke, aurora]

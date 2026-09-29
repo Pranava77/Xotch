@@ -37,11 +37,9 @@ enum SettingsKey {
     static let captureMicrophone = "captureMicrophone"
     static let captureShowsClicks = "captureShowsClicks"
     static let captureKeepDays = "captureKeepDays"
-    static let weekStartsMonday = "weekStartsMonday"
-    static let lifeRollover = "lifeRollover"
-    static let lifeActivity = "lifeActivity"
-    static let lifeEveningNudge = "lifeEveningNudge"
-    static let lifeNudgeMinutes = "lifeNudgeMinutes"
+    // The key strings still say "life": people who changed them keep their choice.
+    static let todoRollover = "lifeRollover"
+    static let todoActivity = "lifeActivity"
 }
 
 enum DisplayChoice {
@@ -83,11 +81,8 @@ enum AppSettings {
             SettingsKey.captureMicrophone: false,
             SettingsKey.captureShowsClicks: false,
             SettingsKey.captureKeepDays: 7,
-            SettingsKey.weekStartsMonday: true,
-            SettingsKey.lifeRollover: true,
-            SettingsKey.lifeActivity: false,
-            SettingsKey.lifeEveningNudge: false,
-            SettingsKey.lifeNudgeMinutes: 21 * 60,
+            SettingsKey.todoRollover: true,
+            SettingsKey.todoActivity: false,
             Diagnostics.shareKey: false,
         ])
     }
@@ -170,28 +165,15 @@ enum AppSettings {
         UserDefaults.standard.integer(forKey: SettingsKey.captureKeepDays)
     }
 
-    // MARK: - Life
+    // MARK: - To-dos
 
-    static var weekStartsMonday: Bool {
-        UserDefaults.standard.bool(forKey: SettingsKey.weekStartsMonday)
-    }
-
-    /// Unfinished tasks move to today at the first launch of a new day.
-    static var lifeRollover: Bool {
-        UserDefaults.standard.bool(forKey: SettingsKey.lifeRollover)
+    /// Unfinished to-dos move to today at the first launch of a new day.
+    static var todoRollover: Bool {
+        UserDefaults.standard.bool(forKey: SettingsKey.todoRollover)
     }
 
     /// Shows how many to-dos are left beside the notch.
-    static var lifeActivity: Bool {
-        UserDefaults.standard.bool(forKey: SettingsKey.lifeActivity)
-    }
-
-    static var lifeEveningNudge: Bool {
-        UserDefaults.standard.bool(forKey: SettingsKey.lifeEveningNudge)
-    }
-
-    /// Minutes after midnight for the evening nudge.
-    static var lifeNudgeMinutes: Int {
-        UserDefaults.standard.integer(forKey: SettingsKey.lifeNudgeMinutes)
+    static var todoActivity: Bool {
+        UserDefaults.standard.bool(forKey: SettingsKey.todoActivity)
     }
 }

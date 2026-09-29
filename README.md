@@ -90,23 +90,15 @@ If more than one thing is live, the most important shows, and small dots tell yo
 - **Home:** the time, your next meeting and what's playing.
 - **Notes:** a scratchpad that can sit beside the notch, and notes that save as you type.
 
-## Your life, one square at a time
+## To-dos
 
-<img src="docs/images/module-life.jpg" alt="Life: today's to-dos on the left, today's habits on the right, and a year of squares that darken with what you got done">
+<img src="docs/images/module-todos.jpg" alt="To-dos: today's list under an add field">
 
-Today's to-dos, the week you keep every week as a timetable, and a square for every day that darkens with what you got done — a commit graph, for your life.
-
-**Arcs** are the stretches you're committing to: a name, an end date, the habits you'll keep and the milestones that prove it. A finished to-do counts as one commit, a habit kept as two, a milestone as five, and the streak counts the days you kept going.
+Today's to-dos, and a someday list for the rest.
 
 - Type a to-do straight into the notch, or press ⌘K anywhere and say what you're doing.
-- **Routine** is your week as a timetable: hours down the side, your days across it. Type "9:30 Maths" or "14:00-15:30 Lab" into a day and it's there every week, in its arc's colour. Today is marked, with a line where you are in it.
-- Habits can remind you at a time you pick, and you can check in from the notification without opening anything.
+- Right-click a to-do to move it to today, tomorrow or someday.
 - Unfinished to-dos carry over to the next day rather than quietly disappearing.
-- Click any square to see what you finished that day.
-
-<img src="docs/images/module-life-routine.jpg" alt="Life's routine: hours down the side, the week's fixed slots laid out across seven days, today marked">
-
-The notch grows when you open Life, and shrinks back for everything else.
 
 ## Screenshots and recordings
 
@@ -164,7 +156,6 @@ Press **⌘K** in the open notch and type:
 | `10 min` | Start a 10-minute timer |
 | `pause` | Pause the music |
 | `shot` | Take a screenshot |
-| `gym` | Check in on a habit |
 | Anything else | Add it to today's to-dos |
 | `aurora` | Switch theme |
 | Something you copied | Copy it again |
@@ -199,7 +190,7 @@ Xotch asks only when you use something that needs it.
 | Permission | When | Why |
 |---|---|---|
 | Calendars and Reminders | You choose **Allow** in Calendar | Your events and reminders |
-| Notifications | You start your first timer, or set a habit reminder | Telling you when time's up, and nudging a habit |
+| Notifications | You start your first timer | Telling you when time's up |
 | Paste from other apps (macOS 26) | You choose **Allow** in Clipboard | Keeping your clipboard history |
 | System audio recording | You turn on real sound for the music bars | Measuring how loud the music is |
 | Screen Recording | Your first screenshot or recording in Capture | Taking the picture. Choosing a window to record uses macOS's own picker instead, which needs no permission |

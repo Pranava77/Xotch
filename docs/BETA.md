@@ -28,7 +28,7 @@ Still to do for a beta channel: automatic updates. Adding Sparkle needs the Spar
 - **Every day:** Home, Now Playing (Music, Spotify, a browser), Calendar, Timers.
 - **Clipboard:** copy things and search them later. macOS asks once whether Xotch may read the clipboard.
 - **Shelf:** drag a file towards the notch, drop it, then drag it out somewhere else.
-- **Life:** put today's to-dos in, tick them off, and design one arc you actually care about. Check the graph after a few days — it should look like your week.
+- **To-dos:** put today's to-dos in, tick them off, and right-click one to move it to tomorrow or someday.
 - **Capture:** take a screenshot of an area, a window and the screen, record a few seconds of screen, and check that your own ⌘⇧4 screenshots turn up there too. macOS asks for Screen Recording the first time; screen recording itself needs macOS 15.
 - **Make it yours:** try the themes in Settings › Appearance, ⌘K in the open notch, scrolling on the closed notch for volume, and flicking a file off the Shelf.
 - **Different setups:** full-screen apps, an external display, sleep and wake.

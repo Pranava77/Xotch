@@ -112,15 +112,9 @@ enum DebugHooks {
                     "theme: \(ThemeStore.shared.palette.id) shaders ready=\(ShaderKit.shared.isReady) compile=\(ShaderKit.shared.compileTime.map { "\($0)" } ?? "-") failure=\(ShaderKit.shared.failure ?? "-")",
                     "audio levels: \(AudioLevels.shared.status)",
                     "clipboard access: \(ClipboardService.shared.access)",
-                    "life ui: \(LifeService.debugUI) tasksToday=\(LifeService.shared.openToday) arcs=\(LifeService.shared.liveArcs.count)",
+                    "todos: open today=\(TodoService.shared.openToday) total=\(TodoService.shared.todos.count)",
                     Storage.damaged.isEmpty ? "store: all files read cleanly"
                         : "store: DAMAGED, kept as \(Storage.damaged.joined(separator: ", "))",
-                    "life routine: \(LifeService.shared.timetable.count) slots" +
-                    (LifeService.shared.timetable.isEmpty ? "" : " [" + LifeService.shared.timetable
-                        .sorted { ($0.weekday, $0.start) < ($1.weekday, $1.start) }
-                        .map { "\($0.weekday)@\(LifeTime.label($0.start))+\($0.length)" }
-                        .joined(separator: " ") + "]"),
-                    "life draft: \(LifeService.shared.draft.map { "\($0.name.isEmpty ? "untitled" : $0.name) colour=\(String(format: "%02X%02X%02X", Int($0.colour.red * 255), Int($0.colour.green * 255), Int($0.colour.blue * 255))) habits=\($0.habits.count) milestones=\($0.milestones.count)" } ?? "none")",
                     "capture: permission=\(CaptureService.hasScreenPermission) items=\(CaptureService.shared.items.count) recording=\(CaptureService.shared.isRecording) starting=\(CaptureService.shared.isStartingRecording) stopping=\(CaptureService.shared.isStoppingRecording) notice=\(CaptureService.shared.notice.map { "\($0)" } ?? "-") quickLook=\(QLPreviewPanel.sharedPreviewPanelExists() && QLPreviewPanel.shared().isVisible)",
                     String(format: "pointer events: %.1f/s", ScreenManager.shared.debugPointerRate()),
                 ]
@@ -175,8 +169,7 @@ enum DebugHooks {
         lines.append("shelf: \(ShelfService.shared.items.count) items, airdrop=\(ShelfService.shared.canAirDrop)")
         lines.append("notes: \(NotesService.shared.notes.count) notes")
         lines += captureSelfTest()
-        lines += lifeSelfTest()
-        lines += await lifeUISelfTest()
+        lines += todoSelfTest()
 
         // Phase 5
         if #available(macOS 15.4, *) {
@@ -351,152 +344,29 @@ enum DebugHooks {
         return lines
     }
 
-    /// Makes a real arc, keeps a habit, ticks a real task, then clears up —
-    /// the same calls the buttons make, so a broken save shows up here.
+    /// Adds a real to-do, ticks it, moves it and deletes it: the same calls the
+    /// buttons make, so a broken save shows up here.
     @MainActor
-    private static func lifeRoundTrip() -> [String] {
-        let life = LifeService.shared
-        let arcsBefore = life.arcs.count, tasksBefore = life.tasks.count
-        var arc = Arc(name: "Self-test arc", colour: RGBA(hex: 0x4FA3FF), intent: "Deleted straight away")
-        arc.habits = [Habit(title: "Self-test habit", cadence: .daily)]
-        arc.milestones = [Milestone(title: "Self-test milestone")]
-        life.save(arc)
-        let saved = life.arcs.contains { $0.id == arc.id }
-        guard let stored = life.arcs.first(where: { $0.id == arc.id }), let habit = stored.habits.first else {
-            return ["life round trip: FAILED to save the arc"]
-        }
-        life.toggleCheckIn(habit, in: stored)
-        let kept = life.isKept(habit)
-        let task = life.add("Self-test task", on: LifeService.today, arcID: stored.id)
-        let added = task != nil
-        var ticked = false
-        if let task {
-            life.toggle(task)
-            ticked = life.tasks.first { $0.id == task.id }?.isDone ?? false
-            life.delete(task)
-        }
-        let commits = life.commits(on: LifeService.today)
-        if kept { life.toggleCheckIn(habit, in: stored) }
-        life.delete(stored)
-        let cleaned = life.arcs.count == arcsBefore && life.tasks.count == tasksBefore
-        return ["life round trip: saved=\(saved) checkedIn=\(kept) taskAdded=\(added) taskTicked=\(ticked) commitsSeen=\(commits) cleanedUp=\(cleaned) (all expect true)"]
-    }
-
-    /// Drives Life's buttons with real clicks, the way a person would.
-    ///
-    /// This pass exists because the designer once looked perfect and did
-    /// nothing: a filled overlay ate every click, and once that was fixed,
-    /// saving an arc killed the app on a force-unwrapped binding. Neither
-    /// showed up in a data-layer test.
-    @MainActor
-    private static func lifeUISelfTest() async -> [String] {
-        let life = LifeService.shared
-        let screen = ScreenManager.shared
-        let arcsBefore = life.arcs.count
-        let tasksBefore = life.tasks.count
-        let name = "UI self-test \(Int(Date().timeIntervalSince1970) % 10_000)"
-        func settle() async { try? await Task.sleep(for: .milliseconds(450)) }
-
-        screen.debugOpen(moduleID: "life")
-        await settle()
-        screen.debugClick(named: "life.tab.arcs")
-        await settle()
-        let onArcs = LifeService.debugCurrentTab == "Arcs"
-
-        screen.debugClick(named: "life.newArc")
-        await settle()
-        let opened = life.draft != nil
-
-        // The name field takes focus when the designer appears.
-        screen.debugType(name)
-        await settle()
-        let typed = life.draft?.name == name
-
-        screen.debugClick(named: "life.lockItIn")
-        await settle()
-        let saved = life.arcs.contains { $0.name == name }
-        let closed = life.draft == nil
-
-        // Open one more and back out, which is the other way the draft is
-        // cleared — the path that used to trap.
-        screen.debugClick(named: "life.newArc")
-        await settle()
-        screen.debugClick(named: "life.cancel")
-        await settle()
-        let cancelled = life.draft == nil
-
-        // The routine: a slot typed into Monday is the same every week.
-        let slotsBefore = life.timetable.count
-        screen.debugClick(named: "life.tab.routine")
-        await settle()
-        let lesson = "Self-test lesson \(Int(Date().timeIntervalSince1970) % 10_000)"
-        screen.debugClick(named: "life.routine.add.0")
-        await settle()
-        screen.debugType("9:30 " + lesson + "\n")
-        await settle()
-        let monday = LifeService.calendar.component(.weekday, from: life.week()[0])
-        let slot = life.timetable.first { $0.title == lesson }
-        let scheduled = slot?.weekday == monday && slot?.start == 570 && slot?.length == 60
-        if let slot { life.remove(slot) }
-        let routineClean = life.timetable.count == slotsBefore
-
-        if let made = life.arcs.first(where: { $0.name == name }) { life.delete(made) }
-        let cleaned = life.arcs.count == arcsBefore && life.tasks.count == tasksBefore
-        let passed = onArcs && opened && typed && saved && closed && cancelled
-            && scheduled && routineClean && cleaned
-        return ["life ui: arcsTab=\(onArcs) designerOpened=\(opened) typed=\(typed) saved=\(saved) " +
-                "closed=\(closed) cancelled=\(cancelled) " +
-                "routineSlot=\(scheduled) routineClean=\(routineClean) cleanedUp=\(cleaned) " +
-                "→ \(passed ? "PASS" : "FAILED")"]
-    }
-
-    /// Scoring, streaks, weeks, rollover and the reminder schedule, on sample
-    /// data only: no task titles or arcs of your own are read.
-    @MainActor
-    private static func lifeSelfTest() -> [String] {
+    private static func todoSelfTest() -> [String] {
         var lines: [String] = []
-        let life = LifeService.shared
-        let levels = [0, 1, 2, 3, 5, 6, 9, 10, 40].map { "\($0)→\(LifeScore.level(of: $0))" }
-        lines.append("life levels: \(levels.joined(separator: " ")) (expect 0→0 1→1 2→1 3→2 5→2 6→3 9→3 10→4 40→4)")
-        lines.append("life weights: task=\(LifeScore.task) checkIn=\(LifeScore.checkIn) milestone=\(LifeScore.milestone)")
-
-        // Reading a time off the front of what you typed, and — just as
-        // important — not reading one where there isn't one.
-        let readings = ["9:30 standup", "14:00-15:30 deep work", "2pm dentist", "9.30 lab",
-                        "30 push-ups", "9:30", "9amazing idea"].map { text -> String in
-            let reading = LifeTime.parse(text)
-            return "\(text)→\(reading.start.map(String.init) ?? "-")/\(reading.length.map(String.init) ?? "-")/\(reading.rest)"
+        let todos = TodoService.shared
+        let before = todos.todos.count
+        let todo = todos.add("Self-test to-do", on: TodoService.today)
+        let added = todo != nil
+        var ticked = false, moved = false
+        if let todo {
+            todos.toggle(todo)
+            ticked = todos.todos.first { $0.id == todo.id }?.isDone ?? false
+            todos.move(todo, to: nil)
+            moved = todos.todos.first { $0.id == todo.id }?.day == nil
+            todos.delete(todo)
         }
-        lines.append("life times: \(readings.joined(separator: " "))")
-        lines.append("life times expect: 9:30 standup→570/-/standup 14:00-15:30 deep work→840/90/deep work " +
-                     "2pm dentist→840/-/dentist 9.30 lab→570/-/lab 30 push-ups→-/-/30 push-ups " +
-                     "9:30→570/-/ 9amazing idea→-/-/9amazing idea")
-
-        life.withSample {
-            let today = LifeService.today
-            let week = life.week()
-            let names = week.map { LifeService.calendar.component(.weekday, from: $0) }
-            lines.append("life week: starts weekday \(names.first ?? 0) (\(AppSettings.weekStartsMonday ? "Monday=2" : "Sunday=1")) days=\(names.count) containsToday=\(week.contains(today))")
-            lines.append("life sample: \(life.tasks.count) tasks, \(life.arcs.count) arcs, \(life.checkIns.count) check-ins, today=\(life.commits(on: today)) commits, week=\(life.commitsThisWeek()), streak=\(life.streak), longest=\(life.longestStreak)")
-            let columns = life.graphColumns()
-            let days = columns.flatMap { $0 }
-            let lit = days.filter { life.commits(on: $0) > 0 }.count
-            lines.append("life graph: \(columns.count) weeks × 7 = \(days.count) days, \(lit) with commits, ends \(days.last.map { LifeService.calendar.component(.weekday, from: $0) } ?? 0) (7 per column)")
-            if let arc = life.liveArcs.first(where: { !$0.milestones.isEmpty }) {
-                let progress = life.progress(of: arc)
-                lines.append("life arc: milestones \(progress.milestonesDone)/\(progress.milestonesTotal) habitRate=\(String(format: "%.2f", progress.habitRate)) daysLeft=\(progress.daysLeft.map(String.init) ?? "-")")
-            }
-            let plans = LifeReminders.plans(arcs: life.liveArcs, eveningNudge: 21 * 60)
-            let described = plans.map { "\($0.title.prefix(12))@\(String(format: "%02d:%02d", $0.hour, $0.minute))\($0.weekday.map { "w\($0)" } ?? "")" }
-            lines.append("life reminders: \(plans.count) → \(described.joined(separator: " "))")
-            let again = LifeReminders.plans(arcs: life.liveArcs, eveningNudge: 21 * 60)
-            lines.append("life reminders stable: \(Set(plans.map(\.identifier)) == Set(again.map(\.identifier)) && plans.count == again.count) (expect true)")
-        }
-        lines += lifeRoundTrip()
+        let cleaned = todos.todos.count == before
+        lines.append("todos round trip: added=\(added) ticked=\(ticked) movedToSomeday=\(moved) cleanedUp=\(cleaned) → \(added && ticked && moved && cleaned ? "PASS" : "FAILED")")
         let renamed = UserDefaults.standard.bool(forKey: "migration.renamedFromBrim")
         let oldFolder = FileManager.default.fileExists(atPath: FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent("Brim").path)
         lines.append("rename: migrated=\(renamed) oldFolderLeft=\(oldFolder) oldSettings=\(Migration.oldSettings()?.count ?? 0) keys, support=\(Storage.directory.lastPathComponent), hook=\(ClaudeHookInstaller.marker)")
-        lines.append("life: \(life.tasks.count) tasks, \(life.arcs.count) arcs, rollover=\(AppSettings.lifeRollover), ear=\(AppSettings.lifeActivity), nudge=\(AppSettings.lifeEveningNudge)")
+        lines.append("todos: \(todos.todos.count) to-dos, rollover=\(AppSettings.todoRollover), ear=\(AppSettings.todoActivity)")
         return lines
     }
 
@@ -702,32 +572,6 @@ enum DebugHooks {
             }
         }
         withSampleData {
-            for tab in ["Routine", "Arcs"] {
-                LifeService.debugTab = tab
-                render("4-open-life-\(tab.lowercased())") {
-                    $0.phase = .open
-                    $0.selectedModuleID = "life"
-                }
-            }
-            LifeService.debugTab = "Arcs"
-            LifeService.debugDesigner = true
-            render("4-open-life-designer") {
-                $0.phase = .open
-                $0.selectedModuleID = "life"
-            }
-            LifeService.debugDesigner = false
-            // The designer render left a draft behind, and a draft takes the
-            // module over — without this the day shot draws the designer again.
-            LifeService.shared.draft = nil
-            LifeService.debugTab = "Today"
-            LifeService.debugSelectedDay = LifeService.calendar.date(byAdding: .day, value: -9, to: LifeService.today)
-            render("4-open-life-day") {
-                $0.phase = .open
-                $0.selectedModuleID = "life"
-            }
-            LifeService.debugReset()
-        }
-        withSampleData {
             CaptureService.shared.debugSetRecording(since: Date().addingTimeInterval(-75))
             render("4-open-capture-recording") {
                 $0.phase = .open
@@ -839,7 +683,7 @@ func withSampleData(_ body: () -> Void) {
     NotesService.shared.withSample {
     ShelfService.shared.withSample {
     CaptureService.shared.withSample {
-    LifeService.shared.withSample {
+    TodoService.shared.withSample {
     StatsService.shared.withSample {
     ClaudeUsageService.shared.withSample {
     ClaudeLiveService.shared.withSample {
