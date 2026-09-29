@@ -178,8 +178,8 @@ private struct PaletteButton: View {
             .foregroundStyle(Theme.tertiaryInk)
             .padding(.horizontal, 6)
             .frame(height: 20)
-            .background(RoundedRectangle(cornerRadius: 6).strokeBorder(Theme.hairline))
-            .contentShape(Rectangle())
+            .xotchGlass(Capsule(), interactive: true, fallback: Theme.fill)
+            .contentShape(Capsule())
         }
         .buttonStyle(.plain)
         .help("Command palette  ⌘K")
@@ -219,8 +219,38 @@ private struct ModuleDock: View {
     let selectedID: String
     let namespace: Namespace.ID
     let select: (String) -> Void
+    @Environment(\.snapshotMode) private var snapshotMode
 
     var body: some View {
+        if #available(macOS 26.0, *), glassAvailable(snapshot: snapshotMode) {
+            // One glass capsule holds the row, and the selected icon is a lens
+            // that slides between them like a system segmented control.
+            GlassEffectContainer(spacing: 4) {
+                row(highlight: { isSelected in
+                    if isSelected {
+                        Capsule()
+                            .fill(Color.clear)
+                            .glassEffect(.regular.tint(Theme.ink.opacity(0.14)).interactive(), in: Capsule())
+                            .glassEffectID("dock-highlight", in: namespace)
+                    }
+                })
+                .padding(4)
+                .glassEffect(.regular, in: Capsule())
+            }
+        } else {
+            row(highlight: { isSelected in
+                if isSelected {
+                    Capsule()
+                        .fill(Theme.selection)
+                        .matchedGeometryEffect(id: "dock-highlight", in: namespace)
+                }
+            })
+            .padding(4)
+            .background(Theme.fill, in: Capsule())
+        }
+    }
+
+    private func row<Highlight: View>(@ViewBuilder highlight: @escaping (Bool) -> Highlight) -> some View {
         HStack(spacing: 4) {
             ForEach(Array(modules.enumerated()), id: \.element.id) { index, module in
                 let isSelected = module.id == selectedID
@@ -232,14 +262,8 @@ private struct ModuleDock: View {
                         .font(.system(size: 13, weight: .semibold))
                         .matchedGeometryEffect(id: "icon-\(module.id)", in: namespace)
                         .frame(width: 38, height: 30)
-                        .foregroundStyle(isSelected ? Theme.ink : Theme.tertiaryInk)
-                        .background {
-                            if isSelected {
-                                Capsule()
-                                    .fill(Theme.selection)
-                                    .matchedGeometryEffect(id: "dock-highlight", in: namespace)
-                            }
-                        }
+                        .foregroundStyle(isSelected ? Theme.ink : Theme.secondaryInk)
+                        .background { highlight(isSelected) }
                         .contentShape(Capsule())
                 }
                 .buttonStyle(.plain)
@@ -248,8 +272,6 @@ private struct ModuleDock: View {
                 .accessibilityAddTraits(isSelected ? .isSelected : [])
             }
         }
-        .padding(4)
-        .background(Theme.fill, in: Capsule())
     }
 }
 

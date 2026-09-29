@@ -45,7 +45,7 @@ enum ModuleRegistry {
         ClipboardModule(),
         ShelfModule(),
         CaptureModule(),
-        LifeModule(),
+        TodosModule(),
         NotesModule(),
         StatsModule(),
         ClaudeModule(),

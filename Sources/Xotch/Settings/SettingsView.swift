@@ -26,11 +26,8 @@ struct SettingsView: View {
     @AppStorage(SettingsKey.captureSystemAudio) private var captureSystemAudio = true
     @AppStorage(SettingsKey.captureMicrophone) private var captureMicrophone = false
     @AppStorage(SettingsKey.captureShowsClicks) private var captureShowsClicks = false
-    @AppStorage(SettingsKey.weekStartsMonday) private var weekStartsMonday = true
-    @AppStorage(SettingsKey.lifeRollover) private var lifeRollover = true
-    @AppStorage(SettingsKey.lifeActivity) private var lifeActivity = false
-    @AppStorage(SettingsKey.lifeEveningNudge) private var lifeEveningNudge = false
-    @AppStorage(SettingsKey.lifeNudgeMinutes) private var lifeNudgeMinutes = 21 * 60
+    @AppStorage(SettingsKey.todoRollover) private var todoRollover = true
+    @AppStorage(SettingsKey.todoActivity) private var todoActivity = false
     @State private var confirmClearClipboard = false
     @State private var openAtLogin = SMAppService.mainApp.status == .enabled
     @State private var loginMessage: String?
@@ -154,36 +151,16 @@ struct SettingsView: View {
             }
 
             Section {
-                Picker("Weeks start on", selection: $weekStartsMonday) {
-                    Text("Monday").tag(true)
-                    Text("Sunday").tag(false)
-                }
-                .pickerStyle(.segmented)
-                Toggle("Carry unfinished to-dos over to the next day", isOn: $lifeRollover)
-                Toggle("Show how many to-dos are left beside the notch", isOn: $lifeActivity)
-                    .onChange(of: lifeActivity) { _, _ in LifeService.shared.updateActivity() }
-                Toggle("Ask in the evening if nothing's been committed", isOn: $lifeEveningNudge)
-                    .onChange(of: lifeEveningNudge) { _, on in
-                        if on { LifeReminders.shared.requestPermission() }
-                        LifeReminders.shared.refreshAll()
-                    }
-                if lifeEveningNudge {
-                    DatePicker("Ask at", selection: Binding(
-                        get: { LifeService.today.addingTimeInterval(Double(lifeNudgeMinutes) * 60) },
-                        set: { date in
-                            let parts = Calendar.current.dateComponents([.hour, .minute], from: date)
-                            lifeNudgeMinutes = (parts.hour ?? 21) * 60 + (parts.minute ?? 0)
-                            LifeReminders.shared.refreshAll()
-                        }
-                    ), displayedComponents: .hourAndMinute)
-                }
-                LabeledContent("Your life file") {
-                    Button("Show in Finder") { LifeService.shared.revealStore() }
+                Toggle("Carry unfinished to-dos over to the next day", isOn: $todoRollover)
+                Toggle("Show how many to-dos are left beside the notch", isOn: $todoActivity)
+                    .onChange(of: todoActivity) { _, _ in TodoService.shared.updateActivity() }
+                LabeledContent("Your to-do file") {
+                    Button("Show in Finder") { TodoService.shared.revealStore() }
                 }
             } header: {
-                Text("Life")
+                Text("To-dos")
             } footer: {
-                Text("To-dos, arcs and your commit graph live in life.json on this Mac. Habit reminders are Xotch's own notifications, so macOS asks for permission the first time you set one.")
+                Text("Your to-dos live in todos.json on this Mac.")
                     .foregroundStyle(.secondary)
             }
 

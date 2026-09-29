@@ -100,7 +100,7 @@ final class ScreenManager {
         DownloadsService.shared.settingsChanged()
         AudioLevels.shared.settingsChanged()
         CaptureService.shared.settingsChanged()
-        LifeService.shared.settingsChanged()
+        TodoService.shared.updateActivity()
         let hide = AppSettings.hideInFullScreen
         if hide != hideInFullScreen {
             hideInFullScreen = hide
@@ -357,7 +357,7 @@ final class ScreenManager {
         primary.model.dropCount += 1
     }
 
-    /// `open:life` uses the primary notch; `open:life@1` picks a screen by
+    /// `open:todos` uses the primary notch; `open:todos@1` picks a screen by
     /// position, left to right, so a second display can be tested too.
     func debugOpen(moduleID: String, screen index: Int? = nil) {
         let target: NotchWindowController?

@@ -8,7 +8,7 @@
 #
 # click, type and probe drive the notch's own UI: the events are synthesised
 # inside the app, so no Accessibility permission is involved. A control name
-# comes from `.debugFrame(_:)` — "life.newArc", "life.lockItIn" and so on.
+# comes from `.debugFrame(_:)` — "todos.add" and so on.
 set -euo pipefail
 
 COMMAND="${1:?usage: scripts/debug.sh open [module]|close|activity|activity-media|activity-timer|activity-claude|activity-download|clear-activities|celebrate|palette|ripple|theme <id>|mood <mood>|rebuild <n>|status <file>|snapshot <folder>|effects <folder>|marketing <folder>|selftest <file>|click <x,y|name>|type <text>|probe <file>}"

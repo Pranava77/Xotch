@@ -61,15 +61,9 @@ enum MarketingShots {
         withSampleData {
             theme.withPalette(Palette.midnight.id) {
                 save("hero", open("home"), size: CGSize(width: 1080, height: 400), status: true)
-                for module in ["media", "calendar", "timers", "clipboard", "shelf", "capture", "stats", "claude"] {
+                for module in ["media", "calendar", "timers", "clipboard", "shelf", "capture", "todos", "stats", "claude"] {
                     save("module-\(module)", open(module), size: openSize, scale: 1.5)
                 }
-                // Life asks for a bigger notch, so its shot needs a bigger scene.
-                save("module-life", open("life"), size: CGSize(width: 1250, height: 650), scale: 1.2)
-                // The routine is half of what Life is, so it gets its own shot.
-                LifeService.debugTab = "Routine"
-                save("module-life-routine", open("life"), size: CGSize(width: 1250, height: 650), scale: 1.2)
-                LifeService.debugReset()
                 let palette = open("home")
                 palette.isPinned = true
                 palette.palette.isOpen = true

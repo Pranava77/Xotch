@@ -34,7 +34,7 @@ With a debug build running:
 ./scripts/debug.sh selftest ~/Desktop/xotch-selftest.txt  # check the real services, write a report
 ./scripts/debug.sh status ~/Desktop/xotch-status.txt      # notch state per display, pointer event rate
 ./scripts/debug.sh rebuild 30        # rebuild the notch windows, for leak checks
-./scripts/debug.sh click life.newArc # click a control by name, or by "x,y" in window coordinates
+./scripts/debug.sh click todos.add # click a control by name, or by "x,y" in window coordinates
 ./scripts/debug.sh type "Ship it"    # type into whatever has focus; \n is Return
 ./scripts/debug.sh probe ~/Desktop/xotch-probe.txt  # hit-test a grid down the open notch
 ```
@@ -43,7 +43,7 @@ With a debug build running:
 
 `click` and `type` synthesise real events and post them to the app's own event
 queue, so a debug build can drive its own UI with no Accessibility permission
-and no robot moving your cursor. Controls tagged with `.debugFrame("life.newArc")`
+and no robot moving your cursor. Controls tagged with `.debugFrame("todos.add")`
 can be clicked by name, which survives layout changes; coordinates are a
 fallback, in window points from the bottom left.
 
@@ -62,9 +62,7 @@ Two things to know:
   marketing shots build the whole shell inside an `ImageRenderer`, off screen
   and in its own coordinate space; recording those frames pointed every later
   click at a window that wasn't there.
-- `selftest` runs a UI pass (`life ui: … → PASS`) that clicks Life's tabs, makes
-  an arc, saves it, opens another and cancels. That pass exists because of the
-  two bugs below.
+- `selftest` adds a to-do, ticks it, moves it to someday and deletes it, through the same calls the UI makes (`todos round trip: … → PASS`).
 
 The project lives on the Desktop, which macOS protects, and every rebuild resets the debug build's permissions. So render product images into a folder outside Desktop, Documents and Downloads, then copy them into `docs/images`. Writing there directly makes Xotch wait for the "access files in your Desktop folder" prompt.
 
@@ -90,7 +88,7 @@ See [PERFORMANCE.md](PERFORMANCE.md), [TESTING.md](TESTING.md) (manual checks an
 | Clipboard | NSPasteboard | Paste from other apps (macOS 26) |
 | Shelf | bookmarks, Quick Look, an AppKit drag source | — |
 | Capture | `/usr/sbin/screencapture`, ScreenCaptureKit, Spotlight (`NSMetadataQuery`) | Screen Recording; Microphone (optional) |
-| Life | JSON in Application Support, UserNotifications | Notifications (only when you set a habit reminder) |
+| To-dos | JSON in Application Support | — |
 | Notes | JSON in Application Support | — |
 | System | Mach, getifaddrs, IOKit | — |
 | Claude Code | `~/.claude/projects` logs, a Claude Code hook | Adding the hook (optional) |
@@ -125,19 +123,13 @@ The plan called for a Rive mascot and SwiftUI's `.layerEffect`. Rive needs its p
 
 Captures are saved to `~/Pictures/Xotch` by default. Pictures is one of the few home folders macOS doesn't protect, so saving there asks for nothing. Removing an item from the shelf only hides it (the paths are kept in `capture-hidden.json`); the file itself stays until you move it to the Trash.
 
-### Life
+### To-dos
 
-`Modules/Life` holds to-dos, arcs and the commit graph in one `life.json`, saved through `Storage` like Notes.
+`Modules/Todos` holds to-dos in `todos.json`, saved through `Storage` like Notes. Before To-dos there was a Life module (arcs, habits, a routine timetable, a commit graph); on the first launch after it went, `TodoService` copies the to-dos out of `life.json` and leaves that file alone.
 
-- **Scoring:** a finished to-do is worth 1, a habit check-in 2, a milestone 5 (`LifeScore`). Day totals are cached in `LifeService` and thrown away whenever something changes, so the graph never recomputes a year of history while you type.
-- **Routine is a timetable:** hours down the left, the seven days across, and the fixed weekly slots in between (`TimetableEntry`: a weekday, minutes after midnight, a length — no date, because it is the same every week). `TimetableMetrics` owns the minutes-to-points maths and widens the usual 07:00–23:00 to hold anything outside it; `TimetableGrid.swift` holds the ruler, the hour lines and the blocks. Blocks are ordinary views positioned with `.offset`, not a `Canvas` like `LifeGraph`, because they need context menus and clicks. Only the routine is drawn there: to-dos live on Today, and the tab shows weekday names rather than dates, since the week it describes is every week.
-- **A time is only a time when it says so:** `LifeTime.parse` reads "9:30 Maths", "14:00-15:30 Lab" and "2pm dentist", but a bare number is never a time — "30 push-ups" would be a slot at half past midnight otherwise. It needs two digits after a colon or a dot, or an am/pm. Times are `Int` minutes after midnight, matching `Habit.reminder`; nothing in Life stores a wall-clock `Date`.
-- **Typing builds the routine:** each day carries an add field (`DayAddField`) that writes a weekly slot through `addSlot(_:weekday:)`, "#arc" filing included, and keeps focus so a day can be listed out in one go. The fields stay quiet — no fill, dimmed plus, "Add" rather than the example — until hovered or focused, because seven lit fields would shout over the week. A slot is reference only: never ticked, never a commit, so the graph keeps meaning what it meant.
-- **The graph** is a single SwiftUI `Canvas`: 53 columns × 7 days drawn in one pass, with hit-testing worked out from the point rather than a view per square.
-- **Reminders** (`LifeReminders`) are repeating `UNCalendarNotificationTrigger`s with stable identifiers, so rescheduling replaces them instead of piling up. `plans(arcs:eveningNudge:)` is pure, which is what the self-test checks. The notification carries a **Check in** button, handled without opening the notch.
-- **Clicks in the designer, twice broken:** the arc designer painted its own card with `.overlay(RoundedRectangle(…).fill(Theme.fill))`. A filled SwiftUI shape takes hit tests even at 7% opacity, so the overlay sat on top of the designer and ate every click in it — the tabs above still worked, which made it look like only "the arc" was broken. It's a `.background` now, and decorative strokes elsewhere carry `.allowsHitTesting(false)`. With clicks restored, saving an arc then killed the app outright: the designer was handed `Binding($life.draft)`, and that force-unwrapping binding traps when SwiftUI updates the subtree once more after the draft is cleared (`BindingOperations.ForceUnwrapping.get` in the crash report). `LifeService.draftBinding` falls back to a placeholder for that last update instead. Both are covered by the self-test's UI pass.
-- **A wider notch:** `NotchModule.openSize` lets a module ask for more room; Life asks for `Layout.wideOpenSize` (1120×580) and everything else keeps 600×300. The panel is sized once from `Layout.maxOpenSize` (so 1236×624 including shoulders and the shadow margin) and never resized, and `NotchViewModel.openSize` clamps to the screen so a small display still fits.
-- **The graph fills the room it has:** `LifeGraph.cell(fitting:columns:)` picks the biggest square between 9 and 14pt that fits a year of weeks in the width available, and `LifeGraph.height(cell:)` gives the row exactly that height — the old fixed 100pt box shaved the bottom row. The day panel's width is reserved whether or not a day is selected, so clicking a square slides the panel in without reflowing the year underneath it.
+- **Two lists:** today, and someday (no day). Right-click moves a to-do between today, tomorrow and someday; ticking a someday to-do puts it on today.
+- **Rollover:** unfinished to-dos from before today move to today once a day, at midnight or first launch (`rolloverIfNeeded`), unless "Carry unfinished to-dos over" is off. The setting keeps its old `lifeRollover` key so saved choices survive.
+- **Beside the notch:** with the setting on, "3 left" shows as an ongoing activity.
 
 ### Claude Code live status
 

@@ -21,10 +21,11 @@ struct NotchSurface: View {
                     GlassBackground(shape: shape, tint: palette.surface.color)
                         .transition(.opacity)
                 }
-                // Fade to black at the top, so the glass meets the menu bar and
-                // the camera housing without a seam.
+                // A short fade to black at the top, so the glass meets the menu
+                // bar and the camera housing without a seam. Any longer and the
+                // top of the panel stops looking like glass.
                 LinearGradient(colors: [.black, .black.opacity(0)], startPoint: .top, endPoint: .bottom)
-                    .frame(height: 64)
+                    .frame(height: 28)
                     .clipShape(shape)
                     .allowsHitTesting(false)
                     .transition(.opacity)
@@ -44,7 +45,7 @@ private struct GlassBackground: View {
     var body: some View {
         if #available(macOS 26.0, *), !GlassFallback.forced {
             Color.clear
-                .glassEffect(.regular.tint(tint.opacity(0.6)), in: shape)
+                .glassEffect(.regular.tint(tint.opacity(0.25)), in: shape)
         } else {
             VisualEffectBlur()
                 .clipShape(shape)
