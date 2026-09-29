@@ -47,6 +47,13 @@ struct RGBA: Codable, Hashable, Sendable {
         return RGBA(Color(nsColor: shifted))
     }
 
+    /// This colour moved `amount` (0...1) of the way towards `other`.
+    func mixed(with other: RGBA, _ amount: Double) -> RGBA {
+        let t = min(max(amount, 0), 1)
+        return RGBA(red: red + (other.red - red) * t, green: green + (other.green - green) * t,
+                    blue: blue + (other.blue - blue) * t, alpha: alpha + (other.alpha - alpha) * t)
+    }
+
     /// Black or white, whichever reads on top of this colour.
     var onColor: Color { luminance > 0.45 ? .black : .white }
 
@@ -59,6 +66,13 @@ enum SurfaceMaterial: String, Codable, Sendable {
     case solid
     /// Frosted glass that shows a blur of what's behind the notch.
     case glass
+}
+
+/// How controls are finished. Modern is flat translucent fills; retro is the
+/// glossy 2000s "Aero" look: a bright specular band, gradients and bevelled edges.
+enum PaletteStyle: String, Codable, Sendable {
+    case modern
+    case retro
 }
 
 /// The colours the open notch is drawn with. The closed notch is always black,
@@ -77,7 +91,18 @@ struct Palette: Codable, Hashable, Sendable, Identifiable {
     /// 0 turns the glow off.
     var glowStrength: Double
     var material: SurfaceMaterial
+    /// Nil in themes saved before styles existed, which read as modern.
+    var style: PaletteStyle?
 
+    var isRetro: Bool { style == .retro }
+
+    /// Frutiger Aero: sky-blue water glass, an aqua-green accent, and light
+    /// that spills in from the top like a window in Vista or Aqua.
+    static let aero = Palette(
+        id: "aero", name: "Aero Glass",
+        surface: RGBA(hex: 0x061E33), ink: .white, accent: RGBA(hex: 0x3DDCC8),
+        glow: RGBA(hex: 0x4FC3F7), glowStrength: 0.4, material: .glass, style: .retro
+    )
     static let midnight = Palette(
         id: "midnight", name: "Midnight",
         surface: .black, ink: .white, accent: RGBA(hex: 0xFF9F0A),
@@ -94,7 +119,7 @@ struct Palette: Codable, Hashable, Sendable, Identifiable {
         glow: RGBA(hex: 0x7B6CFF), glowStrength: 0.42, material: .glass
     )
 
-    static let builtIn = [midnight, smoke, aurora]
+    static let builtIn = [aero, midnight, smoke, aurora]
     static let customID = "custom"
 
     /// Text colour that reads on top of the accent.
@@ -116,7 +141,7 @@ final class ThemeStore: @unchecked Sendable {
 
     init() {
         let defaults = UserDefaults.standard
-        selectedID = defaults.string(forKey: Self.selectedKey) ?? Palette.midnight.id
+        selectedID = defaults.string(forKey: Self.selectedKey) ?? Palette.aero.id
         if let data = defaults.data(forKey: Self.customKey),
            let saved = try? JSONDecoder().decode(Palette.self, from: data) {
             custom = saved
@@ -129,7 +154,7 @@ final class ThemeStore: @unchecked Sendable {
 
     var palette: Palette {
         if selectedID == Palette.customID { return custom }
-        return Palette.builtIn.first { $0.id == selectedID } ?? .midnight
+        return Palette.builtIn.first { $0.id == selectedID } ?? .aero
     }
 
     var choices: [Palette] { Palette.builtIn + [custom] }

@@ -19,6 +19,10 @@ enum Theme {
     /// Midnight's accent is the orange of macOS's microphone-in-use dot (#FF9F0A).
     static var accent: Color { palette.accent.color }
     static var onAccent: Color { palette.onAccent }
+    /// Retro themes finish controls with gloss; modern ones stay flat.
+    static var isRetro: Bool { palette.isRetro }
+    /// Rounded type suits the retro look, the way Frutiger did.
+    static var fontDesign: Font.Design { isRetro ? .rounded : .default }
     static let positive = Color(red: 0.2, green: 0.84, blue: 0.47)
     static let negative = Color(red: 1.0, green: 0.36, blue: 0.33)
 }
@@ -29,6 +33,11 @@ enum Layout {
     static let openSize = CGSize(width: 600, height: 300)
     /// Default width of each "ear" beside the hardware notch in the activity state.
     static let earWidth: CGFloat = 78
+    /// Room for an activity's icon when it moves into the right ear, because the
+    /// HUD's bars have the left one.
+    static let inlineIconWidth: CGFloat = 28
+    /// A left ear holding just an activity's icon and the edge padding.
+    static let leftIconEarWidth: CGFloat = 52
     /// How much the closed notch grows while the pointer rests on it.
     static let peekGrowth = CGSize(width: 18, height: 6)
     /// Size of the drawn notch on displays that don't have one. A flat width
@@ -58,8 +67,45 @@ extension View {
     /// Liquid Glass on macOS 26 and later. Earlier systems, snapshots (which
     /// can't draw glass) and the forced-fallback switch get a flat fill instead.
     func xotchGlass<S: Shape>(_ shape: S, tint: Color? = nil, interactive: Bool = false,
-                              fallback: Color? = nil) -> some View {
-        modifier(XotchGlass(shape: shape, tint: tint, interactive: interactive, fallback: fallback))
+                              fallback: Color? = nil, gloss: Double = 1) -> some View {
+        modifier(XotchGlass(shape: shape, tint: tint, interactive: interactive, fallback: fallback, gloss: gloss))
+    }
+
+    /// The retro finish on its own: a bright band across the top half, a
+    /// bevelled edge, and nothing at all in modern themes. `strength` scales it
+    /// down for big surfaces, where full gloss would shout.
+    func xotchGloss<S: Shape>(_ shape: S, strength: Double = 1) -> some View {
+        modifier(RetroGloss(shape: shape, strength: strength))
+    }
+}
+
+private struct RetroGloss<S: Shape>: ViewModifier {
+    let shape: S
+    let strength: Double
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if Theme.isRetro, strength > 0 {
+            content.overlay {
+                ZStack {
+                    // The specular band: brightest at the top, with the hard
+                    // edge at the middle that makes glass look wet.
+                    shape.fill(LinearGradient(stops: [
+                        .init(color: .white.opacity(0.42 * strength), location: 0),
+                        .init(color: .white.opacity(0.14 * strength), location: 0.5),
+                        .init(color: .white.opacity(0), location: 0.5001),
+                    ], startPoint: .top, endPoint: .bottom))
+                    // Bevel: a lit top edge fading to a dark lower edge.
+                    shape.stroke(LinearGradient(colors: [.white.opacity(0.7 * strength),
+                                                         .white.opacity(0.08 * strength),
+                                                         .black.opacity(0.35 * strength)],
+                                                startPoint: .top, endPoint: .bottom), lineWidth: 1)
+                }
+                .allowsHitTesting(false)
+            }
+        } else {
+            content
+        }
     }
 }
 
@@ -74,14 +120,15 @@ private struct XotchGlass<S: Shape>: ViewModifier {
     let tint: Color?
     let interactive: Bool
     let fallback: Color?
+    let gloss: Double
     @Environment(\.snapshotMode) private var snapshotMode
 
     @ViewBuilder
     func body(content: Content) -> some View {
         if #available(macOS 26.0, *), !snapshotMode, !GlassFallback.forced {
-            content.glassEffect(glass, in: shape)
+            content.glassEffect(glass, in: shape).xotchGloss(shape, strength: gloss)
         } else {
-            content.background(tint ?? fallback ?? Theme.fill, in: shape)
+            content.background(tint ?? fallback ?? Theme.fill, in: shape).xotchGloss(shape, strength: gloss)
         }
     }
 
@@ -100,16 +147,41 @@ struct PillButtonStyle: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.system(size: 12, weight: .semibold))
+            .font(.system(size: 12, weight: .semibold, design: Theme.fontDesign))
             .lineLimit(1)
             .padding(.horizontal, 12)
             .padding(.vertical, 6)
-            .xotchGlass(Capsule(), tint: prominent ? tint : nil, interactive: true,
-                        fallback: Theme.raisedFill)
+            .modifier(PillBackground(tint: tint, prominent: prominent, pressed: configuration.isPressed))
             .foregroundStyle(prominent ? RGBA(tint).onColor : Theme.ink)
-            .opacity(configuration.isPressed ? 0.75 : 1)
+            .opacity(configuration.isPressed && !Theme.isRetro ? 0.75 : 1)
             .scaleEffect(configuration.isPressed ? 0.96 : 1)
             .animation(Motion.press, value: configuration.isPressed)
+    }
+}
+
+/// A retro prominent pill is a lit jelly button: a gradient from a lighter top
+/// to the tint, a gloss band, and a glow. Pressing darkens it and dims the
+/// gloss. Everything else is glass.
+private struct PillBackground: ViewModifier {
+    let tint: Color
+    let prominent: Bool
+    let pressed: Bool
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if Theme.isRetro, prominent {
+            let base = RGBA(tint)
+            content
+                .background(Capsule().fill(LinearGradient(
+                    colors: [base.mixed(with: .white, pressed ? 0.05 : 0.35).color,
+                             base.mixed(with: .black, pressed ? 0.3 : 0.05).color],
+                    startPoint: .top, endPoint: .bottom)))
+                .xotchGloss(Capsule(), strength: pressed ? 0.4 : 1)
+                .shadow(color: tint.opacity(pressed ? 0.15 : 0.45), radius: pressed ? 2 : 6, y: 1)
+        } else {
+            content.xotchGlass(Capsule(), tint: prominent ? tint : nil, interactive: true,
+                               fallback: Theme.raisedFill)
+        }
     }
 }
 
@@ -133,7 +205,7 @@ struct IconButtonStyle: ButtonStyle {
                 content.background(Circle().fill(Theme.ink))
             } else {
                 content.xotchGlass(Circle(), interactive: true,
-                                   fallback: hovering ? Theme.selection : Theme.fill)
+                                   fallback: hovering ? Theme.selection : Theme.fill, gloss: 0.8)
             }
         }
     }
@@ -207,7 +279,7 @@ struct Tile<Content: View>: View {
         content
             .padding(padding)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            .xotchGlass(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .xotchGlass(RoundedRectangle(cornerRadius: 14, style: .continuous), gloss: 0.4)
     }
 }
 

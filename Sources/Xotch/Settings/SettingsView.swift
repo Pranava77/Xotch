@@ -5,6 +5,15 @@ struct SettingsView: View {
     @AppStorage(SettingsKey.openBehavior) private var openBehavior: OpenBehavior = .hover
     @AppStorage(SettingsKey.hoverDelay) private var hoverDelay: Double = 150
     @AppStorage(SettingsKey.haptics) private var haptics = true
+    @AppStorage(SettingsKey.retroSounds) private var retroSounds = false
+    @AppStorage(SettingsKey.mediaKeysHUD) private var mediaKeysHUD = false
+    @State private var keysTrusted = MediaKeys.isTrusted
+    @AppStorage(SettingsKey.hudEnabled) private var hudEnabled = false
+    @AppStorage(SettingsKey.hudCPU) private var hudCPU = true
+    @AppStorage(SettingsKey.hudMemory) private var hudMemory = true
+    @AppStorage(SettingsKey.hudNetwork) private var hudNetwork = true
+    @AppStorage(SettingsKey.hudBattery) private var hudBattery = true
+    @AppStorage(SettingsKey.retroSoundVolume) private var retroSoundVolume = 0.5
     @AppStorage(SettingsKey.display) private var display = DisplayChoice.automatic
     @AppStorage(SettingsKey.moduleOrder) private var moduleOrder = ""
     @AppStorage(SettingsKey.hiddenModules) private var hiddenModules = ""
@@ -15,6 +24,7 @@ struct SettingsView: View {
     @AppStorage(Diagnostics.shareKey) private var shareDiagnostics = false
     @AppStorage(SettingsKey.scrollForVolume) private var scrollForVolume = true
     @AppStorage(SettingsKey.showMascot) private var showMascot = true
+    @AppStorage(SettingsKey.adiyogiEar) private var adiyogiEar = true
     @AppStorage(SettingsKey.celebrateFocus) private var celebrateFocus = true
     @AppStorage(SettingsKey.realAudioLevels) private var realAudioLevels = false
     @AppStorage(SettingsKey.downloadProgress) private var downloadProgress = false
@@ -50,6 +60,18 @@ struct SettingsView: View {
                 }
 
                 Toggle("Haptic feedback", isOn: $haptics)
+                Toggle("Arcade sound effects", isOn: $retroSounds)
+                    .onChange(of: retroSounds) { _, on in
+                        if on { RetroSound.play(.complete, force: true) }
+                    }
+                if retroSounds {
+                    LabeledContent("Volume") {
+                        Slider(value: $retroSoundVolume, in: 0.05...1, onEditingChanged: { editing in
+                            if !editing { RetroSound.play(.tick, force: true) }
+                        })
+                        .frame(maxWidth: 180)
+                    }
+                }
             }
 
             Section {
@@ -58,6 +80,7 @@ struct SettingsView: View {
                     CustomThemeEditor()
                 }
                 Toggle("Show Xotch's mascot on Home", isOn: $showMascot)
+                Toggle("Show Adiyogi beside the closed notch", isOn: $adiyogiEar)
                 Toggle("Show the track on a dot-matrix display", isOn: $ledTitle)
             } header: {
                 Text("Appearance")
@@ -148,6 +171,46 @@ struct SettingsView: View {
                 } message: {
                     Text("Pinned items stay. This can't be undone.")
                 }
+            }
+
+            Section {
+                Toggle("Show volume and brightness in the notch", isOn: $mediaKeysHUD)
+                    .onChange(of: mediaKeysHUD) { _, on in
+                        if on, !MediaKeys.isTrusted { MediaKeys.requestPermission() }
+                        keysTrusted = MediaKeys.isTrusted
+                    }
+                if mediaKeysHUD, !keysTrusted {
+                    LabeledContent("Needs permission") {
+                        Button("Open Accessibility settings") { PrivacyPane.accessibility.open() }
+                    }
+                }
+            } header: {
+                Text("Volume and brightness")
+            } footer: {
+                Text("The keys show their level in the notch instead of macOS's popup. Needs Accessibility permission. Brightness works on the built-in display only; Shift+Option gives smaller steps.")
+                    .foregroundStyle(.secondary)
+            }
+            .task {
+                // Permission is granted in System Settings, and nothing tells us.
+                while !Task.isCancelled {
+                    keysTrusted = MediaKeys.isTrusted
+                    try? await Task.sleep(for: .seconds(2))
+                }
+            }
+
+            Section {
+                Toggle("Show system gauges beside the notch", isOn: $hudEnabled)
+                if hudEnabled {
+                    Toggle("CPU", isOn: $hudCPU)
+                    Toggle("Memory", isOn: $hudMemory)
+                    Toggle("Network", isOn: $hudNetwork)
+                    Toggle("Battery", isOn: $hudBattery)
+                }
+            } header: {
+                Text("System HUD")
+            } footer: {
+                Text("Small bars in the left ear of the closed notch, shown alongside anything else that is live. While this is on, Xotch checks these readings every 2 seconds, and stops when the notch is hidden by a full-screen app or your displays sleep.")
+                    .foregroundStyle(.secondary)
             }
 
             Section {
@@ -317,11 +380,14 @@ private struct ThemePicker: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 10) {
+            // The cards share the row's width. At a fixed 92 points each, five of
+            // them made the row wider than the window and clipped the whole form.
+            HStack(spacing: 8) {
                 ForEach(store.choices) { palette in
                     ThemeCard(palette: palette, isSelected: palette.id == store.selectedID) {
                         store.select(palette.id)
                     }
+                    .frame(maxWidth: .infinity)
                 }
             }
             if store.selectedID != Palette.customID {
@@ -367,7 +433,8 @@ private struct ThemeCard: View {
                         .clipShape(UnevenRoundedRectangle(bottomLeadingRadius: 10, bottomTrailingRadius: 10, style: .continuous))
                         .padding(.horizontal, 8)
                 }
-                .frame(width: 92, height: 60)
+                .frame(maxWidth: .infinity)
+                .frame(height: 56)
                 .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                 .overlay(
                     RoundedRectangle(cornerRadius: 10, style: .continuous)
@@ -376,6 +443,8 @@ private struct ThemeCard: View {
                 )
                 Text(palette.name)
                     .font(.caption)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
                     .foregroundStyle(isSelected ? .primary : .secondary)
             }
         }
@@ -400,6 +469,10 @@ private struct CustomThemeEditor: View {
             Text("Glass").tag(SurfaceMaterial.glass)
         }
         .pickerStyle(.segmented)
+        Toggle("Glossy retro controls", isOn: Binding(
+            get: { store.custom.isRetro },
+            set: { on in store.updateCustom { $0.style = on ? .retro : .modern } }
+        ))
         Toggle("Glow in each module's colour", isOn: Binding(
             get: { store.custom.glow == nil },
             set: { follows in store.updateCustom { $0.glow = follows ? nil : $0.accent } }

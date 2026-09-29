@@ -160,7 +160,11 @@ final class TimerService {
         if finished == .focus, UserDefaults.standard.bool(forKey: SettingsKey.celebrateFocus) {
             ActivityCenter.shared.celebrate()
         }
-        NSSound(named: "Glass")?.play()
+        if AppSettings.retroSounds {
+            RetroSound.play(.timerDone)
+        } else {
+            NSSound(named: "Glass")?.play()
+        }
         notifications.post(title: finished.title, body: message)
         ActivityCenter.shared.post(LiveActivity(moduleID: "timers", symbol: "bell.fill",
                                                 content: .text("Done"), tint: finished.tint,

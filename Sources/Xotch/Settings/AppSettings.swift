@@ -17,6 +17,14 @@ enum SettingsKey {
     static let openBehavior = "openBehavior"
     static let hoverDelay = "hoverDelayMs"
     static let haptics = "hapticsEnabled"
+    static let retroSounds = "retroSounds"
+    static let mediaKeysHUD = "mediaKeysHUD"
+    static let hudEnabled = "hudEnabled"
+    static let hudCPU = "hudCPU"
+    static let hudMemory = "hudMemory"
+    static let hudNetwork = "hudNetwork"
+    static let hudBattery = "hudBattery"
+    static let retroSoundVolume = "retroSoundVolume"
     static let display = "displayChoice"
     static let moduleOrder = "moduleOrder"
     static let hiddenModules = "hiddenModules"
@@ -26,6 +34,7 @@ enum SettingsKey {
     static let hideInFullScreen = "hideInFullScreen"
     static let scrollForVolume = "scrollForVolume"
     static let showMascot = "showMascot"
+    static let adiyogiEar = "adiyogiEar"
     static let celebrateFocus = "celebrateFocus"
     static let realAudioLevels = "realAudioLevels"
     static let downloadProgress = "downloadProgress"
@@ -61,6 +70,14 @@ enum AppSettings {
             SettingsKey.openBehavior: OpenBehavior.hover.rawValue,
             SettingsKey.hoverDelay: 150.0,
             SettingsKey.haptics: true,
+            SettingsKey.retroSounds: false,
+            SettingsKey.mediaKeysHUD: false,
+            SettingsKey.hudEnabled: false,
+            SettingsKey.hudCPU: true,
+            SettingsKey.hudMemory: true,
+            SettingsKey.hudNetwork: true,
+            SettingsKey.hudBattery: true,
+            SettingsKey.retroSoundVolume: 0.5,
             SettingsKey.display: DisplayChoice.all,
             SettingsKey.moduleOrder: "",
             SettingsKey.hiddenModules: "",
@@ -70,6 +87,7 @@ enum AppSettings {
             SettingsKey.hideInFullScreen: true,
             SettingsKey.scrollForVolume: true,
             SettingsKey.showMascot: true,
+            SettingsKey.adiyogiEar: true,
             SettingsKey.celebrateFocus: true,
             SettingsKey.realAudioLevels: false,
             SettingsKey.downloadProgress: false,
@@ -99,6 +117,21 @@ enum AppSettings {
         UserDefaults.standard.bool(forKey: SettingsKey.haptics)
     }
 
+    /// Volume and brightness keys show in the notch instead of macOS's popup.
+    /// Needs Accessibility permission, so it is off until asked for.
+    static var mediaKeysHUD: Bool {
+        UserDefaults.standard.bool(forKey: SettingsKey.mediaKeysHUD)
+    }
+
+    /// Arcade sound effects. Off until asked for.
+    static var retroSounds: Bool {
+        UserDefaults.standard.bool(forKey: SettingsKey.retroSounds)
+    }
+
+    static var retroSoundVolume: Double {
+        UserDefaults.standard.double(forKey: SettingsKey.retroSoundVolume)
+    }
+
     static var displayChoice: String {
         UserDefaults.standard.string(forKey: SettingsKey.display) ?? DisplayChoice.automatic
     }
@@ -125,6 +158,11 @@ enum AppSettings {
 
     static var scrollForVolume: Bool {
         UserDefaults.standard.bool(forKey: SettingsKey.scrollForVolume)
+    }
+
+    /// Adiyogi in the left ear of the closed notch.
+    static var adiyogiEar: Bool {
+        UserDefaults.standard.bool(forKey: SettingsKey.adiyogiEar)
     }
 
     /// 0 means keep shelf items until removed.

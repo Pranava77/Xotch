@@ -55,11 +55,15 @@ When something's happening, the notch grows two small "ears" to show it, without
   </tr>
   <tr>
     <td align="center"><img src="docs/images/ears-download.jpg" alt="Download progress at 62 percent beside the notch"><br><sub><b>Downloads:</b> how far along they are</sub></td>
-    <td align="center"><img src="docs/images/ears-volume.jpg" alt="A volume bar beside the notch"><br><sub><b>Volume:</b> scroll on the notch to change it</sub></td>
+    <td align="center"><img src="docs/images/ears-hud.jpg" alt="Four small bars on the left of the notch showing CPU, memory, network and battery, with Claude Code's status on the right"><br><sub><b>System HUD:</b> CPU, memory, network and battery as bars in the left ear, beside whatever else is live</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/images/ears-volume.jpg" alt="A volume bar beside the notch"><br><sub><b>Volume and brightness:</b> scroll on the notch, or press the keys once you turn on the setting. The bar shows in the header if the notch is open</sub></td>
+    <td></td>
   </tr>
 </table>
 
-If more than one thing is live, the most important shows, and small dots tell you others are waiting.
+If more than one thing is live, the most important shows, and small dots tell you others are waiting. The **system HUD** (Settings › System HUD, off by default) has the left ear to itself, so it shows alongside a timer, a song or Claude, whose icon moves next to its status on the right. It reads the stats every 2 seconds while it's on, and stops when a full-screen app hides the notch or your displays sleep. **Adiyogi** keeps the outer edge of the left ear, eyes closed, third eye glowing, and an activity's icon moves right beside its status (hide it in Settings › Appearance).
 
 ## Everything you reach for, in one place
 
@@ -126,17 +130,21 @@ Add the hook, and each session shows whether it's working, needs you, or is done
 
 <table>
   <tr>
-    <td width="33%"><img src="docs/images/theme-midnight.jpg" alt="The Midnight theme: a solid black notch"></td>
-    <td width="33%"><img src="docs/images/theme-smoke.jpg" alt="The Smoke Glass theme: a frosted notch showing a blur of the wallpaper"></td>
-    <td width="33%"><img src="docs/images/theme-aurora.jpg" alt="The Aurora theme: a deep blue notch with a violet glow"></td>
+    <td width="25%"><img src="docs/images/theme-aero.jpg" alt="The Aero Glass theme: sky-blue glass with a bright specular band and glossy aqua buttons"></td>
+    <td width="25%"><img src="docs/images/theme-midnight.jpg" alt="The Midnight theme: a solid black notch"></td>
+    <td width="25%"><img src="docs/images/theme-smoke.jpg" alt="The Smoke Glass theme: a frosted notch showing a blur of the wallpaper"></td>
+    <td width="25%"><img src="docs/images/theme-aurora.jpg" alt="The Aurora theme: a deep blue notch with a violet glow"></td>
   </tr>
   <tr>
+    <td align="center"><b>Aero Glass</b><br><sub>The default: glossy 2000s glass</sub></td>
     <td align="center"><b>Midnight</b></td>
     <td align="center"><b>Smoke Glass</b><br><sub>Liquid Glass on macOS 26</sub></td>
     <td align="center"><b>Aurora</b></td>
   </tr>
 </table>
 
+- **Aero Glass** is Frutiger Aero, the glossy look of Windows Aero and early Mac OS X: a bright band across the top of every button, bevelled edges, aqua-green accents and rounded type, on top of Liquid Glass. The other themes stay flat, and a custom theme can turn the gloss on or off.
+- **Arcade sound effects:** short 8-bit blips for opening and closing the notch, switching modules, adding, finishing and deleting to-dos, pinning, and a jingle for a finished timer or a celebration. They're generated in code, so nothing is bundled. Off by default: turn them on in Settings, with a volume slider.
 - **Your own theme:** pick the background, text, accent and glow colours. The closed notch always stays black, so it blends in with the camera.
 - **The mascot:** Xotch's little mascot lives on Home. It naps when things are quiet, thinks while you work, and jumps for joy when you finish a focus session.
 - **Your modules, your way:**
@@ -197,8 +205,9 @@ Xotch asks only when you use something that needs it.
 | Microphone | Only if you turn on Capture › Microphone | Recording your voice with the screen |
 | Desktop folder (may be asked) | Opening Capture, if it's listing your ⌘⇧3 and ⌘⇧4 screenshots | Finding those screenshots. macOS saves them to Desktop unless you've changed it |
 | Downloads folder | macOS may ask when you turn on download progress | Showing how far downloads have got |
+| Accessibility | Only if you turn on **Settings › Show volume and brightness in the notch** | Reading the volume, mute and brightness keys so the notch can show the level in place of macOS's popup. It is off by default; Xotch reads only those keys and nothing else you type |
 
-Xotch never asks for Accessibility or Input Monitoring.
+Without that one setting, Xotch never asks for Accessibility or Input Monitoring.
 
 </details>
 

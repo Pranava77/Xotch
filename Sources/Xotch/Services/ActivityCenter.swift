@@ -77,6 +77,11 @@ final class ActivityCenter {
     private(set) var hud: LiveActivity?
     private(set) var banner: LiveActivity?
     private(set) var ongoing: [String: LiveActivity] = [:]
+    /// The system HUD's bars. They have the left ear to themselves, so they show
+    /// alongside whatever activity is live instead of waiting behind it.
+    private(set) var gauges: [Gauge]?
+    /// Adiyogi rests in the left ear while nothing else needs it.
+    private(set) var showsAdiyogi = false
     /// Goes up by one for each celebration; views watch it to play one.
     private(set) var celebrations = 0
     private(set) var isCelebrating = false
@@ -173,12 +178,45 @@ final class ActivityCenter {
         }
     }
 
+    /// Shows the system HUD's bars, or hides them with nil. Only appearing and
+    /// disappearing animate; each reading's bars animate on their own.
+    func setGauges(_ new: [Gauge]?) {
+        let new = new?.isEmpty == true ? nil : new
+        #if DEBUG
+        // Snapshots have set the live bars aside: keep the latest for afterwards.
+        if isStashed {
+            stashedGauges = new
+            return
+        }
+        #endif
+        guard new != gauges else { return }
+        if (new == nil) != (gauges == nil) {
+            withAnimation(Motion.activity) { gauges = new }
+        } else {
+            gauges = new
+        }
+    }
+
+    /// Called at launch and whenever a setting changes.
+    func settingsChanged() {
+        let on = AppSettings.adiyogiEar
+        #if DEBUG
+        if isStashed {
+            stashedAdiyogi = on
+            return
+        }
+        #endif
+        guard on != showsAdiyogi else { return }
+        withAnimation(Motion.activity) { showsAdiyogi = on }
+    }
+
     /// Confetti and a haptic, e.g. for a finished focus session.
     func celebrate() {
         noteActivity()
         celebrations += 1
         withAnimation(Motion.activity) { isCelebrating = true }
         Haptics.celebrate()
+        RetroSound.play(.celebrate)
         celebrationTask?.cancel()
         celebrationTask = Task { [weak self] in
             try? await Task.sleep(for: .seconds(4))
@@ -238,17 +276,42 @@ final class ActivityCenter {
         if let drowsy { isDrowsy = drowsy }
     }
 
-    /// Sets live activities aside (for snapshots) and returns them.
+    /// Which ongoing activities are live, for `scripts/debug.sh status`.
+    var debugOngoingIDs: String { ongoing.keys.sorted().joined(separator: ",") }
+
+    @ObservationIgnored private var stashedGauges: [Gauge]?
+    @ObservationIgnored private var stashedAdiyogi = false
+    @ObservationIgnored private var isStashed = false
+
+    /// Sets live activities (and the HUD's bars) aside for snapshots, and returns them.
     func debugStash() -> [String: LiveActivity] {
         let saved = ongoing
         ongoing = [:]
+        stashedGauges = gauges
+        gauges = nil
+        stashedAdiyogi = showsAdiyogi
+        showsAdiyogi = false
+        isStashed = true
         return saved
+    }
+
+    /// Snapshots set bars of their own; this goes around the stash.
+    func debugShowGauges(_ shown: [Gauge]?) {
+        gauges = shown
+    }
+
+    func debugShowAdiyogi(_ shown: Bool) {
+        showsAdiyogi = shown
     }
 
     func debugRestore(_ saved: [String: LiveActivity]) {
         for (moduleID, activity) in saved where ongoing[moduleID] == nil {
             ongoing[moduleID] = activity
         }
+        isStashed = false
+        gauges = stashedGauges
+        stashedGauges = nil
+        showsAdiyogi = stashedAdiyogi
     }
     #endif
 }

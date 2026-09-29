@@ -21,6 +21,10 @@ struct NotchSurface: View {
                     GlassBackground(shape: shape, tint: palette.surface.color)
                         .transition(.opacity)
                 }
+                if palette.isRetro {
+                    RetroSheen(shape: shape)
+                        .transition(.opacity)
+                }
                 // A short fade to black at the top, so the glass meets the menu
                 // bar and the camera housing without a seam. Any longer and the
                 // top of the panel stops looking like glass.
@@ -35,6 +39,23 @@ struct NotchSurface: View {
                     .transition(.opacity)
             }
         }
+    }
+}
+
+/// Light through the top of a window: a soft sheen from the top edge, and a
+/// faint streak of reflected light across the glass. Static, so it costs nothing.
+private struct RetroSheen: View {
+    let shape: NotchShape
+
+    var body: some View {
+        ZStack {
+            LinearGradient(colors: [.white.opacity(0.16), .white.opacity(0.04), .clear],
+                           startPoint: .top, endPoint: .init(x: 0.5, y: 0.45))
+            LinearGradient(colors: [.clear, .white.opacity(0.07), .clear],
+                           startPoint: .topLeading, endPoint: .bottomTrailing)
+        }
+        .clipShape(shape)
+        .allowsHitTesting(false)
     }
 }
 

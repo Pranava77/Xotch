@@ -236,9 +236,11 @@ final class NotchWindowController: NotchActions {
         }
         withAnimation(animation) { model.phase = phase }
         switch phase {
-        case .open: Haptics.open()
+        case .open:
+            Haptics.open()
+            RetroSound.play(.open)
         case .peek: Haptics.tick()
-        case .closed: break
+        case .closed: RetroSound.play(.close)
         }
     }
 
@@ -271,11 +273,14 @@ final class NotchWindowController: NotchActions {
         let activities = model.activities
         guard model.showsActivity, CaptureService.shared.isRecording,
               let current = activities.current, current.id == activities.ongoing["capture"]?.id else { return false }
-        return abs(location.x - model.screenRect.midX) > model.closedSize.width / 2
+        // With the HUD's bars in the left ear, only the right ear is the recording's.
+        let offset = location.x - model.screenRect.midX
+        return activities.gauges == nil ? abs(offset) > model.closedSize.width / 2 : offset > model.closedSize.width / 2
     }
 
     func togglePin() {
         model.isPinned.toggle()
+        RetroSound.play(.pin)
         if model.isPinned {
             panel.makeKey()
         } else if !isHovering {
@@ -291,6 +296,7 @@ final class NotchWindowController: NotchActions {
         model.switchEdge = to >= from ? .trailing : .leading
         withAnimation(Motion.switchModule) { model.selectedModuleID = moduleID }
         Haptics.tick()
+        RetroSound.play(.switchModule)
     }
 
     // MARK: - Keyboard and trackpad

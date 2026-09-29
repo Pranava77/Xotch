@@ -328,7 +328,7 @@ private struct PaletteBackground: View {
         let shape = RoundedRectangle(cornerRadius: 16, style: .continuous)
         Group {
             if glassAvailable(snapshot: snapshotMode) {
-                Color.clear.xotchGlass(shape, tint: Theme.surface.opacity(0.3))
+                Color.clear.xotchGlass(shape, tint: Theme.surface.opacity(0.3), gloss: 0.5)
             } else {
                 shape.fill(Theme.surface)
                     .overlay(shape.fill(Theme.fill))

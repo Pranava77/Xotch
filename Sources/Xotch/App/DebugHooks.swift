@@ -19,6 +19,8 @@ import SwiftUI
 /// shell can be checked without screen-recording permission.
 enum DebugHooks {
     static let notificationName = Notification.Name("com.pranava.xotch.debug")
+    /// The window `settings:` opens, kept so `settings-close` can shut it.
+    @MainActor private static var debugSettingsWindow: NSWindow?
 
     static func install() {
         DistributedNotificationCenter.default().addObserver(
@@ -108,6 +110,7 @@ enum DebugHooks {
                 let path = String(command.dropFirst("status:".count))
                 let lines = [
                     "screens: \(ScreenManager.shared.debugSummary)",
+                    "ongoing: [\(ActivityCenter.shared.debugOngoingIDs)] gauges=\(ActivityCenter.shared.gauges?.count ?? 0) hud enabled=\(AppSettings.hudEnabled)",
                     "activity: \(ActivityCenter.shared.current?.moduleID ?? "-") waiting=\(ActivityCenter.shared.waitingCount) mood=\(ActivityCenter.shared.mood.rawValue)",
                     "theme: \(ThemeStore.shared.palette.id) shaders ready=\(ShaderKit.shared.isReady) compile=\(ShaderKit.shared.compileTime.map { "\($0)" } ?? "-") failure=\(ShaderKit.shared.failure ?? "-")",
                     "audio levels: \(AudioLevels.shared.status)",
@@ -119,6 +122,50 @@ enum DebugHooks {
                     String(format: "pointer events: %.1f/s", ScreenManager.shared.debugPointerRate()),
                 ]
                 try? (lines.joined(separator: "\n") + "\n").write(toFile: path, atomically: true, encoding: .utf8)
+            } else if command.hasPrefix("settings:") {
+                // Shows the Settings view in its own window and writes the window
+                // number to a file, for `screencapture -l`.
+                let path = String(command.dropFirst("settings:".count))
+                let window = NSWindow(contentViewController: NSHostingController(rootView: SettingsView()))
+                window.title = "Xotch Settings (debug)"
+                window.isReleasedWhenClosed = false
+                window.center()
+                window.orderFrontRegardless()
+                debugSettingsWindow = window
+                try? "\(window.windowNumber)".write(toFile: path, atomically: true, encoding: .utf8)
+            } else if command.hasPrefix("settings-scroll:") {
+                // Scrolls the debug Settings window's form to a point: `settings-scroll 900`.
+                let y = Double(command.dropFirst("settings-scroll:".count)) ?? 0
+                func scrollView(in view: NSView?) -> NSScrollView? {
+                    guard let view else { return nil }
+                    if let found = view as? NSScrollView { return found }
+                    for sub in view.subviews { if let found = scrollView(in: sub) { return found } }
+                    return nil
+                }
+                if let scroll = scrollView(in: debugSettingsWindow?.contentView) {
+                    scroll.contentView.scroll(to: NSPoint(x: 0, y: y))
+                    scroll.reflectScrolledClipView(scroll.contentView)
+                }
+            } else if command == "settings-close" {
+                debugSettingsWindow?.close()
+                debugSettingsWindow = nil
+            } else if command.hasPrefix("key:") {
+                // Sends a media key through the same handler the event tap uses,
+                // with no Accessibility permission: `debug.sh key volup`.
+                let names: [String: MediaKey] = ["volup": .volumeUp, "voldown": .volumeDown, "mute": .mute,
+                                                 "brightup": .brightnessUp, "brightdown": .brightnessDown]
+                if let key = names[String(command.dropFirst("key:".count))] {
+                    _ = MediaKeys.shared.handle(key, isDown: true, flags: [])
+                }
+            } else if command.hasPrefix("hud:") {
+                // Flips the setting from inside the app, the way Settings does, so
+                // it is observed. `defaults write` from a shell isn't.
+                UserDefaults.standard.set(command == "hud:on", forKey: SettingsKey.hudEnabled)
+            } else if command.hasPrefix("sound:") {
+                // Plays one cue whether or not sounds are switched on: `debug.sh sound complete`.
+                if let cue = RetroCue(rawValue: String(command.dropFirst("sound:".count))) {
+                    RetroSound.play(cue, force: true)
+                }
             } else if command.hasPrefix("theme:") {
                 ThemeStore.shared.select(String(command.dropFirst("theme:".count)))
             } else if command.hasPrefix("mood:") {
@@ -170,6 +217,9 @@ enum DebugHooks {
         lines.append("notes: \(NotesService.shared.notes.count) notes")
         lines += captureSelfTest()
         lines += todoSelfTest()
+        lines += retroSoundSelfTest()
+        lines += hudSelfTest()
+        lines += mediaKeysSelfTest()
 
         // Phase 5
         if #available(macOS 15.4, *) {
@@ -342,6 +392,98 @@ enum DebugHooks {
         lines.append(String(format: "ring: timed 30 s of 120 s = %.2f (expect 0.25)", ringNow))
         lines.append("cleanup: done=\(UserDefaults.standard.bool(forKey: "cleanup.removedConnectedModules")) module list \"home,revenue,media,weather,analytics,stats\" → \"\(LegacyCleanup.strippingRemoved(from: "home,revenue,media,weather,analytics,stats"))\" (expect home,media,stats)")
         return lines
+    }
+
+    /// Key decoding, step maths and modifier rules, plus what this Mac can do.
+    /// Reads the brightness but never changes it.
+    @MainActor
+    private static func mediaKeysSelfTest() -> [String] {
+        // data1 for a key: code << 16 | flags, where 0xA00 is pressed and 0xB00 released.
+        func data(_ key: Int, down: Bool) -> Int { key << 16 | (down ? 0xA00 : 0xB00) }
+        func describe(_ code: Int, down: Bool) -> String {
+            guard let result = MediaKeyLogic.decode(data1: data(code, down: down)) else { return "nil" }
+            return "\(result.key)/\(result.isDown)"
+        }
+        let decoded: [String] = [describe(0, down: true), describe(7, down: false), describe(21, down: true)]
+        let steps: [Double] = [
+            MediaKeyLogic.step(0.5, up: true, fine: false),      // 9/16
+            MediaKeyLogic.step(0.52, up: true, fine: false),     // snaps: 9/16
+            MediaKeyLogic.step(1, up: true, fine: false),        // stays 1
+            MediaKeyLogic.step(0, up: false, fine: false),       // stays 0
+            MediaKeyLogic.step(0.5, up: false, fine: true),      // 31/64
+        ]
+        let modifiers: [MediaKeyLogic.Modifiers] = [MediaKeyLogic.modifiers([]), MediaKeyLogic.modifiers([.shift, .option]),
+                                                    MediaKeyLogic.modifiers([.option]), MediaKeyLogic.modifiers([.command])]
+        let expectedSteps: [Double] = [9.0 / 16, 9.0 / 16, 1, 0, 31.0 / 64]
+        let stepsOK = steps == expectedSteps
+        let ok = decoded == ["volumeUp/true", "mute/false", "nil"] && stepsOK
+            && modifiers == [.plain, .fine, .passThrough, .passThrough]
+        let brightness = Brightness.level.map { String(format: "%.2f", $0) } ?? "unavailable"
+        let stepText = steps.map { String(format: "%.3f", $0) }.joined(separator: ",")
+        let verdict = ok ? "PASS" : "FAILED"
+        let first = "media keys: decode=\(decoded.joined(separator: ",")) steps=\(stepText) modifiers=\(modifiers) → \(verdict)"
+        let enabled = AppSettings.mediaKeysHUD
+        let trusted = MediaKeys.isTrusted
+        let running = MediaKeys.shared.isRunning
+        let canSet = SystemVolume.canSetVolume
+        let canShow = ScreenManager.shared.canShowHUD
+        let second = "media keys on this Mac: enabled=\(enabled) trusted=\(trusted) tapRunning=\(running) canSetVolume=\(canSet) brightness=\(brightness) canShowHUD=\(canShow)"
+        return [first, second]
+    }
+
+    /// The HUD's thresholds and its power promise, on made-up readings: amber
+    /// from 80% CPU, red from 90%, battery only warns when unplugged.
+    @MainActor
+    private static func hudSelfTest() -> [String] {
+        func reading(cpu: Double, memory: Double = 0.4, battery: BatteryInfo?) -> StatsSnapshot {
+            StatsSnapshot(cpu: cpu, memoryUsed: memory * 16e9, memoryTotal: 16e9, download: 0, upload: 0,
+                          diskFree: 1, diskTotal: 2, battery: battery)
+        }
+        let all = HUDSelection()
+        func level(_ id: String, _ snapshot: StatsSnapshot) -> String {
+            switch GaugesHUD.gauges(from: snapshot, selection: all).first(where: { $0.id == id })?.level {
+            case .normal?: "normal"
+            case .warn?: "warn"
+            case .alert?: "alert"
+            case nil: "missing"
+            }
+        }
+        let unplugged = BatteryInfo(percent: 8, isCharging: false, onPower: false)
+        let plugged = BatteryInfo(percent: 8, isCharging: true, onPower: true)
+        let results = [
+            "cpu50=\(level("cpu", reading(cpu: 0.5, battery: nil)))",
+            "cpu85=\(level("cpu", reading(cpu: 0.85, battery: nil)))",
+            "cpu95=\(level("cpu", reading(cpu: 0.95, battery: nil)))",
+            "mem90=\(level("memory", reading(cpu: 0.1, memory: 0.9, battery: nil)))",
+            "bat8unplugged=\(level("battery", reading(cpu: 0.1, battery: unplugged)))",
+            "bat8charging=\(level("battery", reading(cpu: 0.1, battery: plugged)))",
+            "noBattery=\(level("battery", reading(cpu: 0.1, battery: nil)))",
+        ]
+        let expected = ["cpu50=normal", "cpu85=warn", "cpu95=alert", "mem90=warn", "bat8unplugged=alert",
+                        "bat8charging=normal", "noBattery=missing"]
+        let none = GaugesHUD.gauges(from: reading(cpu: 0.5, battery: unplugged), selection: HUDSelection(cpu: false, memory: false, network: false, battery: false))
+        let pass = results == expected && none.isEmpty
+        return ["hud: \(results.joined(separator: " ")) allOff=\(none.count) enabled=\(AppSettings.hudEnabled) → \(pass ? "PASS" : "FAILED (expected \(expected.joined(separator: " ")))")"]
+    }
+
+    /// Renders every cue and checks it is audible, not clipped, short, and
+    /// starts and ends at silence (a click is a jump at either edge).
+    @MainActor
+    private static func retroSoundSelfTest() -> [String] {
+        var problems: [String] = []
+        var summary: [String] = []
+        for cue in RetroCue.allCases {
+            let samples = RetroSynth.render(cue)
+            let peak = samples.map(abs).max() ?? 0
+            let ms = Int(Double(samples.count) / RetroSynth.sampleRate * 1000)
+            let edge = max(abs(samples.first ?? 1), abs(samples.last ?? 1))
+            summary.append("\(cue.rawValue)=\(ms)ms/\(String(format: "%.2f", peak))")
+            if peak < 0.2 { problems.append("\(cue.rawValue) is nearly silent") }
+            if peak > RetroSynth.peak + 0.001 { problems.append("\(cue.rawValue) clips") }
+            if ms > 900 { problems.append("\(cue.rawValue) is too long") }
+            if edge > 0.05 { problems.append("\(cue.rawValue) would click at its edge") }
+        }
+        return ["retro sounds: \(summary.joined(separator: " ")) enabled=\(AppSettings.retroSounds) engineRunning=\(RetroSound.shared.isEngineRunning) → \(problems.isEmpty ? "PASS" : "FAILED: " + problems.joined(separator: "; "))"]
     }
 
     /// Adds a real to-do, ticks it, moves it and deletes it: the same calls the
@@ -570,6 +712,19 @@ enum DebugHooks {
                     $0.selectedModuleID = module.id
                 }
             }
+        }
+        withSampleData {
+            // A volume key pressed while the notch is open: the level takes the header.
+            ActivityCenter.shared.showHUD(LiveActivity(moduleID: "volume", symbol: "speaker.wave.2.fill",
+                                                       content: .level(0.56), tint: Theme.ink, earWidth: 96),
+                                          for: .seconds(30))
+            render("4-open-key-hud") {
+                $0.phase = .open
+                $0.selectedModuleID = "home"
+            }
+            ActivityCenter.shared.showHUD(LiveActivity(moduleID: "brightness", symbol: "sun.max.fill",
+                                                       content: .level(0.82), tint: Theme.ink, earWidth: 96),
+                                          for: .milliseconds(10))
         }
         withSampleData {
             CaptureService.shared.debugSetRecording(since: Date().addingTimeInterval(-75))

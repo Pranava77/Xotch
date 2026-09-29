@@ -27,6 +27,8 @@ The self-test checks:
   - Metal shaders compile, and how long it took
   - the audio analyser against 80 Hz, 2.5 kHz and 7 kHz tones and silence
   - output volume (read only), themes, mascot moods, the timer ring
+  - **Retro sounds:** all nine cues render, are audible, stay under the clip limit and start and end at silence, so none clicks. Nothing plays and the audio engine stays off while the setting is off.
+  - **HUD:** the thresholds (amber from 80% CPU, red from 90%, memory and battery likewise, and battery only warns when unplugged), and that switching every gauge off shows none.
   - that the cleanup for the removed Revenue, Analytics and Weather modules has run, and strips their IDs from the module order
   - download progress, using a fake download in a scratch folder
 
@@ -72,6 +74,12 @@ These need hardware or situations a script can't create. Tick them before a beta
 ### Signature UI
 
 - [ ] Each theme in Settings › Appearance: the open notch changes at once, the closed notch stays black.
+- [ ] Aero Glass (the default): buttons, the dock highlight, switches and the search field have a bright band and bevelled edge; text on them stays readable over a light and a dark wallpaper. Midnight, Smoke Glass and Aurora stay flat. A custom theme with "Glossy retro controls" on looks like Aero.
+- [ ] Settings › Arcade sound effects is off by default and nothing plays. Turn it on: a coin blip plays. Open and close the notch, switch modules, add, tick and delete a to-do, pin, and finish a 1-minute timer: each has its own sound and nothing clips or clicks. The volume slider changes the level. Turn it off: silence.
+- [ ] Settings › Show volume and brightness in the notch (off by default; needs a real keyboard, which the debug tools can't press). Turn it on: macOS asks for Accessibility. Grant it in System Settings; within a couple of seconds the row in Settings disappears and the keys work. Press volume up and down: the bar shows beside the closed notch (in the header if it's open), macOS's own popup does not, and the level matches the menu bar's. Mute shows an empty bar. Shift+Option gives smaller steps; Option alone still opens Sound settings. Brightness up and down move the built-in display and show the bar.
+- [ ] Media keys, when Xotch can't act: play a full-screen app so the notch is hidden (the keys should give macOS's popup); pick an HDMI or other output with no volume control; use an external monitor's brightness keys. In each, macOS handles the key as normal. Quit Xotch: the keys work as normal.
+- [ ] Turn the media-key setting off, or revoke Accessibility: the keys go back to macOS at once, with no relaunch.
+- [ ] Settings › System HUD is off by default. Turn it on: four bars appear beside the closed notch. Start a timer, play music or keep a Notes scratchpad beside the notch: the bars stay in the left ear and the activity shows on the right with its icon, and the notch stays centred on the camera. With a recording running and the bars on, clicking the right ear stops it and clicking the bars doesn't. Put a full-screen app in front: the bars stop updating (check Activity Monitor for Xotch's CPU). Turn the toggles for CPU, memory, network and battery on and off: the bars appear and disappear without the others moving.
 - [ ] Smoke Glass on macOS 26 shows Liquid Glass; on macOS 14–15 (or with `defaults write com.pranava.xotch forceBlurFallback -bool YES`) a blur. Text stays readable over a white window and over a dark one.
 - [ ] Customise a theme, quit Xotch, reopen: the custom colours are kept.
 - [ ] Drop a file on the notch: a ripple spreads from where it landed.

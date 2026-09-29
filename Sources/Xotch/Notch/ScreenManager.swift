@@ -20,6 +20,9 @@ final class ScreenManager {
     func start() {
         rebuild()
         installMonitors()
+        GaugesHUD.shared.settingsChanged()
+        MediaKeys.shared.settingsChanged()
+        ActivityCenter.shared.settingsChanged()
 
         observe(NotificationCenter.default, NSApplication.didChangeScreenParametersNotification) { manager in
             #if DEBUG
@@ -28,7 +31,10 @@ final class ScreenManager {
             manager.scheduleRebuild()
         }
         observe(NotificationCenter.default, UserDefaults.didChangeNotification) { manager in
-            manager.settingsChanged()
+            // This can arrive in the middle of a SwiftUI update (a framework
+            // registering its defaults while a view renders), and changing what
+            // the notch shows there aborts the app. Wait for the next turn.
+            Task { @MainActor [weak manager] in manager?.settingsChanged() }
         }
         let workspace = NSWorkspace.shared.notificationCenter
         observe(workspace, NSWorkspace.willSleepNotification) { manager in
@@ -101,6 +107,9 @@ final class ScreenManager {
         AudioLevels.shared.settingsChanged()
         CaptureService.shared.settingsChanged()
         TodoService.shared.updateActivity()
+        GaugesHUD.shared.settingsChanged()
+        MediaKeys.shared.settingsChanged()
+        ActivityCenter.shared.settingsChanged()
         let hide = AppSettings.hideInFullScreen
         if hide != hideInFullScreen {
             hideInFullScreen = hide
@@ -186,7 +195,19 @@ final class ScreenManager {
         }
     }
 
+    /// Is a notch on screen right now to show the volume or brightness HUD? When
+    /// none is (every one hidden behind a full-screen app), the keys are left to
+    /// macOS so there is still a popup.
+    var canShowHUD: Bool {
+        controllers.values.contains { !$0.isHiddenForFullScreen }
+    }
+
     private func checkFullScreen() {
+        defer {
+            // The HUD stops reading the stats while every notch is out of sight.
+            GaugesHUD.shared.setFullScreen(!controllers.isEmpty
+                                           && controllers.values.allSatisfy { $0.isHiddenForFullScreen })
+        }
         guard hideInFullScreen else {
             controllers.values.forEach { $0.setHiddenForFullScreen(false) }
             return
