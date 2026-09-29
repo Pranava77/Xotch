@@ -139,7 +139,7 @@ private struct OpenContent: View {
     private var topRow: some View {
         HStack(spacing: 0) {
             Text(selected.title)
-                .font(.system(size: 13, weight: .semibold))
+                .font(.system(size: 13, weight: .semibold, design: Theme.fontDesign))
                 .contentTransition(.opacity)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
@@ -230,24 +230,33 @@ private struct ModuleDock: View {
                     if isSelected {
                         Capsule()
                             .fill(Color.clear)
-                            .glassEffect(.regular.tint(Theme.ink.opacity(0.14)).interactive(), in: Capsule())
+                            .glassEffect(.regular.tint(highlightTint).interactive(), in: Capsule())
+                            .xotchGloss(Capsule())
                             .glassEffectID("dock-highlight", in: namespace)
                     }
                 })
                 .padding(4)
                 .glassEffect(.regular, in: Capsule())
+                .xotchGloss(Capsule(), strength: 0.6)
             }
         } else {
             row(highlight: { isSelected in
                 if isSelected {
                     Capsule()
-                        .fill(Theme.selection)
+                        .fill(Theme.isRetro ? highlightTint : Theme.selection)
+                        .xotchGloss(Capsule())
                         .matchedGeometryEffect(id: "dock-highlight", in: namespace)
                 }
             })
             .padding(4)
             .background(Theme.fill, in: Capsule())
+            .xotchGloss(Capsule(), strength: 0.6)
         }
+    }
+
+    /// The lit button under the selected icon: accent-tinted in retro themes.
+    private var highlightTint: Color {
+        Theme.isRetro ? Theme.accent.opacity(0.55) : Theme.ink.opacity(0.14)
     }
 
     private func row<Highlight: View>(@ViewBuilder highlight: @escaping (Bool) -> Highlight) -> some View {

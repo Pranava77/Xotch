@@ -400,6 +400,10 @@ private struct CustomThemeEditor: View {
             Text("Glass").tag(SurfaceMaterial.glass)
         }
         .pickerStyle(.segmented)
+        Toggle("Glossy retro controls", isOn: Binding(
+            get: { store.custom.isRetro },
+            set: { on in store.updateCustom { $0.style = on ? .retro : .modern } }
+        ))
         Toggle("Glow in each module's colour", isOn: Binding(
             get: { store.custom.glow == nil },
             set: { follows in store.updateCustom { $0.glow = follows ? nil : $0.accent } }
