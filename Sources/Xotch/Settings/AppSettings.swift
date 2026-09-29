@@ -18,6 +18,7 @@ enum SettingsKey {
     static let hoverDelay = "hoverDelayMs"
     static let haptics = "hapticsEnabled"
     static let retroSounds = "retroSounds"
+    static let mediaKeysHUD = "mediaKeysHUD"
     static let hudEnabled = "hudEnabled"
     static let hudCPU = "hudCPU"
     static let hudMemory = "hudMemory"
@@ -69,6 +70,7 @@ enum AppSettings {
             SettingsKey.hoverDelay: 150.0,
             SettingsKey.haptics: true,
             SettingsKey.retroSounds: false,
+            SettingsKey.mediaKeysHUD: false,
             SettingsKey.hudEnabled: false,
             SettingsKey.hudCPU: true,
             SettingsKey.hudMemory: true,
@@ -111,6 +113,12 @@ enum AppSettings {
 
     static var hapticsEnabled: Bool {
         UserDefaults.standard.bool(forKey: SettingsKey.haptics)
+    }
+
+    /// Volume and brightness keys show in the notch instead of macOS's popup.
+    /// Needs Accessibility permission, so it is off until asked for.
+    static var mediaKeysHUD: Bool {
+        UserDefaults.standard.bool(forKey: SettingsKey.mediaKeysHUD)
     }
 
     /// Arcade sound effects. Off until asked for.

@@ -108,7 +108,7 @@ enum DebugHooks {
                 let path = String(command.dropFirst("status:".count))
                 let lines = [
                     "screens: \(ScreenManager.shared.debugSummary)",
-                    "ongoing: [\(ActivityCenter.shared.debugOngoingIDs)] hud enabled=\(AppSettings.hudEnabled)",
+                    "ongoing: [\(ActivityCenter.shared.debugOngoingIDs)] gauges=\(ActivityCenter.shared.gauges?.count ?? 0) hud enabled=\(AppSettings.hudEnabled)",
                     "activity: \(ActivityCenter.shared.current?.moduleID ?? "-") waiting=\(ActivityCenter.shared.waitingCount) mood=\(ActivityCenter.shared.mood.rawValue)",
                     "theme: \(ThemeStore.shared.palette.id) shaders ready=\(ShaderKit.shared.isReady) compile=\(ShaderKit.shared.compileTime.map { "\($0)" } ?? "-") failure=\(ShaderKit.shared.failure ?? "-")",
                     "audio levels: \(AudioLevels.shared.status)",
@@ -120,6 +120,14 @@ enum DebugHooks {
                     String(format: "pointer events: %.1f/s", ScreenManager.shared.debugPointerRate()),
                 ]
                 try? (lines.joined(separator: "\n") + "\n").write(toFile: path, atomically: true, encoding: .utf8)
+            } else if command.hasPrefix("key:") {
+                // Sends a media key through the same handler the event tap uses,
+                // with no Accessibility permission: `debug.sh key volup`.
+                let names: [String: MediaKey] = ["volup": .volumeUp, "voldown": .volumeDown, "mute": .mute,
+                                                 "brightup": .brightnessUp, "brightdown": .brightnessDown]
+                if let key = names[String(command.dropFirst("key:".count))] {
+                    _ = MediaKeys.shared.handle(key, isDown: true, flags: [])
+                }
             } else if command.hasPrefix("hud:") {
                 // Flips the setting from inside the app, the way Settings does, so
                 // it is observed. `defaults write` from a shell isn't.
@@ -182,6 +190,7 @@ enum DebugHooks {
         lines += todoSelfTest()
         lines += retroSoundSelfTest()
         lines += hudSelfTest()
+        lines += mediaKeysSelfTest()
 
         // Phase 5
         if #available(macOS 15.4, *) {
@@ -354,6 +363,43 @@ enum DebugHooks {
         lines.append(String(format: "ring: timed 30 s of 120 s = %.2f (expect 0.25)", ringNow))
         lines.append("cleanup: done=\(UserDefaults.standard.bool(forKey: "cleanup.removedConnectedModules")) module list \"home,revenue,media,weather,analytics,stats\" → \"\(LegacyCleanup.strippingRemoved(from: "home,revenue,media,weather,analytics,stats"))\" (expect home,media,stats)")
         return lines
+    }
+
+    /// Key decoding, step maths and modifier rules, plus what this Mac can do.
+    /// Reads the brightness but never changes it.
+    @MainActor
+    private static func mediaKeysSelfTest() -> [String] {
+        // data1 for a key: code << 16 | flags, where 0xA00 is pressed and 0xB00 released.
+        func data(_ key: Int, down: Bool) -> Int { key << 16 | (down ? 0xA00 : 0xB00) }
+        func describe(_ code: Int, down: Bool) -> String {
+            guard let result = MediaKeyLogic.decode(data1: data(code, down: down)) else { return "nil" }
+            return "\(result.key)/\(result.isDown)"
+        }
+        let decoded: [String] = [describe(0, down: true), describe(7, down: false), describe(21, down: true)]
+        let steps: [Double] = [
+            MediaKeyLogic.step(0.5, up: true, fine: false),      // 9/16
+            MediaKeyLogic.step(0.52, up: true, fine: false),     // snaps: 9/16
+            MediaKeyLogic.step(1, up: true, fine: false),        // stays 1
+            MediaKeyLogic.step(0, up: false, fine: false),       // stays 0
+            MediaKeyLogic.step(0.5, up: false, fine: true),      // 31/64
+        ]
+        let modifiers: [MediaKeyLogic.Modifiers] = [MediaKeyLogic.modifiers([]), MediaKeyLogic.modifiers([.shift, .option]),
+                                                    MediaKeyLogic.modifiers([.option]), MediaKeyLogic.modifiers([.command])]
+        let expectedSteps: [Double] = [9.0 / 16, 9.0 / 16, 1, 0, 31.0 / 64]
+        let stepsOK = steps == expectedSteps
+        let ok = decoded == ["volumeUp/true", "mute/false", "nil"] && stepsOK
+            && modifiers == [.plain, .fine, .passThrough, .passThrough]
+        let brightness = Brightness.level.map { String(format: "%.2f", $0) } ?? "unavailable"
+        let stepText = steps.map { String(format: "%.3f", $0) }.joined(separator: ",")
+        let verdict = ok ? "PASS" : "FAILED"
+        let first = "media keys: decode=\(decoded.joined(separator: ",")) steps=\(stepText) modifiers=\(modifiers) → \(verdict)"
+        let enabled = AppSettings.mediaKeysHUD
+        let trusted = MediaKeys.isTrusted
+        let running = MediaKeys.shared.isRunning
+        let canSet = SystemVolume.canSetVolume
+        let canShow = ScreenManager.shared.canShowHUD
+        let second = "media keys on this Mac: enabled=\(enabled) trusted=\(trusted) tapRunning=\(running) canSetVolume=\(canSet) brightness=\(brightness) canShowHUD=\(canShow)"
+        return [first, second]
     }
 
     /// The HUD's thresholds and its power promise, on made-up readings: amber
@@ -637,6 +683,19 @@ enum DebugHooks {
                     $0.selectedModuleID = module.id
                 }
             }
+        }
+        withSampleData {
+            // A volume key pressed while the notch is open: the level takes the header.
+            ActivityCenter.shared.showHUD(LiveActivity(moduleID: "volume", symbol: "speaker.wave.2.fill",
+                                                       content: .level(0.56), tint: Theme.ink, earWidth: 96),
+                                          for: .seconds(30))
+            render("4-open-key-hud") {
+                $0.phase = .open
+                $0.selectedModuleID = "home"
+            }
+            ActivityCenter.shared.showHUD(LiveActivity(moduleID: "brightness", symbol: "sun.max.fill",
+                                                       content: .level(0.82), tint: Theme.ink, earWidth: 96),
+                                          for: .milliseconds(10))
         }
         withSampleData {
             CaptureService.shared.debugSetRecording(since: Date().addingTimeInterval(-75))

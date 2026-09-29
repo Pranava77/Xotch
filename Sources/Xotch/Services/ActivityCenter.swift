@@ -15,8 +15,6 @@ enum ActivityContent: Equatable {
     case level(Double)
     /// Lines that take turns, rolling like a ticker.
     case ticker([String])
-    /// Small bars for the system HUD.
-    case gauges([Gauge])
 }
 
 /// A ring drawn around the left-hand icon.
@@ -71,7 +69,7 @@ final class ActivityCenter {
     static let shared = ActivityCenter()
 
     /// Which ongoing activity wins when several are live.
-    private static let priority = ["capture", "claude", "timers", "downloads", "media", "notes", "hud"]
+    private static let priority = ["capture", "claude", "timers", "downloads", "media", "notes"]
     /// Ongoing activities that count as "working" for the mascot.
     private static let busyModules: Set<String> = ["capture", "claude", "timers", "downloads"]
     private static let sleepAfter: Duration = .seconds(10 * 60)
@@ -79,6 +77,9 @@ final class ActivityCenter {
     private(set) var hud: LiveActivity?
     private(set) var banner: LiveActivity?
     private(set) var ongoing: [String: LiveActivity] = [:]
+    /// The system HUD's bars. They have the left ear to themselves, so they show
+    /// alongside whatever activity is live instead of waiting behind it.
+    private(set) var gauges: [Gauge]?
     /// Goes up by one for each celebration; views watch it to play one.
     private(set) var celebrations = 0
     private(set) var isCelebrating = false
@@ -102,10 +103,7 @@ final class ActivityCenter {
 
     /// Live things not shown right now.
     var waitingCount: Int {
-        // The system HUD is always there and always last, so it never counts as
-        // something waiting.
-        let live = ongoing.values.filter { $0.moduleID != GaugesHUD.moduleID }.count
-            + queue.count + (banner == nil ? 0 : 1) + (hud == nil ? 0 : 1)
+        let live = ongoing.count + queue.count + (banner == nil ? 0 : 1) + (hud == nil ? 0 : 1)
         return max(0, live - 1)
     }
 
@@ -178,6 +176,25 @@ final class ActivityCenter {
         }
     }
 
+    /// Shows the system HUD's bars, or hides them with nil. Only appearing and
+    /// disappearing animate; each reading's bars animate on their own.
+    func setGauges(_ new: [Gauge]?) {
+        let new = new?.isEmpty == true ? nil : new
+        #if DEBUG
+        // Snapshots have set the live bars aside: keep the latest for afterwards.
+        if isStashed {
+            stashedGauges = new
+            return
+        }
+        #endif
+        guard new != gauges else { return }
+        if (new == nil) != (gauges == nil) {
+            withAnimation(Motion.activity) { gauges = new }
+        } else {
+            gauges = new
+        }
+    }
+
     /// Confetti and a haptic, e.g. for a finished focus session.
     func celebrate() {
         noteActivity()
@@ -247,17 +264,31 @@ final class ActivityCenter {
     /// Which ongoing activities are live, for `scripts/debug.sh status`.
     var debugOngoingIDs: String { ongoing.keys.sorted().joined(separator: ",") }
 
-    /// Sets live activities aside (for snapshots) and returns them.
+    @ObservationIgnored private var stashedGauges: [Gauge]?
+    @ObservationIgnored private var isStashed = false
+
+    /// Sets live activities (and the HUD's bars) aside for snapshots, and returns them.
     func debugStash() -> [String: LiveActivity] {
         let saved = ongoing
         ongoing = [:]
+        stashedGauges = gauges
+        gauges = nil
+        isStashed = true
         return saved
+    }
+
+    /// Snapshots set bars of their own; this goes around the stash.
+    func debugShowGauges(_ shown: [Gauge]?) {
+        gauges = shown
     }
 
     func debugRestore(_ saved: [String: LiveActivity]) {
         for (moduleID, activity) in saved where ongoing[moduleID] == nil {
             ongoing[moduleID] = activity
         }
+        isStashed = false
+        gauges = stashedGauges
+        stashedGauges = nil
     }
     #endif
 }

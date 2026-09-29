@@ -268,8 +268,17 @@ struct GaugeBars: View {
     let gauges: [Gauge]
     let tint: Color
 
+    static let barWidth: CGFloat = 5
+    static let spacing: CGFloat = 3
+
+    /// An ear just wide enough for `count` bars and the ear's edge padding.
+    static func earWidth(count: Int) -> CGFloat {
+        let bars = CGFloat(count) * barWidth + CGFloat(max(count - 1, 0)) * spacing
+        return bars + 12 + 14
+    }
+
     var body: some View {
-        HStack(spacing: 3) {
+        HStack(spacing: Self.spacing) {
             ForEach(gauges) { gauge in
                 GaugeBar(gauge: gauge, tint: tint)
             }
@@ -301,7 +310,7 @@ private struct GaugeBar: View {
                 .frame(height: max(3, 16 * gauge.value))
                 .xotchGloss(Capsule(), strength: 0.5)
         }
-        .frame(width: 5, height: 16)
+        .frame(width: GaugeBars.barWidth, height: 16)
         .animation(Motion.press, value: gauge.value)
     }
 }

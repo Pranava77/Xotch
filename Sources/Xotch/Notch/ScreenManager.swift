@@ -21,6 +21,7 @@ final class ScreenManager {
         rebuild()
         installMonitors()
         GaugesHUD.shared.settingsChanged()
+        MediaKeys.shared.settingsChanged()
 
         observe(NotificationCenter.default, NSApplication.didChangeScreenParametersNotification) { manager in
             #if DEBUG
@@ -103,6 +104,7 @@ final class ScreenManager {
         CaptureService.shared.settingsChanged()
         TodoService.shared.updateActivity()
         GaugesHUD.shared.settingsChanged()
+        MediaKeys.shared.settingsChanged()
         let hide = AppSettings.hideInFullScreen
         if hide != hideInFullScreen {
             hideInFullScreen = hide
@@ -186,6 +188,13 @@ final class ScreenManager {
             guard !Task.isCancelled else { return }
             self?.checkFullScreen()
         }
+    }
+
+    /// Is a notch on screen right now to show the volume or brightness HUD? When
+    /// none is (every one hidden behind a full-screen app), the keys are left to
+    /// macOS so there is still a popup.
+    var canShowHUD: Bool {
+        controllers.values.contains { !$0.isHiddenForFullScreen }
     }
 
     private func checkFullScreen() {

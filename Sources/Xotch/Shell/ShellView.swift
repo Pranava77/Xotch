@@ -35,8 +35,10 @@ struct ShellView: View {
                                    endRadius: max(520, width * 0.62))
                         .transition(.opacity)
                 }
-                if model.showsActivity, let activity = model.activities.current {
-                    LiveActivityBar(activity: activity,
+                if model.showsActivity {
+                    LiveActivityBar(activity: model.activities.current,
+                                    gauges: model.activities.gauges,
+                                    earWidth: model.earWidth,
                                     notchSize: model.closedSize,
                                     waiting: model.activities.waitingCount,
                                     namespace: namespace)
@@ -138,10 +140,19 @@ private struct OpenContent: View {
     /// Title left of the camera housing; palette and pin on the right.
     private var topRow: some View {
         HStack(spacing: 0) {
-            Text(selected.title)
-                .font(.system(size: 13, weight: .semibold, design: Theme.fontDesign))
-                .contentTransition(.opacity)
-                .frame(maxWidth: .infinity, alignment: .leading)
+            // While a volume or brightness key is held, the header shows the
+            // level: with the notch open there are no ears to show it in.
+            Group {
+                if let hud = model.activities.hud, case .level(let value) = hud.content {
+                    KeyLevelPill(symbol: hud.symbol, value: value)
+                        .transition(.opacity)
+                } else {
+                    Text(selected.title)
+                        .font(.system(size: 13, weight: .semibold, design: Theme.fontDesign))
+                        .contentTransition(.opacity)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
 
             // Room for the camera housing, which sits over the open notch's
             // header. A drawn notch has nothing there, so it only needs a gap.
@@ -162,6 +173,27 @@ private struct OpenContent: View {
             .frame(maxWidth: .infinity)
         }
         .padding(.horizontal, 22)
+    }
+}
+
+/// A level bar with its icon, for the open notch's header.
+private struct KeyLevelPill: View {
+    let symbol: String
+    let value: Double
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: symbol)
+                .font(.system(size: 13, weight: .semibold))
+                .frame(width: 18)
+            LevelBar(value: value, tint: Theme.accent)
+                .frame(width: 130)
+            Text("\(Int((value * 100).rounded()))")
+                .font(.system(size: 11, weight: .semibold, design: .rounded))
+                .monospacedDigit()
+                .foregroundStyle(Theme.secondaryInk)
+                .frame(width: 26, alignment: .leading)
+        }
     }
 }
 
@@ -308,28 +340,48 @@ private struct PinButton: View {
 
 /// Live content in the "ears" either side of the camera housing.
 private struct LiveActivityBar: View {
-    let activity: LiveActivity
+    let activity: LiveActivity?
+    /// The system HUD's bars, which take the left ear when on.
+    let gauges: [Gauge]?
+    let earWidth: CGFloat
     let notchSize: CGSize
     let waiting: Int
     let namespace: Namespace.ID
 
     var body: some View {
         HStack(spacing: 0) {
-            leading
-                .matchedGeometryEffect(id: "icon-\(activity.moduleID)", in: namespace)
-                .padding(.leading, 12)
-                .frame(width: activity.earWidth, alignment: .leading)
+            Group {
+                if let gauges {
+                    GaugeBars(gauges: gauges, tint: Theme.accent)
+                        .transition(.opacity)
+                } else if let activity {
+                    icon(activity)
+                        .matchedGeometryEffect(id: "icon-\(activity.moduleID)", in: namespace)
+                }
+            }
+            .padding(.leading, 12)
+            .frame(width: earWidth, alignment: .leading)
 
             Color.clear
                 .frame(width: notchSize.width)
 
-            trailing
+            HStack(spacing: 6) {
+                if let activity {
+                    if gauges != nil {
+                        // The bars have the left ear, so the icon sits by its content.
+                        icon(activity)
+                            .scaleEffect(0.85)
+                            .matchedGeometryEffect(id: "icon-\(activity.moduleID)", in: namespace)
+                    }
+                    trailing(activity)
+                }
+            }
                 .font(.system(size: 12.5, weight: .semibold, design: .rounded))
                 .monospacedDigit()
                 .foregroundStyle(Theme.ink)
                 .lineLimit(1)
                 .padding(.trailing, 12)
-                .frame(width: activity.earWidth, alignment: .trailing)
+                .frame(width: earWidth, alignment: .trailing)
                 .overlay(alignment: .trailing) {
                     if waiting > 0 {
                         WaitingDots(count: waiting)
@@ -342,7 +394,7 @@ private struct LiveActivityBar: View {
         .accessibilityElement(children: .combine)
     }
 
-    @ViewBuilder private var leading: some View {
+    @ViewBuilder private func icon(_ activity: LiveActivity) -> some View {
         if let image = activity.image {
             Image(nsImage: image)
                 .resizable()
@@ -368,7 +420,7 @@ private struct LiveActivityBar: View {
         }
     }
 
-    @ViewBuilder private var trailing: some View {
+    @ViewBuilder private func trailing(_ activity: LiveActivity) -> some View {
         switch activity.content {
         case .text(let text):
             Text(text)
@@ -389,8 +441,6 @@ private struct LiveActivityBar: View {
                 .frame(width: max(activity.earWidth - 30, 30))
         case .ticker(let lines):
             TickerText(lines: lines)
-        case .gauges(let gauges):
-            GaugeBars(gauges: gauges, tint: activity.tint)
         }
     }
 }

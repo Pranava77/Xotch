@@ -45,14 +45,22 @@ final class NotchViewModel {
     }
 
     var showsActivity: Bool {
-        phase != .open && activities.current != nil
+        phase != .open && (activities.current != nil || activities.gauges != nil)
+    }
+
+    /// Width of each ear. They stay equal so the notch stays centred on the
+    /// camera: with the HUD's bars on the left, both grow to fit the wider side.
+    var earWidth: CGFloat {
+        let right = activities.current.map { $0.earWidth + (activities.gauges == nil ? 0 : Layout.inlineIconWidth) } ?? 0
+        let left = activities.gauges.map { GaugeBars.earWidth(count: $0.count) } ?? 0
+        return max(left, right, activities.current == nil ? 0 : Layout.earWidth)
     }
 
     var bodySize: CGSize {
         if phase == .open { return openSize }
         var size = closedSize
-        if showsActivity, let activity = activities.current {
-            size.width += activity.earWidth * 2
+        if showsActivity {
+            size.width += earWidth * 2
         }
         if phase == .peek {
             size.width += Layout.peekGrowth.width

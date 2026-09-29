@@ -93,11 +93,6 @@ enum MarketingShots {
                     ("download", LiveActivity(moduleID: "downloads", symbol: "arrow.down", content: .text("62%"),
                                               tint: Palette.midnight.accent.color, earWidth: 90,
                                               progress: .fraction(0.62))),
-                    ("hud", GaugesHUD.activity(GaugesHUD.gauges(
-                        from: StatsSnapshot(cpu: 0.34, memoryUsed: 11.2e9, memoryTotal: 18e9, download: 1_250_000,
-                                            upload: 84_000, diskFree: 1, diskTotal: 2,
-                                            battery: BatteryInfo(percent: 76, isCharging: false, onPower: false)),
-                        selection: HUDSelection()))),
                     ("volume", LiveActivity(moduleID: "volume", symbol: "speaker.wave.2.fill", content: .level(0.56),
                                             tint: .white, earWidth: 96)),
                 ]
@@ -106,6 +101,18 @@ enum MarketingShots {
                     save("ears-\(name)", model { _ in }, size: earSize, scale: 2)
                     center.setOngoing(nil, for: activity.moduleID)
                 }
+                // The HUD's bars on the left, beside a live Claude session on the right.
+                center.debugShowGauges(GaugesHUD.gauges(
+                    from: StatsSnapshot(cpu: 0.34, memoryUsed: 11.2e9, memoryTotal: 18e9, download: 1_250_000,
+                                        upload: 84_000, diskFree: 1, diskTotal: 2,
+                                        battery: BatteryInfo(percent: 76, isCharging: false, onPower: false)),
+                    selection: HUDSelection()))
+                let claude = LiveActivity(moduleID: "claude", symbol: "sparkle", content: .text("Editing"),
+                                          tint: ClaudeLiveService.tint, earWidth: 110, pulse: .calm)
+                center.setOngoing(claude, for: "claude")
+                save("ears-hud", model { _ in }, size: earSize, scale: 2)
+                center.setOngoing(nil, for: "claude")
+                center.debugShowGauges(nil)
             }
             center.debugRestore(samples)
         }

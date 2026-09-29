@@ -273,7 +273,9 @@ final class NotchWindowController: NotchActions {
         let activities = model.activities
         guard model.showsActivity, CaptureService.shared.isRecording,
               let current = activities.current, current.id == activities.ongoing["capture"]?.id else { return false }
-        return abs(location.x - model.screenRect.midX) > model.closedSize.width / 2
+        // With the HUD's bars in the left ear, only the right ear is the recording's.
+        let offset = location.x - model.screenRect.midX
+        return activities.gauges == nil ? abs(offset) > model.closedSize.width / 2 : offset > model.closedSize.width / 2
     }
 
     func togglePin() {

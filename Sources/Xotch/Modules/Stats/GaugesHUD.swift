@@ -33,7 +33,6 @@ struct HUDSelection: Equatable, Sendable {
 @MainActor
 final class GaugesHUD {
     static let shared = GaugesHUD()
-    static let moduleID = "hud"
 
     private var sampling: Task<Void, Never>?
     private var suspendedForFullScreen = false
@@ -47,7 +46,10 @@ final class GaugesHUD {
         installObserversOnce()
         if shouldRun {
             startSampling()
-            publish()
+            // Settings changes arrive synchronously, sometimes in the middle of a
+            // SwiftUI update, and changing what the notch shows there aborts the
+            // app. Show the new bars on the next turn of the run loop instead.
+            Task { @MainActor [weak self] in self?.publish() }
         } else {
             stopSampling()
         }
@@ -77,7 +79,7 @@ final class GaugesHUD {
         sampling?.cancel()
         sampling = nil
         StatsService.shared.onSample = nil
-        ActivityCenter.shared.setOngoing(nil, for: Self.moduleID)
+        ActivityCenter.shared.setGauges(nil)
     }
 
     private func installObserversOnce() {
@@ -96,16 +98,7 @@ final class GaugesHUD {
 
     private func publish() {
         guard shouldRun, let snapshot = StatsService.shared.snapshot else { return }
-        let gauges = Self.gauges(from: snapshot, selection: AppSettings.hudSelection)
-        guard !gauges.isEmpty else {
-            ActivityCenter.shared.setOngoing(nil, for: Self.moduleID)
-            return
-        }
-        ActivityCenter.shared.setOngoing(Self.activity(gauges), for: Self.moduleID)
-    }
-
-    static func activity(_ gauges: [Gauge]) -> LiveActivity {
-        LiveActivity(moduleID: moduleID, symbol: "gauge.medium", content: .gauges(gauges), tint: Theme.accent)
+        ActivityCenter.shared.setGauges(Self.gauges(from: snapshot, selection: AppSettings.hudSelection))
     }
 
     // MARK: - Readings

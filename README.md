@@ -55,12 +55,15 @@ When something's happening, the notch grows two small "ears" to show it, without
   </tr>
   <tr>
     <td align="center"><img src="docs/images/ears-download.jpg" alt="Download progress at 62 percent beside the notch"><br><sub><b>Downloads:</b> how far along they are</sub></td>
-    <td align="center"><img src="docs/images/ears-hud.jpg" alt="Four small bars beside the notch showing CPU, memory, network and battery"><br><sub><b>System HUD:</b> CPU, memory, network and battery as bars, when nothing else is live</sub></td>
-    <td align="center"><img src="docs/images/ears-volume.jpg" alt="A volume bar beside the notch"><br><sub><b>Volume:</b> scroll on the notch to change it</sub></td>
+    <td align="center"><img src="docs/images/ears-hud.jpg" alt="Four small bars on the left of the notch showing CPU, memory, network and battery, with Claude Code's status on the right"><br><sub><b>System HUD:</b> CPU, memory, network and battery as bars in the left ear, beside whatever else is live</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/images/ears-volume.jpg" alt="A volume bar beside the notch"><br><sub><b>Volume and brightness:</b> scroll on the notch, or press the keys once you turn on the setting. The bar shows in the header if the notch is open</sub></td>
+    <td></td>
   </tr>
 </table>
 
-If more than one thing is live, the most important shows, and small dots tell you others are waiting. The **system HUD** (Settings › System HUD, off by default) always comes last, so a timer, recording or song takes its place, and it doesn't count as something waiting. It reads the stats every 2 seconds while it's on, and stops when a full-screen app hides the notch or your displays sleep.
+If more than one thing is live, the most important shows, and small dots tell you others are waiting. The **system HUD** (Settings › System HUD, off by default) has the left ear to itself, so it shows alongside a timer, a song or Claude, whose icon moves next to its status on the right. It reads the stats every 2 seconds while it's on, and stops when a full-screen app hides the notch or your displays sleep.
 
 ## Everything you reach for, in one place
 
@@ -202,8 +205,9 @@ Xotch asks only when you use something that needs it.
 | Microphone | Only if you turn on Capture › Microphone | Recording your voice with the screen |
 | Desktop folder (may be asked) | Opening Capture, if it's listing your ⌘⇧3 and ⌘⇧4 screenshots | Finding those screenshots. macOS saves them to Desktop unless you've changed it |
 | Downloads folder | macOS may ask when you turn on download progress | Showing how far downloads have got |
+| Accessibility | Only if you turn on **Settings › Show volume and brightness in the notch** | Reading the volume, mute and brightness keys so the notch can show the level in place of macOS's popup. It is off by default; Xotch reads only those keys and nothing else you type |
 
-Xotch never asks for Accessibility or Input Monitoring.
+Without that one setting, Xotch never asks for Accessibility or Input Monitoring.
 
 </details>
 

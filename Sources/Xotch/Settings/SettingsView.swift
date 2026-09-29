@@ -6,6 +6,8 @@ struct SettingsView: View {
     @AppStorage(SettingsKey.hoverDelay) private var hoverDelay: Double = 150
     @AppStorage(SettingsKey.haptics) private var haptics = true
     @AppStorage(SettingsKey.retroSounds) private var retroSounds = false
+    @AppStorage(SettingsKey.mediaKeysHUD) private var mediaKeysHUD = false
+    @State private var keysTrusted = MediaKeys.isTrusted
     @AppStorage(SettingsKey.hudEnabled) private var hudEnabled = false
     @AppStorage(SettingsKey.hudCPU) private var hudCPU = true
     @AppStorage(SettingsKey.hudMemory) private var hudMemory = true
@@ -170,6 +172,31 @@ struct SettingsView: View {
             }
 
             Section {
+                Toggle("Show volume and brightness in the notch", isOn: $mediaKeysHUD)
+                    .onChange(of: mediaKeysHUD) { _, on in
+                        if on, !MediaKeys.isTrusted { MediaKeys.requestPermission() }
+                        keysTrusted = MediaKeys.isTrusted
+                    }
+                if mediaKeysHUD, !keysTrusted {
+                    LabeledContent("Needs permission") {
+                        Button("Open Accessibility settings") { PrivacyPane.accessibility.open() }
+                    }
+                }
+            } header: {
+                Text("Volume and brightness")
+            } footer: {
+                Text("Your keyboard's volume, mute and brightness keys show their level in the notch, and macOS's own popup no longer appears. Xotch needs Accessibility permission to do that. It only takes a key when it can act on it: a full-screen app hiding the notch, an output with no volume control, or a display Xotch can't read (external monitors) leaves the key to macOS. Hold Shift+Option for smaller steps. Brightness uses a private macOS framework and covers the built-in display only.")
+                    .foregroundStyle(.secondary)
+            }
+            .task {
+                // Permission is granted in System Settings, and nothing tells us.
+                while !Task.isCancelled {
+                    keysTrusted = MediaKeys.isTrusted
+                    try? await Task.sleep(for: .seconds(2))
+                }
+            }
+
+            Section {
                 Toggle("Show system gauges beside the notch", isOn: $hudEnabled)
                 if hudEnabled {
                     Toggle("CPU", isOn: $hudCPU)
@@ -180,7 +207,7 @@ struct SettingsView: View {
             } header: {
                 Text("System HUD")
             } footer: {
-                Text("Small bars beside the closed notch, shown when nothing else is live. A timer, music or recording always takes their place. While this is on, Xotch checks these readings every 2 seconds, and stops when the notch is hidden by a full-screen app or your displays sleep.")
+                Text("Small bars in the left ear of the closed notch, shown alongside anything else that is live. While this is on, Xotch checks these readings every 2 seconds, and stops when the notch is hidden by a full-screen app or your displays sleep.")
                     .foregroundStyle(.secondary)
             }
 
