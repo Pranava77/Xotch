@@ -33,6 +33,13 @@ for module in home media calendar clipboard shelf capture notes stats claude tim
   measure "Open on $module"
 done
 debug close
+debug hud on
+sleep 4
+debug clear-activities
+sleep 3
+measure "Closed, system HUD on (nothing else live)"
+debug hud off
+debug close
 sleep 2
 debug activity-media
 sleep 2

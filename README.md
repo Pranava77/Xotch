@@ -55,11 +55,12 @@ When something's happening, the notch grows two small "ears" to show it, without
   </tr>
   <tr>
     <td align="center"><img src="docs/images/ears-download.jpg" alt="Download progress at 62 percent beside the notch"><br><sub><b>Downloads:</b> how far along they are</sub></td>
+    <td align="center"><img src="docs/images/ears-hud.jpg" alt="Four small bars beside the notch showing CPU, memory, network and battery"><br><sub><b>System HUD:</b> CPU, memory, network and battery as bars, when nothing else is live</sub></td>
     <td align="center"><img src="docs/images/ears-volume.jpg" alt="A volume bar beside the notch"><br><sub><b>Volume:</b> scroll on the notch to change it</sub></td>
   </tr>
 </table>
 
-If more than one thing is live, the most important shows, and small dots tell you others are waiting.
+If more than one thing is live, the most important shows, and small dots tell you others are waiting. The **system HUD** (Settings › System HUD, off by default) always comes last, so a timer, recording or song takes its place, and it doesn't count as something waiting. It reads the stats every 2 seconds while it's on, and stops when a full-screen app hides the notch or your displays sleep.
 
 ## Everything you reach for, in one place
 
@@ -126,17 +127,21 @@ Add the hook, and each session shows whether it's working, needs you, or is done
 
 <table>
   <tr>
-    <td width="33%"><img src="docs/images/theme-midnight.jpg" alt="The Midnight theme: a solid black notch"></td>
-    <td width="33%"><img src="docs/images/theme-smoke.jpg" alt="The Smoke Glass theme: a frosted notch showing a blur of the wallpaper"></td>
-    <td width="33%"><img src="docs/images/theme-aurora.jpg" alt="The Aurora theme: a deep blue notch with a violet glow"></td>
+    <td width="25%"><img src="docs/images/theme-aero.jpg" alt="The Aero Glass theme: sky-blue glass with a bright specular band and glossy aqua buttons"></td>
+    <td width="25%"><img src="docs/images/theme-midnight.jpg" alt="The Midnight theme: a solid black notch"></td>
+    <td width="25%"><img src="docs/images/theme-smoke.jpg" alt="The Smoke Glass theme: a frosted notch showing a blur of the wallpaper"></td>
+    <td width="25%"><img src="docs/images/theme-aurora.jpg" alt="The Aurora theme: a deep blue notch with a violet glow"></td>
   </tr>
   <tr>
+    <td align="center"><b>Aero Glass</b><br><sub>The default: glossy 2000s glass</sub></td>
     <td align="center"><b>Midnight</b></td>
     <td align="center"><b>Smoke Glass</b><br><sub>Liquid Glass on macOS 26</sub></td>
     <td align="center"><b>Aurora</b></td>
   </tr>
 </table>
 
+- **Aero Glass** is Frutiger Aero, the glossy look of Windows Aero and early Mac OS X: a bright band across the top of every button, bevelled edges, aqua-green accents and rounded type, on top of Liquid Glass. The other themes stay flat, and a custom theme can turn the gloss on or off.
+- **Arcade sound effects:** short 8-bit blips for opening and closing the notch, switching modules, adding, finishing and deleting to-dos, pinning, and a jingle for a finished timer or a celebration. They're generated in code, so nothing is bundled. Off by default: turn them on in Settings, with a volume slider.
 - **Your own theme:** pick the background, text, accent and glow colours. The closed notch always stays black, so it blends in with the camera.
 - **The mascot:** Xotch's little mascot lives on Home. It naps when things are quiet, thinks while you work, and jumps for joy when you finish a focus session.
 - **Your modules, your way:**

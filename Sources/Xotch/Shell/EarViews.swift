@@ -262,6 +262,50 @@ struct LevelBar: View {
     }
 }
 
+/// The system HUD: one thin bar per reading, always in the same place. A bar
+/// only changes colour when something needs attention.
+struct GaugeBars: View {
+    let gauges: [Gauge]
+    let tint: Color
+
+    var body: some View {
+        HStack(spacing: 3) {
+            ForEach(gauges) { gauge in
+                GaugeBar(gauge: gauge, tint: tint)
+            }
+        }
+        .frame(height: 16)
+        .accessibilityElement()
+        .accessibilityLabel("System gauges")
+        .accessibilityValue(gauges.map { "\($0.label) \($0.spoken)" }.joined(separator: ", "))
+    }
+}
+
+private struct GaugeBar: View {
+    let gauge: Gauge
+    let tint: Color
+
+    private var colour: Color {
+        switch gauge.level {
+        case .normal: tint
+        case .warn: Color(red: 1, green: 0.69, blue: 0.13)
+        case .alert: Theme.negative
+        }
+    }
+
+    var body: some View {
+        ZStack(alignment: .bottom) {
+            Capsule().fill(Theme.raisedFill)
+            Capsule()
+                .fill(colour)
+                .frame(height: max(3, 16 * gauge.value))
+                .xotchGloss(Capsule(), strength: 0.5)
+        }
+        .frame(width: 5, height: 16)
+        .animation(Motion.press, value: gauge.value)
+    }
+}
+
 /// Up to three dots: how many other live activities are waiting their turn.
 struct WaitingDots: View {
     let count: Int

@@ -41,6 +41,8 @@ final class StatsService {
     @ObservationIgnored private var previousNetwork: (received: UInt64, sent: UInt64, at: Date)?
     @ObservationIgnored private var batteryHealth: (health: Double?, cycles: Int?)?
     @ObservationIgnored private var sampleCount = 0
+    /// Called after each sample; the notch HUD uses it to redraw.
+    @ObservationIgnored var onSample: (() -> Void)?
     @ObservationIgnored private lazy var gate = VisibilityGate(interval: .seconds(2)) { [weak self] in
         self?.sample()
     }
@@ -63,6 +65,7 @@ final class StatsService {
                                  battery: slow ? battery() : snapshot?.battery)
         cpuHistory = Array((cpuHistory + [cpu]).suffix(30))
         networkHistory = Array((networkHistory + [download + upload]).suffix(30))
+        onSample?()
     }
 
     /// Network history scaled to 0...1 for the sparkline.

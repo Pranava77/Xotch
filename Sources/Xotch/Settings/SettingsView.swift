@@ -6,6 +6,11 @@ struct SettingsView: View {
     @AppStorage(SettingsKey.hoverDelay) private var hoverDelay: Double = 150
     @AppStorage(SettingsKey.haptics) private var haptics = true
     @AppStorage(SettingsKey.retroSounds) private var retroSounds = false
+    @AppStorage(SettingsKey.hudEnabled) private var hudEnabled = false
+    @AppStorage(SettingsKey.hudCPU) private var hudCPU = true
+    @AppStorage(SettingsKey.hudMemory) private var hudMemory = true
+    @AppStorage(SettingsKey.hudNetwork) private var hudNetwork = true
+    @AppStorage(SettingsKey.hudBattery) private var hudBattery = true
     @AppStorage(SettingsKey.retroSoundVolume) private var retroSoundVolume = 0.5
     @AppStorage(SettingsKey.display) private var display = DisplayChoice.automatic
     @AppStorage(SettingsKey.moduleOrder) private var moduleOrder = ""
@@ -162,6 +167,21 @@ struct SettingsView: View {
                 } message: {
                     Text("Pinned items stay. This can't be undone.")
                 }
+            }
+
+            Section {
+                Toggle("Show system gauges beside the notch", isOn: $hudEnabled)
+                if hudEnabled {
+                    Toggle("CPU", isOn: $hudCPU)
+                    Toggle("Memory", isOn: $hudMemory)
+                    Toggle("Network", isOn: $hudNetwork)
+                    Toggle("Battery", isOn: $hudBattery)
+                }
+            } header: {
+                Text("System HUD")
+            } footer: {
+                Text("Small bars beside the closed notch, shown when nothing else is live. A timer, music or recording always takes their place. While this is on, Xotch checks these readings every 2 seconds, and stops when the notch is hidden by a full-screen app or your displays sleep.")
+                    .foregroundStyle(.secondary)
             }
 
             Section {

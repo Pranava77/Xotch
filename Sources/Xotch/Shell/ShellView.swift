@@ -389,6 +389,8 @@ private struct LiveActivityBar: View {
                 .frame(width: max(activity.earWidth - 30, 30))
         case .ticker(let lines):
             TickerText(lines: lines)
+        case .gauges(let gauges):
+            GaugeBars(gauges: gauges, tint: activity.tint)
         }
     }
 }

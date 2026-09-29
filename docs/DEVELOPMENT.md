@@ -27,7 +27,7 @@ With a debug build running:
 ./scripts/debug.sh record screen     # start recording: screen, window or area; record-stop ends it
 ./scripts/debug.sh celebrate         # confetti (and the sound, if it's on)
 ./scripts/debug.sh palette           # open the command palette; also ripple
-./scripts/debug.sh theme aurora      # midnight, smoke, aurora or custom; also mood working|celebrating|sleeping|idle
+./scripts/debug.sh theme aero        # aero, midnight, smoke, aurora or custom; also mood working|celebrating|sleeping|idle
 ./scripts/debug.sh snapshot ~/Desktop/xotch-snapshots     # render every state to PNG (sample data)
 ./scripts/debug.sh effects ~/Desktop/xotch-effects        # render the Metal and Core Animation effects to PNG
 ./scripts/debug.sh marketing /tmp/xotch-images            # regenerate the README's product images (sample data)
@@ -101,7 +101,9 @@ The Revenue, Analytics and Weather modules were removed. On first launch after t
 
 | Feature | How it works | Cost |
 |---|---|---|
-| Themes | `ThemeStore` holds the palette (background, text, accent, glow, solid or glass). The closed notch always stays black. | — |
+| Themes | `ThemeStore` holds the palette (background, text, accent, glow, solid or glass, and a `style` of modern or retro). The closed notch always stays black. | — |
+| Arcade sounds | `RetroSound` plays cues that `RetroSynth` renders from pulse, triangle and noise waves through `AVAudioEngine`; the engine stops after 5 s idle | — |
+| System HUD | `GaugesHUD` reads `StatsService` and posts an ongoing activity drawn by `GaugeBars` | — |
 | Glass | `.glassEffect()` on macOS 26; an `NSVisualEffectView` blur on 14–15 (`defaults write com.pranava.xotch forceBlurFallback -bool YES` to see it on 26) | window server |
 | Drop ripple, artwork glow, LED display | Metal shaders compiled at runtime (`Design/Shaders.swift`). The glow and LED display are drawn once and moved by Core Animation; only the one-second ripple draws frame by frame. | ~0.1% while Now Playing is open |
 | Live updates beside the notch | Timer ring and Claude pulse are Core Animation layers; a rolling ticker (`ActivityContent.ticker`); download progress; dots for activities waiting their turn; a volume HUD | 0% (ring 0.4%, the countdown text) |
@@ -130,6 +132,13 @@ Captures are saved to `~/Pictures/Xotch` by default. Pictures is one of the few 
 - **Two lists:** today, and someday (no day). Right-click moves a to-do between today, tomorrow and someday; ticking a someday to-do puts it on today.
 - **Rollover:** unfinished to-dos from before today move to today once a day, at midnight or first launch (`rolloverIfNeeded`), unless "Carry unfinished to-dos over" is off. The setting keeps its old `lifeRollover` key so saved choices survive.
 - **Beside the notch:** with the setting on, "3 left" shows as an ongoing activity.
+
+### Aero glass, arcade sounds and the system HUD
+
+- **Retro is a `Palette.style`, not a separate code path.** `xotchGlass` (real Liquid Glass on macOS 26, a flat fill before that and in snapshots) is unchanged; in a retro palette it also adds `xotchGloss`, one overlay with a specular band over the top half, a lit top edge and a dark lower edge. `PillButtonStyle`, `IconButtonStyle`, `Tile`, the search field, `NotchSwitchStyle`, `ModuleDock` and the command palette all go through it, and `strength` scales it down for big surfaces. `style` is optional so themes saved before it existed still decode, as modern.
+- **Sounds are synthesised, not shipped.** `RetroSynth.render` is pure (no audio hardware), so the self-test can check every cue's length, peak and edges. `RetroSound` keeps four voices, cuts the oldest when a fifth arrives so quick repeats never queue, and stops its engine 5 s after the last sound so it doesn't keep the audio hardware awake. Nothing is created while the setting is off. `scripts/debug.sh sound <cue>` plays one whatever the setting is.
+- **The HUD borrows the stats timer.** `StatsService` samples only while something subscribes through `VisibilityGate`; `GaugesHUD` subscribes while the setting is on, and unsubscribes when every notch is hidden behind a full-screen app or the displays sleep. The old rule that nothing polls while the notch is closed no longer holds with the HUD on, and Settings says so. `ActivityCenter` ranks it last and leaves it out of the waiting-dots count.
+- **`defaults write` isn't seen live.** macOS doesn't notify a running app of a change another process made to its preferences, so `defaults write ... hudEnabled` shows up only after a relaunch. Toggling in Settings is observed; `scripts/debug.sh hud on|off` does the same from a shell.
 
 ### Claude Code live status
 

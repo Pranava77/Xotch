@@ -15,6 +15,8 @@ enum ActivityContent: Equatable {
     case level(Double)
     /// Lines that take turns, rolling like a ticker.
     case ticker([String])
+    /// Small bars for the system HUD.
+    case gauges([Gauge])
 }
 
 /// A ring drawn around the left-hand icon.
@@ -69,7 +71,7 @@ final class ActivityCenter {
     static let shared = ActivityCenter()
 
     /// Which ongoing activity wins when several are live.
-    private static let priority = ["capture", "claude", "timers", "downloads", "media", "notes"]
+    private static let priority = ["capture", "claude", "timers", "downloads", "media", "notes", "hud"]
     /// Ongoing activities that count as "working" for the mascot.
     private static let busyModules: Set<String> = ["capture", "claude", "timers", "downloads"]
     private static let sleepAfter: Duration = .seconds(10 * 60)
@@ -100,7 +102,10 @@ final class ActivityCenter {
 
     /// Live things not shown right now.
     var waitingCount: Int {
-        let live = ongoing.count + queue.count + (banner == nil ? 0 : 1) + (hud == nil ? 0 : 1)
+        // The system HUD is always there and always last, so it never counts as
+        // something waiting.
+        let live = ongoing.values.filter { $0.moduleID != GaugesHUD.moduleID }.count
+            + queue.count + (banner == nil ? 0 : 1) + (hud == nil ? 0 : 1)
         return max(0, live - 1)
     }
 
@@ -238,6 +243,9 @@ final class ActivityCenter {
         if let celebrating { isCelebrating = celebrating }
         if let drowsy { isDrowsy = drowsy }
     }
+
+    /// Which ongoing activities are live, for `scripts/debug.sh status`.
+    var debugOngoingIDs: String { ongoing.keys.sorted().joined(separator: ",") }
 
     /// Sets live activities aside (for snapshots) and returns them.
     func debugStash() -> [String: LiveActivity] {

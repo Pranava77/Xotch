@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Sends a command to a running debug build of Xotch.
-# Usage: scripts/debug.sh sound <cue> | open [module] | close | activity | activity-media | activity-timer |
+# Usage: scripts/debug.sh hud on|off | sound <cue> | open [module] | close | activity | activity-media | activity-timer |
 #        activity-claude | activity-download | clear-activities [module] | celebrate | palette | ripple |
 #        theme <id> | mood <mood> | rebuild <count> | status <file> | snapshot <folder> |
 #        effects <folder> | marketing <folder> | selftest <report file> |

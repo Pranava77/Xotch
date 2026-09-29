@@ -108,6 +108,7 @@ enum DebugHooks {
                 let path = String(command.dropFirst("status:".count))
                 let lines = [
                     "screens: \(ScreenManager.shared.debugSummary)",
+                    "ongoing: [\(ActivityCenter.shared.debugOngoingIDs)] hud enabled=\(AppSettings.hudEnabled)",
                     "activity: \(ActivityCenter.shared.current?.moduleID ?? "-") waiting=\(ActivityCenter.shared.waitingCount) mood=\(ActivityCenter.shared.mood.rawValue)",
                     "theme: \(ThemeStore.shared.palette.id) shaders ready=\(ShaderKit.shared.isReady) compile=\(ShaderKit.shared.compileTime.map { "\($0)" } ?? "-") failure=\(ShaderKit.shared.failure ?? "-")",
                     "audio levels: \(AudioLevels.shared.status)",
@@ -119,6 +120,10 @@ enum DebugHooks {
                     String(format: "pointer events: %.1f/s", ScreenManager.shared.debugPointerRate()),
                 ]
                 try? (lines.joined(separator: "\n") + "\n").write(toFile: path, atomically: true, encoding: .utf8)
+            } else if command.hasPrefix("hud:") {
+                // Flips the setting from inside the app, the way Settings does, so
+                // it is observed. `defaults write` from a shell isn't.
+                UserDefaults.standard.set(command == "hud:on", forKey: SettingsKey.hudEnabled)
             } else if command.hasPrefix("sound:") {
                 // Plays one cue whether or not sounds are switched on: `debug.sh sound complete`.
                 if let cue = RetroCue(rawValue: String(command.dropFirst("sound:".count))) {
@@ -176,6 +181,7 @@ enum DebugHooks {
         lines += captureSelfTest()
         lines += todoSelfTest()
         lines += retroSoundSelfTest()
+        lines += hudSelfTest()
 
         // Phase 5
         if #available(macOS 15.4, *) {
@@ -348,6 +354,41 @@ enum DebugHooks {
         lines.append(String(format: "ring: timed 30 s of 120 s = %.2f (expect 0.25)", ringNow))
         lines.append("cleanup: done=\(UserDefaults.standard.bool(forKey: "cleanup.removedConnectedModules")) module list \"home,revenue,media,weather,analytics,stats\" → \"\(LegacyCleanup.strippingRemoved(from: "home,revenue,media,weather,analytics,stats"))\" (expect home,media,stats)")
         return lines
+    }
+
+    /// The HUD's thresholds and its power promise, on made-up readings: amber
+    /// from 80% CPU, red from 90%, battery only warns when unplugged.
+    @MainActor
+    private static func hudSelfTest() -> [String] {
+        func reading(cpu: Double, memory: Double = 0.4, battery: BatteryInfo?) -> StatsSnapshot {
+            StatsSnapshot(cpu: cpu, memoryUsed: memory * 16e9, memoryTotal: 16e9, download: 0, upload: 0,
+                          diskFree: 1, diskTotal: 2, battery: battery)
+        }
+        let all = HUDSelection()
+        func level(_ id: String, _ snapshot: StatsSnapshot) -> String {
+            switch GaugesHUD.gauges(from: snapshot, selection: all).first(where: { $0.id == id })?.level {
+            case .normal?: "normal"
+            case .warn?: "warn"
+            case .alert?: "alert"
+            case nil: "missing"
+            }
+        }
+        let unplugged = BatteryInfo(percent: 8, isCharging: false, onPower: false)
+        let plugged = BatteryInfo(percent: 8, isCharging: true, onPower: true)
+        let results = [
+            "cpu50=\(level("cpu", reading(cpu: 0.5, battery: nil)))",
+            "cpu85=\(level("cpu", reading(cpu: 0.85, battery: nil)))",
+            "cpu95=\(level("cpu", reading(cpu: 0.95, battery: nil)))",
+            "mem90=\(level("memory", reading(cpu: 0.1, memory: 0.9, battery: nil)))",
+            "bat8unplugged=\(level("battery", reading(cpu: 0.1, battery: unplugged)))",
+            "bat8charging=\(level("battery", reading(cpu: 0.1, battery: plugged)))",
+            "noBattery=\(level("battery", reading(cpu: 0.1, battery: nil)))",
+        ]
+        let expected = ["cpu50=normal", "cpu85=warn", "cpu95=alert", "mem90=warn", "bat8unplugged=alert",
+                        "bat8charging=normal", "noBattery=missing"]
+        let none = GaugesHUD.gauges(from: reading(cpu: 0.5, battery: unplugged), selection: HUDSelection(cpu: false, memory: false, network: false, battery: false))
+        let pass = results == expected && none.isEmpty
+        return ["hud: \(results.joined(separator: " ")) allOff=\(none.count) enabled=\(AppSettings.hudEnabled) → \(pass ? "PASS" : "FAILED (expected \(expected.joined(separator: " ")))")"]
     }
 
     /// Renders every cue and checks it is audible, not clipped, short, and

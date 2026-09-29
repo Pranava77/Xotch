@@ -2,6 +2,8 @@
 
 Budget: **under 0.5% CPU and under 80 MB of memory while idle**, with nothing that keeps working while the notch is closed.
 
+**One exception:** the system HUD (Settings › System HUD, off by default) reads CPU, memory, network and battery every 2 seconds while it's on, even with the notch closed. It stops when a full-screen app hides the notch or the displays sleep. Its row in the table below hasn't been measured yet: a measurement taken while a Claude Code session was running was dominated by Xotch following that session, so it says nothing about the HUD. Run `scripts/perf.sh` on a quiet machine and fill it in.
+
 Measured on a 14" MacBook Pro (Mac17,9, Apple M5 Pro), macOS 26.6.2, debug build 0.2.0 (2), with every module shown, the Smoke Glass theme, and Now Playing connected to a paused Chrome tab.
 
 ## Results
@@ -22,6 +24,7 @@ Measured on a 14" MacBook Pro (Mac17,9, Apple M5 Pro), macOS 26.6.2, debug build
 | Recording the screen with system audio | ~1%* | — | — | — |
 | Open on Claude Code | 0.00% | 0.00 | 0.5/s | 44 MB |
 | Open on Timers | 0.10% | 0.10 | 0.5/s | 44 MB |
+| Closed, system HUD on (nothing else live) | not yet measured — run `scripts/perf.sh` | | | |
 | Closed, music bars (built-in animation) | 0.00% | 0.00 | 0.7/s | 41 MB |
 | Closed, music bars following real sound (tap on, nothing playing) | 0.17% | 0.17 | — | 41 MB |
 | Closed, timer counting down (ring) | 0.44% | 0.44 | 1.0/s | 42 MB |

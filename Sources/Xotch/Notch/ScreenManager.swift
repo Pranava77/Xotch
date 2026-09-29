@@ -20,6 +20,7 @@ final class ScreenManager {
     func start() {
         rebuild()
         installMonitors()
+        GaugesHUD.shared.settingsChanged()
 
         observe(NotificationCenter.default, NSApplication.didChangeScreenParametersNotification) { manager in
             #if DEBUG
@@ -101,6 +102,7 @@ final class ScreenManager {
         AudioLevels.shared.settingsChanged()
         CaptureService.shared.settingsChanged()
         TodoService.shared.updateActivity()
+        GaugesHUD.shared.settingsChanged()
         let hide = AppSettings.hideInFullScreen
         if hide != hideInFullScreen {
             hideInFullScreen = hide
@@ -187,6 +189,11 @@ final class ScreenManager {
     }
 
     private func checkFullScreen() {
+        defer {
+            // The HUD stops reading the stats while every notch is out of sight.
+            GaugesHUD.shared.setFullScreen(!controllers.isEmpty
+                                           && controllers.values.allSatisfy { $0.isHiddenForFullScreen })
+        }
         guard hideInFullScreen else {
             controllers.values.forEach { $0.setHiddenForFullScreen(false) }
             return

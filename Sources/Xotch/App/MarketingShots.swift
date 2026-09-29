@@ -70,7 +70,7 @@ enum MarketingShots {
                 palette.palette.query = "10"
                 save("palette", palette, size: openSize, scale: 1.5)
             }
-            for id in [Palette.midnight.id, Palette.smoke.id, Palette.aurora.id] {
+            for id in [Palette.aero.id, Palette.midnight.id, Palette.smoke.id, Palette.aurora.id] {
                 theme.withPalette(id) {
                     save("theme-\(id)", open("home"), size: openSize, scale: 1.5)
                 }
@@ -93,6 +93,11 @@ enum MarketingShots {
                     ("download", LiveActivity(moduleID: "downloads", symbol: "arrow.down", content: .text("62%"),
                                               tint: Palette.midnight.accent.color, earWidth: 90,
                                               progress: .fraction(0.62))),
+                    ("hud", GaugesHUD.activity(GaugesHUD.gauges(
+                        from: StatsSnapshot(cpu: 0.34, memoryUsed: 11.2e9, memoryTotal: 18e9, download: 1_250_000,
+                                            upload: 84_000, diskFree: 1, diskTotal: 2,
+                                            battery: BatteryInfo(percent: 76, isCharging: false, onPower: false)),
+                        selection: HUDSelection()))),
                     ("volume", LiveActivity(moduleID: "volume", symbol: "speaker.wave.2.fill", content: .level(0.56),
                                             tint: .white, earWidth: 96)),
                 ]
