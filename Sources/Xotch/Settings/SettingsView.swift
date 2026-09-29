@@ -378,11 +378,14 @@ private struct ThemePicker: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 10) {
+            // The cards share the row's width. At a fixed 92 points each, five of
+            // them made the row wider than the window and clipped the whole form.
+            HStack(spacing: 8) {
                 ForEach(store.choices) { palette in
                     ThemeCard(palette: palette, isSelected: palette.id == store.selectedID) {
                         store.select(palette.id)
                     }
+                    .frame(maxWidth: .infinity)
                 }
             }
             if store.selectedID != Palette.customID {
@@ -428,7 +431,8 @@ private struct ThemeCard: View {
                         .clipShape(UnevenRoundedRectangle(bottomLeadingRadius: 10, bottomTrailingRadius: 10, style: .continuous))
                         .padding(.horizontal, 8)
                 }
-                .frame(width: 92, height: 60)
+                .frame(maxWidth: .infinity)
+                .frame(height: 56)
                 .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                 .overlay(
                     RoundedRectangle(cornerRadius: 10, style: .continuous)
@@ -437,6 +441,8 @@ private struct ThemeCard: View {
                 )
                 Text(palette.name)
                     .font(.caption)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
                     .foregroundStyle(isSelected ? .primary : .secondary)
             }
         }

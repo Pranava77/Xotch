@@ -19,6 +19,8 @@ import SwiftUI
 /// shell can be checked without screen-recording permission.
 enum DebugHooks {
     static let notificationName = Notification.Name("com.pranava.xotch.debug")
+    /// The window `settings:` opens, kept so `settings-close` can shut it.
+    @MainActor private static var debugSettingsWindow: NSWindow?
 
     static func install() {
         DistributedNotificationCenter.default().addObserver(
@@ -120,6 +122,33 @@ enum DebugHooks {
                     String(format: "pointer events: %.1f/s", ScreenManager.shared.debugPointerRate()),
                 ]
                 try? (lines.joined(separator: "\n") + "\n").write(toFile: path, atomically: true, encoding: .utf8)
+            } else if command.hasPrefix("settings:") {
+                // Shows the Settings view in its own window and writes the window
+                // number to a file, for `screencapture -l`.
+                let path = String(command.dropFirst("settings:".count))
+                let window = NSWindow(contentViewController: NSHostingController(rootView: SettingsView()))
+                window.title = "Xotch Settings (debug)"
+                window.isReleasedWhenClosed = false
+                window.center()
+                window.orderFrontRegardless()
+                debugSettingsWindow = window
+                try? "\(window.windowNumber)".write(toFile: path, atomically: true, encoding: .utf8)
+            } else if command.hasPrefix("settings-scroll:") {
+                // Scrolls the debug Settings window's form to a point: `settings-scroll 900`.
+                let y = Double(command.dropFirst("settings-scroll:".count)) ?? 0
+                func scrollView(in view: NSView?) -> NSScrollView? {
+                    guard let view else { return nil }
+                    if let found = view as? NSScrollView { return found }
+                    for sub in view.subviews { if let found = scrollView(in: sub) { return found } }
+                    return nil
+                }
+                if let scroll = scrollView(in: debugSettingsWindow?.contentView) {
+                    scroll.contentView.scroll(to: NSPoint(x: 0, y: y))
+                    scroll.reflectScrolledClipView(scroll.contentView)
+                }
+            } else if command == "settings-close" {
+                debugSettingsWindow?.close()
+                debugSettingsWindow = nil
             } else if command.hasPrefix("key:") {
                 // Sends a media key through the same handler the event tap uses,
                 // with no Accessibility permission: `debug.sh key volup`.
