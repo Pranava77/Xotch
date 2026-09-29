@@ -11,7 +11,7 @@ import SwiftUI
 ///                      activity-recording | clear-activities [module] |
 ///                      capture <area|window|screen> | record <area|window|screen> |
 ///                      record-stop | celebrate | palette | ripple |
-///                      theme <id> | mood <mood> | rebuild <count> |
+///                      theme <id> | rebuild <count> |
 ///                      status <file> | snapshot <folder> | effects <folder> |
 ///                      marketing <folder> | selftest <file>
 ///
@@ -110,8 +110,8 @@ enum DebugHooks {
                 let path = String(command.dropFirst("status:".count))
                 let lines = [
                     "screens: \(ScreenManager.shared.debugSummary)",
-                    "ongoing: [\(ActivityCenter.shared.debugOngoingIDs)] gauges=\(ActivityCenter.shared.gauges?.count ?? 0) hud enabled=\(AppSettings.hudEnabled)",
-                    "activity: \(ActivityCenter.shared.current?.moduleID ?? "-") waiting=\(ActivityCenter.shared.waitingCount) mood=\(ActivityCenter.shared.mood.rawValue)",
+                    "ongoing: [\(ActivityCenter.shared.debugOngoingIDs)]",
+                    "activity: \(ActivityCenter.shared.current?.moduleID ?? "-") waiting=\(ActivityCenter.shared.waitingCount)",
                     "theme: \(ThemeStore.shared.palette.id) shaders ready=\(ShaderKit.shared.isReady) compile=\(ShaderKit.shared.compileTime.map { "\($0)" } ?? "-") failure=\(ShaderKit.shared.failure ?? "-")",
                     "audio levels: \(AudioLevels.shared.status)",
                     "clipboard access: \(ClipboardService.shared.access)",
@@ -157,10 +157,6 @@ enum DebugHooks {
                 if let key = names[String(command.dropFirst("key:".count))] {
                     _ = MediaKeys.shared.handle(key, isDown: true, flags: [])
                 }
-            } else if command.hasPrefix("hud:") {
-                // Flips the setting from inside the app, the way Settings does, so
-                // it is observed. `defaults write` from a shell isn't.
-                UserDefaults.standard.set(command == "hud:on", forKey: SettingsKey.hudEnabled)
             } else if command.hasPrefix("sound:") {
                 // Plays one cue whether or not sounds are switched on: `debug.sh sound complete`.
                 if let cue = RetroCue(rawValue: String(command.dropFirst("sound:".count))) {
@@ -168,9 +164,6 @@ enum DebugHooks {
                 }
             } else if command.hasPrefix("theme:") {
                 ThemeStore.shared.select(String(command.dropFirst("theme:".count)))
-            } else if command.hasPrefix("mood:") {
-                let mood = MascotMood(rawValue: String(command.dropFirst("mood:".count)))
-                ActivityCenter.shared.debugSet(celebrating: mood == .celebrating, drowsy: mood == .sleeping)
             } else if command.hasPrefix("marketing:") {
                 let folder = String(command.dropFirst("marketing:".count))
                 Task { await MarketingShots.render(to: folder) }
@@ -218,7 +211,6 @@ enum DebugHooks {
         lines += captureSelfTest()
         lines += todoSelfTest()
         lines += retroSoundSelfTest()
-        lines += hudSelfTest()
         lines += mediaKeysSelfTest()
 
         // Phase 5
@@ -295,7 +287,7 @@ enum DebugHooks {
     }
 
     /// Signature UI: palette parsing, gestures, shaders, audio analysis,
-    /// download progress, themes and the mascot's moods.
+    /// download progress and themes.
     @MainActor
     private static func phase4SelfTest(folder: URL) async -> [String] {
         var lines: [String] = []
@@ -367,27 +359,6 @@ enum DebugHooks {
         }
         lines.append("theme selected=\(store.selectedID) glass api=\(glassAvailable) forcedFallback=\(GlassFallback.forced)")
 
-        let savedTimers = center.ongoing["timers"], savedClaude = center.ongoing["claude"]
-        center.setOngoing(nil, for: "timers")
-        center.setOngoing(nil, for: "claude")
-        var moods = ["start=\(center.mood.rawValue)"]
-        center.setOngoing(LiveActivity(moduleID: "claude", symbol: "sparkle", content: .text("Editing"),
-                                       tint: .orange, pulse: .calm), for: "claude")
-        moods.append("claude working=\(center.mood.rawValue)")
-        center.debugSet(celebrating: true)
-        moods.append("celebrating=\(center.mood.rawValue)")
-        center.debugSet(celebrating: false)
-        center.setOngoing(nil, for: "claude")
-        center.setOngoing(LiveActivity(moduleID: "timers", symbol: "pause.fill", content: .text("12:00"),
-                                       tint: .orange, progress: .fraction(0.5)), for: "timers")
-        moods.append("paused timer=\(center.mood.rawValue)")
-        center.setOngoing(nil, for: "timers")
-        center.debugSet(drowsy: true)
-        moods.append("quiet=\(center.mood.rawValue)")
-        center.debugSet(drowsy: false)
-        center.setOngoing(savedTimers, for: "timers")
-        center.setOngoing(savedClaude, for: "claude")
-        lines.append("mascot moods: \(moods.joined(separator: " ")) (expect idle working celebrating idle sleeping)")
         let ringNow = RingView.fraction(of: .timed(start: Date().addingTimeInterval(-30), end: Date().addingTimeInterval(90)), at: .now)
         lines.append(String(format: "ring: timed 30 s of 120 s = %.2f (expect 0.25)", ringNow))
         lines.append("cleanup: done=\(UserDefaults.standard.bool(forKey: "cleanup.removedConnectedModules")) module list \"home,revenue,media,weather,analytics,stats\" → \"\(LegacyCleanup.strippingRemoved(from: "home,revenue,media,weather,analytics,stats"))\" (expect home,media,stats)")
@@ -429,41 +400,6 @@ enum DebugHooks {
         let canShow = ScreenManager.shared.canShowHUD
         let second = "media keys on this Mac: enabled=\(enabled) trusted=\(trusted) tapRunning=\(running) canSetVolume=\(canSet) brightness=\(brightness) canShowHUD=\(canShow)"
         return [first, second]
-    }
-
-    /// The HUD's thresholds and its power promise, on made-up readings: amber
-    /// from 80% CPU, red from 90%, battery only warns when unplugged.
-    @MainActor
-    private static func hudSelfTest() -> [String] {
-        func reading(cpu: Double, memory: Double = 0.4, battery: BatteryInfo?) -> StatsSnapshot {
-            StatsSnapshot(cpu: cpu, memoryUsed: memory * 16e9, memoryTotal: 16e9, download: 0, upload: 0,
-                          diskFree: 1, diskTotal: 2, battery: battery)
-        }
-        let all = HUDSelection()
-        func level(_ id: String, _ snapshot: StatsSnapshot) -> String {
-            switch GaugesHUD.gauges(from: snapshot, selection: all).first(where: { $0.id == id })?.level {
-            case .normal?: "normal"
-            case .warn?: "warn"
-            case .alert?: "alert"
-            case nil: "missing"
-            }
-        }
-        let unplugged = BatteryInfo(percent: 8, isCharging: false, onPower: false)
-        let plugged = BatteryInfo(percent: 8, isCharging: true, onPower: true)
-        let results = [
-            "cpu50=\(level("cpu", reading(cpu: 0.5, battery: nil)))",
-            "cpu85=\(level("cpu", reading(cpu: 0.85, battery: nil)))",
-            "cpu95=\(level("cpu", reading(cpu: 0.95, battery: nil)))",
-            "mem90=\(level("memory", reading(cpu: 0.1, memory: 0.9, battery: nil)))",
-            "bat8unplugged=\(level("battery", reading(cpu: 0.1, battery: unplugged)))",
-            "bat8charging=\(level("battery", reading(cpu: 0.1, battery: plugged)))",
-            "noBattery=\(level("battery", reading(cpu: 0.1, battery: nil)))",
-        ]
-        let expected = ["cpu50=normal", "cpu85=warn", "cpu95=alert", "mem90=warn", "bat8unplugged=alert",
-                        "bat8charging=normal", "noBattery=missing"]
-        let none = GaugesHUD.gauges(from: reading(cpu: 0.5, battery: unplugged), selection: HUDSelection(cpu: false, memory: false, network: false, battery: false))
-        let pass = results == expected && none.isEmpty
-        return ["hud: \(results.joined(separator: " ")) allOff=\(none.count) enabled=\(AppSettings.hudEnabled) → \(pass ? "PASS" : "FAILED (expected \(expected.joined(separator: " ")))")"]
     }
 
     /// Renders every cue and checks it is audible, not clipped, short, and
@@ -655,11 +591,6 @@ enum DebugHooks {
                   let png = NSBitmapImageRep(cgImage: image).representation(using: .png, properties: [:]) else { return }
             try? png.write(to: folder.appendingPathComponent("\(name).png"))
         }
-        for mood in MascotMood.allCases {
-            let view = MascotView(frame: .zero)
-            view.update(mood: mood, accent: accent.nsColor, ink: .white, animated: false)
-            saveLayer("mascot-\(mood.rawValue)", view: view, size: CGSize(width: 96, height: 96))
-        }
         let ring = RingView(frame: .zero)
         ring.update(progress: .fraction(0.62), tint: accent.nsColor)
         saveLayer("ring-62", view: ring, size: CGSize(width: 46, height: 46))
@@ -807,21 +738,6 @@ enum DebugHooks {
                                        tint: Theme.ink, earWidth: 96), for: "volume")
         render("3-activity-volume") { _ in }
         center.setOngoing(nil, for: "volume")
-        withSampleData {
-        for mood in [MascotMood.working, .celebrating, .sleeping] {
-            center.debugSet(celebrating: mood == .celebrating, drowsy: mood == .sleeping)
-            if mood == .working {
-                center.setOngoing(LiveActivity(moduleID: "claude", symbol: "sparkle", content: .text("Editing"),
-                                               tint: .orange, pulse: .calm), for: "claude")
-            }
-            render("6-home-mascot-\(mood.rawValue)") {
-                $0.phase = .open
-                $0.selectedModuleID = "home"
-            }
-            center.setOngoing(nil, for: "claude")
-        }
-        }
-        center.debugSet(celebrating: false, drowsy: false)
         NotesService.shared.start()
         center.post(LiveActivity(moduleID: "timers", symbol: "checkmark.circle.fill",
                                  content: .text("Done"), tint: Theme.positive))

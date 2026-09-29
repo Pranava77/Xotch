@@ -2,8 +2,6 @@
 
 Budget: **under 0.5% CPU and under 80 MB of memory while idle**, with nothing that keeps working while the notch is closed.
 
-**One exception:** the system HUD (Settings › System HUD, off by default) reads CPU, memory, network and battery every 2 seconds while it's on, even with the notch closed. It stops when a full-screen app hides the notch or the displays sleep. Its row in the table below hasn't been measured yet: a measurement taken while a Claude Code session was running was dominated by Xotch following that session, so it says nothing about the HUD. Run `scripts/perf.sh` on a quiet machine and fill it in.
-
 Measured on a 14" MacBook Pro (Mac17,9, Apple M5 Pro), macOS 26.6.2, debug build 0.2.0 (2), with every module shown, the Smoke Glass theme, and Now Playing connected to a paused Chrome tab.
 
 ## Results
@@ -13,7 +11,7 @@ Measured on a 14" MacBook Pro (Mac17,9, Apple M5 Pro), macOS 26.6.2, debug build
 | State | CPU | Energy impact | Idle wakeups | Memory |
 |---|---|---|---|---|
 | Closed, nothing live | 0.00% | 0.00 | 0.0/s | 18 MB |
-| Open on Home (mascot) | 0.00% | 0.00 | 0.0/s | 32 MB |
+| Open on Home (measured when Home still had the mascot) | 0.00% | 0.00 | 0.0/s | 32 MB |
 | Open on Now Playing (glow, scrolling LED title) | 0.10% | 0.10 | 0.0/s | 38 MB |
 | Open on Calendar | 0.00% | 0.00 | 0.5/s | 36 MB |
 | Open on Clipboard | 0.00% | 0.00 | 0.5/s | 37 MB |
@@ -24,7 +22,6 @@ Measured on a 14" MacBook Pro (Mac17,9, Apple M5 Pro), macOS 26.6.2, debug build
 | Recording the screen with system audio | ~1%* | — | — | — |
 | Open on Claude Code | 0.00% | 0.00 | 0.5/s | 44 MB |
 | Open on Timers | 0.10% | 0.10 | 0.5/s | 44 MB |
-| Closed, system HUD on (nothing else live) | not yet measured — run `scripts/perf.sh` | | | |
 | Closed, music bars (built-in animation) | 0.00% | 0.00 | 0.7/s | 41 MB |
 | Closed, music bars following real sound (tap on, nothing playing) | 0.17% | 0.17 | — | 41 MB |
 | Closed, timer counting down (ring) | 0.44% | 0.44 | 1.0/s | 42 MB |
@@ -56,7 +53,7 @@ The first time each module opens after launch costs a short burst of CPU (loadin
 |---|---|---|---|
 | Artwork glow and LED title | 4.3% CPU and 138 MB with Now Playing open | 0.10% and 38 MB | Metal draws each effect once into an image; Core Animation cross-fades the glow and moves the LED strip a whole column at a time. The LED sign never needed more than 14 steps a second. |
 | Drop ripple | A Metal view that stayed in the open notch | Only exists for the one second it plays | `RippleOverlay` adds its Metal view per ripple. Shaders compile as soon as a file drag starts, so the first ripple isn't missed. |
-| Timer ring, Claude pulse, mascot, confetti | — | 0% | Core Animation layers and a `CAEmitterLayer`, animated by the window server |
+| Timer ring, Claude pulse, confetti | — | 0% | Core Animation layers and a `CAEmitterLayer`, animated by the window server |
 
 ## What Phase 5 changed
 

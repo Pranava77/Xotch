@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Every feature in the notch is a module: an icon in the dock and a view for
+/// Every feature in the notch is a module: a tab in the header and a view for
 /// the open notch. `start()` and `stop()` bracket background work (media,
 /// clipboard) and follow whether the module is shown in Settings; anything that
 /// only matters on screen should run from the view's `.task` instead.

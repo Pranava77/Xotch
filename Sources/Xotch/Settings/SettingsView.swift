@@ -8,11 +8,6 @@ struct SettingsView: View {
     @AppStorage(SettingsKey.retroSounds) private var retroSounds = false
     @AppStorage(SettingsKey.mediaKeysHUD) private var mediaKeysHUD = false
     @State private var keysTrusted = MediaKeys.isTrusted
-    @AppStorage(SettingsKey.hudEnabled) private var hudEnabled = false
-    @AppStorage(SettingsKey.hudCPU) private var hudCPU = true
-    @AppStorage(SettingsKey.hudMemory) private var hudMemory = true
-    @AppStorage(SettingsKey.hudNetwork) private var hudNetwork = true
-    @AppStorage(SettingsKey.hudBattery) private var hudBattery = true
     @AppStorage(SettingsKey.retroSoundVolume) private var retroSoundVolume = 0.5
     @AppStorage(SettingsKey.display) private var display = DisplayChoice.automatic
     @AppStorage(SettingsKey.moduleOrder) private var moduleOrder = ""
@@ -23,7 +18,6 @@ struct SettingsView: View {
     @AppStorage(SettingsKey.hideInFullScreen) private var hideInFullScreen = true
     @AppStorage(Diagnostics.shareKey) private var shareDiagnostics = false
     @AppStorage(SettingsKey.scrollForVolume) private var scrollForVolume = true
-    @AppStorage(SettingsKey.showMascot) private var showMascot = true
     @AppStorage(SettingsKey.adiyogiEar) private var adiyogiEar = true
     @AppStorage(SettingsKey.celebrateFocus) private var celebrateFocus = true
     @AppStorage(SettingsKey.realAudioLevels) private var realAudioLevels = false
@@ -79,7 +73,6 @@ struct SettingsView: View {
                 if ThemeStore.shared.selectedID == Palette.customID {
                     CustomThemeEditor()
                 }
-                Toggle("Show Xotch's mascot on Home", isOn: $showMascot)
                 Toggle("Show Adiyogi beside the closed notch", isOn: $adiyogiEar)
                 Toggle("Show the track on a dot-matrix display", isOn: $ledTitle)
             } header: {
@@ -144,7 +137,7 @@ struct SettingsView: View {
             } header: {
                 Text("Modules")
             } footer: {
-                Text("⌘1–9 picks a module in this order, and a two-finger swipe moves between them. Esc closes the notch.")
+                Text("The first five get a tab beside the camera; the rest are under ···. ⌘1–9 picks a module in this order, and a two-finger swipe moves between them. Esc closes the notch.")
                     .foregroundStyle(.secondary)
             }
 
@@ -196,21 +189,6 @@ struct SettingsView: View {
                     keysTrusted = MediaKeys.isTrusted
                     try? await Task.sleep(for: .seconds(2))
                 }
-            }
-
-            Section {
-                Toggle("Show system gauges beside the notch", isOn: $hudEnabled)
-                if hudEnabled {
-                    Toggle("CPU", isOn: $hudCPU)
-                    Toggle("Memory", isOn: $hudMemory)
-                    Toggle("Network", isOn: $hudNetwork)
-                    Toggle("Battery", isOn: $hudBattery)
-                }
-            } header: {
-                Text("System HUD")
-            } footer: {
-                Text("Small bars in the left ear of the closed notch, shown alongside anything else that is live. While this is on, Xotch checks these readings every 2 seconds, and stops when the notch is hidden by a full-screen app or your displays sleep.")
-                    .foregroundStyle(.secondary)
             }
 
             Section {

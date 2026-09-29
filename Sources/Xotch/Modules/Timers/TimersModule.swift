@@ -12,22 +12,38 @@ private enum TimerTab: String, CaseIterable {
     case focus = "Focus"
     case timer = "Timer"
     case stopwatch = "Stopwatch"
+
+    var symbol: String {
+        switch self {
+        case .focus: "brain.head.profile"
+        case .timer: "timer"
+        case .stopwatch: "stopwatch"
+        }
+    }
 }
 
+/// Three columns for the wide notch: the modes down the left, the ring or the
+/// digits in the middle, and details with the controls on the right. The
+/// controls sit in the same place whichever mode is showing.
 private struct TimersView: View {
     @State private var tab: TimerTab = TimerService.shared.kind == .countdown ? .timer
         : (TimerService.shared.isStopwatchRunning && !TimerService.shared.isActive ? .stopwatch : .focus)
+    @Namespace private var segment
+    private var timers: TimerService { .shared }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 4) {
+        HStack(spacing: 18) {
+            VStack(alignment: .leading, spacing: 4) {
                 ForEach(TimerTab.allCases, id: \.self) { item in
-                    Button(item.rawValue) {
-                        withAnimation(Motion.switchModule) { tab = item }
-                    }
-                    .buttonStyle(PillButtonStyle(tint: Theme.ink, prominent: tab == item))
+                    modeButton(item)
                 }
+                Spacer(minLength: 0)
             }
+            .frame(width: 128)
+            Rectangle()
+                .fill(Theme.fill)
+                .frame(width: 1)
+                .padding(.vertical, 4)
             Group {
                 switch tab {
                 case .focus: FocusPane()
@@ -35,34 +51,145 @@ private struct TimersView: View {
                 case .stopwatch: StopwatchPane()
                 }
             }
-            .frame(maxHeight: .infinity)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+    }
+
+    private func isLive(_ item: TimerTab) -> Bool {
+        switch item {
+        case .focus: timers.isActive && timers.kind != .countdown
+        case .timer: timers.kind == .countdown
+        case .stopwatch: timers.isStopwatchRunning
+        }
+    }
+
+    private func modeButton(_ item: TimerTab) -> some View {
+        let isOn = tab == item
+        return Button {
+            withAnimation(Motion.switchModule) { tab = item }
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: item.symbol)
+                    .font(.system(size: 12, weight: .semibold))
+                    .frame(width: 16)
+                Text(item.rawValue)
+                    .font(.system(size: 12.5, weight: .semibold, design: Theme.fontDesign))
+                Spacer(minLength: 0)
+                // Something is counting in this mode while you look at another.
+                if isLive(item) {
+                    Circle()
+                        .fill(item == .focus ? (timers.kind?.tint ?? Theme.accent) : TimerKind.countdown.tint)
+                        .frame(width: 6, height: 6)
+                }
+            }
+            .foregroundStyle(isOn ? Theme.ink : Theme.secondaryInk)
+            .padding(.horizontal, 10)
+            .frame(height: 32)
+            .background {
+                if isOn {
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .fill(Theme.raisedFill)
+                        .matchedGeometryEffect(id: "mode", in: segment)
+                }
+            }
+            .contentShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(isOn ? .isSelected : [])
+        .debugFrame("timers.\(item.rawValue.lowercased())")
+    }
+}
+
+/// A pane's two halves: what's counting in the middle, details and controls on the right.
+private struct PaneLayout<Display: View, Details: View, Controls: View>: View {
+    @ViewBuilder var display: Display
+    @ViewBuilder var details: Details
+    @ViewBuilder var controls: Controls
+
+    var body: some View {
+        HStack(spacing: 18) {
+            display
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            VStack(alignment: .leading, spacing: 10) {
+                details
+                Spacer(minLength: 0)
+                HStack(spacing: 10) { controls }
+            }
+            .frame(width: 250, alignment: .leading)
+            .padding(.vertical, 4)
         }
     }
 }
 
+/// The countdown ring, with the time and what it's counting inside.
 private struct Ring: View {
     let progress: Double
     let tint: Color
     let label: String
-    var size: CGFloat = 132
+    var caption: String?
+    var size: CGFloat = 124
 
     var body: some View {
         ZStack {
-            Circle().stroke(Theme.fill, lineWidth: 9)
+            Circle().stroke(Theme.fill, lineWidth: 8)
             if progress > 0 {
                 Circle()
                     .trim(from: 0, to: progress)
-                    .stroke(tint, style: StrokeStyle(lineWidth: 9, lineCap: .round))
+                    .stroke(tint, style: StrokeStyle(lineWidth: 8, lineCap: .round))
                     .rotationEffect(.degrees(-90))
                     .shadow(color: tint.opacity(0.5), radius: 6)
             }
-            Text(label)
-                .font(.system(size: 26, weight: .semibold, design: .rounded))
-                .monospacedDigit()
-                .contentTransition(.numericText(countsDown: true))
+            VStack(spacing: 2) {
+                Text(label)
+                    .font(.system(size: 28, weight: .semibold, design: .rounded))
+                    .monospacedDigit()
+                    .contentTransition(.numericText(countsDown: true))
+                if let caption {
+                    Text(caption.uppercased())
+                        .font(.system(size: 9, weight: .semibold))
+                        .tracking(0.8)
+                        .foregroundStyle(tint)
+                }
+            }
         }
         .frame(width: size, height: size)
+        .accessibilityElement(children: .combine)
     }
+}
+
+/// The big round start / pause button.
+private struct PlayButton: View {
+    let isRunning: Bool
+    let tint: Color
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: isRunning ? "pause.fill" : "play.fill")
+                .font(.system(size: 17, weight: .bold))
+                .foregroundStyle(RGBA(tint).onColor)
+                .frame(width: 44, height: 44)
+                .background(Circle().fill(tint))
+                .xotchGloss(Circle(), strength: 0.6)
+                .shadow(color: tint.opacity(0.45), radius: 8, y: 2)
+                .contentShape(Circle())
+        }
+        .buttonStyle(PressScaleStyle())
+        .accessibilityLabel(isRunning ? "Pause" : "Start")
+    }
+}
+
+private struct PressScaleStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.92 : 1)
+            .animation(Motion.press, value: configuration.isPressed)
+    }
+}
+
+/// "Ends at 3:42 PM", which is what you actually want to know about a timer.
+private func endsAt(_ remaining: TimeInterval, at date: Date) -> String {
+    "Ends at " + date.addingTimeInterval(remaining).formatted(date: .omitted, time: .shortened)
 }
 
 private struct FocusPane: View {
@@ -71,49 +198,56 @@ private struct FocusPane: View {
     var body: some View {
         let isPomodoro = timers.kind != nil && timers.kind != .countdown
         let kind = isPomodoro ? timers.kind! : timers.nextPomodoro
-        HStack(spacing: 26) {
-            TimelineView(.periodic(from: .now, by: 1)) { context in
-                let remaining = isPomodoro ? timers.remaining(at: context.date) : defaultSeconds(kind)
+        let done = timers.focusSessionsDone
+        // Sessions finished in this round of four. After the fourth, the long
+        // break still shows the round full; the next focus starts a new one.
+        let filled = kind != .focus && done > 0 && done % 4 == 0 ? 4 : done % 4
+        TimelineView(.periodic(from: .now, by: 1)) { context in
+            let remaining = isPomodoro ? timers.remaining(at: context.date) : defaultSeconds(kind)
+            PaneLayout {
                 Ring(progress: isPomodoro ? timers.progress(at: context.date) : 0,
                      tint: kind.tint,
-                     label: Format.clock(remaining))
-            }
-            VStack(alignment: .leading, spacing: 8) {
-                Text(kind.title)
-                    .font(.system(size: 19, weight: .semibold))
-                HStack(spacing: 5) {
-                    ForEach(0..<4, id: \.self) { index in
-                        Circle()
-                            .fill(index < timers.focusSessionsDone % 4 || (timers.focusSessionsDone > 0 && timers.focusSessionsDone % 4 == 0)
-                                  ? Theme.accent : Theme.raisedFill)
-                            .frame(width: 7, height: 7)
-                    }
-                    Text(timers.focusSessionsDone == 1 ? "1 session done" : "\(timers.focusSessionsDone) sessions done")
-                        .font(.system(size: 11))
+                     label: Format.clock(remaining),
+                     caption: kind.title,
+                     size: 150)
+            } details: {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(kind == .focus ? "Session \(filled + 1) of 4" : kind.title)
+                        .font(.system(size: 19, weight: .semibold))
+                    Text(subtitle(kind, isPomodoro: isPomodoro, remaining: remaining, at: context.date))
+                        .font(.system(size: 12))
                         .foregroundStyle(Theme.secondaryInk)
-                        .padding(.leading, 4)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
-                Text(caption(kind))
-                    .font(.system(size: 12))
-                    .foregroundStyle(Theme.secondaryInk)
-                    .fixedSize(horizontal: false, vertical: true)
-                HStack(spacing: 8) {
-                    if !isPomodoro {
-                        Button { timers.startPomodoro() } label: {
-                            Label("Start \(kind.title.lowercased())", systemImage: "play.fill")
-                        }
-                        .buttonStyle(PillButtonStyle(tint: kind.tint))
-                        if kind != .focus {
-                            Button("Skip break") { timers.skipBreak() }
-                                .buttonStyle(PillButtonStyle(prominent: false))
-                        }
-                    } else {
-                        RunControls()
+                HStack(spacing: 4) {
+                    ForEach(0..<4, id: \.self) { index in
+                        Capsule()
+                            .fill(index < filled ? Theme.accent : Theme.raisedFill)
+                            .frame(width: 30, height: 5)
                     }
+                    Text("\(done) done")
+                        .font(.system(size: 11))
+                        .foregroundStyle(Theme.tertiaryInk)
+                        .padding(.leading, 6)
                 }
-                .padding(.top, 4)
+            } controls: {
+                PlayButton(isRunning: timers.isRunning, tint: kind.tint) {
+                    if !isPomodoro { timers.startPomodoro() }
+                    else if timers.isRunning { timers.pause() }
+                    else { timers.resume() }
+                }
+                if isPomodoro {
+                    Button { timers.reset() } label: { Image(systemName: "arrow.counterclockwise") }
+                        .buttonStyle(IconButtonStyle(size: 32))
+                        .accessibilityLabel("Reset")
+                }
+                if kind != .focus {
+                    Button { timers.skipBreak() } label: { Image(systemName: "forward.end.fill") }
+                        .buttonStyle(IconButtonStyle(size: 32))
+                        .help("Skip the break")
+                        .accessibilityLabel("Skip break")
+                }
             }
-            Spacer(minLength: 0)
         }
     }
 
@@ -125,30 +259,16 @@ private struct FocusPane: View {
         }
     }
 
-    private func caption(_ kind: TimerKind) -> String {
+    private func subtitle(_ kind: TimerKind, isPomodoro: Bool, remaining: TimeInterval, at date: Date) -> String {
+        if isPomodoro {
+            return timers.isRunning ? endsAt(remaining, at: date) : "Paused"
+        }
         switch kind {
-        case .focus: "25 minutes of focus, then a short break. Every fourth break is longer."
-        case .shortBreak: "Five minutes. Stand up, look away from the screen."
-        case .longBreak: "Fifteen minutes. You've earned it."
-        case .countdown: ""
+        case .focus: return "25 minutes, then a 5-minute break"
+        case .shortBreak: return "5 minutes. Stand up, look away."
+        case .longBreak: return "15 minutes. You've earned it."
+        case .countdown: return ""
         }
-    }
-}
-
-/// Pause / resume / reset for whichever countdown is running.
-private struct RunControls: View {
-    private var timers: TimerService { .shared }
-
-    var body: some View {
-        if timers.isRunning {
-            Button { timers.pause() } label: { Label("Pause", systemImage: "pause.fill") }
-                .buttonStyle(PillButtonStyle(tint: timers.kind?.tint ?? Theme.accent))
-        } else {
-            Button { timers.resume() } label: { Label("Resume", systemImage: "play.fill") }
-                .buttonStyle(PillButtonStyle(tint: timers.kind?.tint ?? Theme.accent))
-        }
-        Button("Reset") { timers.reset() }
-            .buttonStyle(PillButtonStyle(prominent: false))
     }
 }
 
@@ -159,17 +279,24 @@ private struct CountdownPane: View {
 
     var body: some View {
         let isCountdown = timers.kind == .countdown
-        HStack(spacing: 26) {
-            TimelineView(.periodic(from: .now, by: 1)) { context in
+        let tint = TimerKind.countdown.tint
+        TimelineView(.periodic(from: .now, by: 1)) { context in
+            let remaining = isCountdown ? timers.remaining(at: context.date) : Double(minutes * 60)
+            PaneLayout {
                 Ring(progress: isCountdown ? timers.progress(at: context.date) : 0,
-                     tint: TimerKind.countdown.tint,
-                     label: Format.clock(isCountdown ? timers.remaining(at: context.date) : Double(minutes * 60)))
-            }
-            VStack(alignment: .leading, spacing: 10) {
+                     tint: tint,
+                     label: Format.clock(remaining),
+                     caption: isCountdown ? (timers.isRunning ? "Running" : "Paused") : "Timer",
+                     size: 150)
+            } details: {
                 if isCountdown {
-                    Text("Timer running")
-                        .font(.system(size: 19, weight: .semibold))
-                    HStack(spacing: 8) { RunControls() }
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("\(Int((timers.total / 60).rounded()))-minute timer")
+                            .font(.system(size: 19, weight: .semibold))
+                        Text(timers.isRunning ? endsAt(remaining, at: context.date) : "Paused")
+                            .font(.system(size: 12))
+                            .foregroundStyle(Theme.secondaryInk)
+                    }
                 } else {
                     HStack(spacing: 10) {
                         Button { minutes = max(1, minutes - 1) } label: { Image(systemName: "minus") }
@@ -183,20 +310,45 @@ private struct CountdownPane: View {
                             .buttonStyle(IconButtonStyle())
                             .accessibilityLabel("One minute more")
                     }
-                    LazyVGrid(columns: Array(repeating: GridItem(.fixed(44), spacing: 6), count: 4), alignment: .leading, spacing: 6) {
+                    LazyVGrid(columns: Array(repeating: GridItem(.fixed(56), spacing: 6), count: 4),
+                              alignment: .leading, spacing: 6) {
                         ForEach(presets, id: \.self) { preset in
-                            Button("\(preset)m") { minutes = preset }
-                                .buttonStyle(PillButtonStyle(tint: TimerKind.countdown.tint, prominent: preset == minutes))
+                            Button("\(preset) min") { minutes = preset }
+                                .buttonStyle(ChipStyle(isOn: preset == minutes, tint: tint))
                         }
                     }
-                    Button { timers.start(.countdown, seconds: Double(minutes * 60)) } label: {
-                        Label("Start", systemImage: "play.fill")
-                    }
-                    .buttonStyle(PillButtonStyle(tint: TimerKind.countdown.tint))
+                }
+            } controls: {
+                PlayButton(isRunning: isCountdown && timers.isRunning, tint: tint) {
+                    if !isCountdown { timers.start(.countdown, seconds: Double(minutes * 60)) }
+                    else if timers.isRunning { timers.pause() }
+                    else { timers.resume() }
+                }
+                if isCountdown {
+                    Button { timers.reset() } label: { Image(systemName: "xmark") }
+                        .buttonStyle(IconButtonStyle(size: 32))
+                        .accessibilityLabel("Cancel timer")
                 }
             }
-            Spacer(minLength: 0)
         }
+    }
+}
+
+/// A small round-cornered preset, filled when chosen.
+private struct ChipStyle: ButtonStyle {
+    let isOn: Bool
+    let tint: Color
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.system(size: 11.5, weight: .semibold, design: .rounded))
+            .monospacedDigit()
+            .foregroundStyle(isOn ? RGBA(tint).onColor : Theme.ink)
+            .frame(width: 56, height: 26)
+            .background(RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .fill(isOn ? tint : Theme.fill))
+            .scaleEffect(configuration.isPressed ? 0.94 : 1)
+            .animation(Motion.press, value: configuration.isPressed)
     }
 }
 
@@ -204,51 +356,59 @@ private struct StopwatchPane: View {
     private var timers: TimerService { .shared }
 
     var body: some View {
-        HStack(alignment: .top, spacing: 24) {
-            VStack(alignment: .leading, spacing: 12) {
-                TimelineView(.animation(minimumInterval: 0.05, paused: !timers.isStopwatchRunning)) { context in
-                    Text(stopwatchText(timers.stopwatchElapsed(at: context.date)))
-                        .font(.system(size: 46, weight: .semibold, design: .rounded))
-                        .monospacedDigit()
-                }
-                HStack(spacing: 8) {
-                    Button { timers.toggleStopwatch() } label: {
-                        Label(timers.isStopwatchRunning ? "Pause" : "Start",
-                              systemImage: timers.isStopwatchRunning ? "pause.fill" : "play.fill")
-                    }
-                    .buttonStyle(PillButtonStyle(tint: TimerKind.countdown.tint))
-                    Button("Lap") { timers.lap() }
-                        .buttonStyle(PillButtonStyle(prominent: false))
-                        .disabled(!timers.isStopwatchRunning)
-                    Button("Reset") { timers.resetStopwatch() }
-                        .buttonStyle(PillButtonStyle(prominent: false))
-                }
+        let tint = TimerKind.countdown.tint
+        PaneLayout {
+            TimelineView(.animation(minimumInterval: 0.05, paused: !timers.isStopwatchRunning)) { context in
+                Text(stopwatchText(timers.stopwatchElapsed(at: context.date)))
+                    .font(.system(size: 48, weight: .semibold, design: .rounded))
+                    .monospacedDigit()
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
             }
-            Tile {
-                VStack(alignment: .leading, spacing: 6) {
-                    SectionLabel("Laps")
-                    if timers.laps.isEmpty {
-                        Text("Press Lap while it runs.")
-                            .font(.system(size: 12))
-                            .foregroundStyle(Theme.secondaryInk)
-                    } else {
-                        NotchScroll {
-                            VStack(spacing: 4) {
-                                ForEach(Array(timers.laps.enumerated()), id: \.offset) { index, lap in
-                                    HStack {
-                                        Text("Lap \(timers.laps.count - index)")
-                                            .foregroundStyle(Theme.secondaryInk)
-                                        Spacer()
-                                        Text(stopwatchText(lap))
-                                    }
-                                    .font(.system(size: 12, weight: .medium).monospacedDigit())
-                                }
+        } details: {
+            SectionLabel("Laps")
+            if timers.laps.isEmpty {
+                Text("Press the flag while it runs.")
+                    .font(.system(size: 12))
+                    .foregroundStyle(Theme.secondaryInk)
+            } else {
+                let splits = lapDurations
+                let fastest = splits.count >= 3 ? splits.min() : nil
+                let slowest = splits.count >= 3 ? splits.max() : nil
+                NotchScroll {
+                    VStack(spacing: 4) {
+                        ForEach(Array(splits.enumerated()), id: \.offset) { index, split in
+                            HStack {
+                                Text("Lap \(splits.count - index)")
+                                    .foregroundStyle(Theme.secondaryInk)
+                                Spacer()
+                                Text(stopwatchText(split))
+                                    .foregroundStyle(split == fastest ? Theme.positive
+                                                     : split == slowest ? Theme.negative : Theme.ink)
                             }
+                            .font(.system(size: 12, weight: .medium).monospacedDigit())
                         }
                     }
                 }
+                .frame(maxHeight: 96)
             }
-            .frame(width: 200)
+        } controls: {
+            PlayButton(isRunning: timers.isStopwatchRunning, tint: tint) { timers.toggleStopwatch() }
+            Button { timers.lap() } label: { Image(systemName: "flag.fill") }
+                .buttonStyle(IconButtonStyle(size: 32))
+                .disabled(!timers.isStopwatchRunning)
+                .accessibilityLabel("Lap")
+            Button { timers.resetStopwatch() } label: { Image(systemName: "arrow.counterclockwise") }
+                .buttonStyle(IconButtonStyle(size: 32))
+                .accessibilityLabel("Reset")
+        }
+    }
+
+    /// Each lap's own time. `laps` holds the running total at each press, newest first.
+    private var lapDurations: [TimeInterval] {
+        let laps = timers.laps
+        return laps.indices.map { index in
+            laps[index] - (index + 1 < laps.count ? laps[index + 1] : 0)
         }
     }
 
