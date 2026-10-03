@@ -47,6 +47,7 @@
 | **Notes** | A scratchpad and notes that save as you type |
 | **System** | CPU, memory, network, disk and battery health |
 | **Claude Code** | Today's tokens, your streak, and live session status |
+| **AI** | Chat with a local model or your own API key, ask about your screen, and keep a context like your resume |
 | **Beside the notch** | Timers, music, Claude, recordings, downloads and volume, shown without opening |
 | **Adiyogi** | A small Adiyogi bust in the left ear of the closed notch |
 | **Command palette** | ⌘K to open a module, start a timer, pause music or add a to-do |
@@ -96,7 +97,7 @@ The volume and brightness keys are off by default, because they need Accessibili
     <td width="33%"><img src="docs/images/module-timers.jpg" alt="Timers: a 25-minute focus session ready to start"></td>
   </tr>
   <tr>
-    <td valign="top"><b>Now Playing</b><br><sub>Artwork, a dot-matrix track display and controls for Music, Spotify, your browser, or any other app playing audio.</sub></td>
+    <td valign="top"><b>Now Playing</b><br><sub>Artwork, a dot-matrix track display, controls and a volume slider for Music, Spotify, your browser, or any other app playing audio.</sub></td>
     <td valign="top"><b>Calendar</b><br><sub>The next 7 days, one-click Join for Zoom, Google Meet and Teams, and reminders you can tick off.</sub></td>
     <td valign="top"><b>Timers</b><br><sub>Focus sessions with breaks, countdowns, and a stopwatch with laps.</sub></td>
   </tr>
@@ -106,7 +107,7 @@ The volume and brightness keys are off by default, because they need Accessibili
     <td><img src="docs/images/module-stats.jpg" alt="System: CPU, memory, network, disk and battery health"></td>
   </tr>
   <tr>
-    <td valign="top"><b>Clipboard</b><br><sub>Everything you've copied, searchable and pinnable. Passwords from password managers are skipped.</sub></td>
+    <td valign="top"><b>Clipboard</b><br><sub>Everything you've copied as a row of cards, searchable and pinnable. Passwords from password managers are skipped.</sub></td>
     <td valign="top"><b>Shelf</b><br><sub>Drop files on the notch to keep them handy. Drag them out later, AirDrop them, or flick them away.</sub></td>
     <td valign="top"><b>System</b><br><sub>CPU, memory, network speed, disk space and battery health, updated only while you look.</sub></td>
   </tr>
@@ -118,7 +119,7 @@ Home is a set of live tiles: what's playing (or the time when nothing is), the n
 
 <img src="docs/images/module-todos.jpg" alt="To-dos: today's list under an add field, with a someday list below">
 
-Today's to-dos, and a someday list for everything else. Type one straight into the notch, or press ⌘K anywhere and say what you're doing. Right-click a to-do to move it to today, tomorrow or someday. Anything you don't finish carries over to the next day instead of quietly disappearing.
+Today's to-dos on the left; tomorrow's and a someday list on the right. Type one straight into the notch, or press ⌘K anywhere and say what you're doing. Right-click a to-do to move it to today, tomorrow or someday. Anything you don't finish carries over to the next day instead of quietly disappearing.
 
 ## Screenshots and recordings
 
@@ -142,6 +143,24 @@ Add the hook and every session shows whether it's working, needs you, or is done
 
 <br clear="right">
 
+## Ask AI, from anywhere
+
+Press **⌘⇧Space** in any app and the notch opens on a chat, ready to type. Press **⌘⇧↩** and it takes the screen first, so you can ask about the code, the error or the slide in front of you. Xotch leaves its own notch out of the picture.
+
+Choose the AI in **Settings › AI**:
+
+| Provider | Needs |
+|---|---|
+| Ollama | Ollama running on your Mac. Nothing leaves it |
+| OpenAI-compatible server | A URL: LM Studio, llama.cpp, Groq, OpenRouter and others. A key only if the server asks |
+| OpenAI, Anthropic (Claude), Google Gemini | Your API key |
+
+Add as many as you like and switch between them, and between models, from the chip beside the input. Keys are kept in your Keychain, never in Xotch's files. Screen questions need a model that can see images, such as `llama3.2-vision` or `gemma3` in Ollama, or any current Claude, GPT or Gemini model.
+
+A **context** is background the AI keeps in mind: your resume, a job description, or notes on a topic you're preparing for. Paste it in or import a PDF, text or Markdown file, and pick one from the chip on the left. It goes with every question until you choose **No context**.
+
+**Settings › Privacy & Feedback › Hide the notch from screen sharing and recordings** asks macOS to leave the notch out of shared screens and recordings. Some apps and macOS versions capture it anyway, so check with a test call first.
+
 ## Make it yours
 
 <table>
@@ -161,7 +180,7 @@ Add the hook and every session shows whether it's working, needs you, or is done
 
 **Aero Glass** is Frutiger Aero, the glossy look of Windows Aero and early Mac OS X: a bright band across the top of every button, bevelled edges, aqua-green accents and rounded type, on top of Liquid Glass. The other themes stay flat. A custom theme lets you pick the background, text, accent and glow colours, and turn the gloss on or off. The closed notch always stays black so it blends in with the camera.
 
-**Arcade sound effects** are short 8-bit blips for opening and closing the notch, switching modules, adding, finishing and deleting to-dos, and pinning, with a jingle for a finished timer or a celebration. They're generated in code, so no sound files ship with the app. They're off by default; turn them on in Settings, where there's a volume slider.
+**Arcade sound effects** are short 8-bit blips for opening and closing the notch, switching modules, adding, finishing and deleting to-dos, and pinning, with a jingle for a finished timer or a celebration. They're generated in code, so no sound files ship with the app. They're off by default; turn them on in Settings › General, where there's a volume slider.
 
 You can also reorder or hide any module, choose whether the notch opens on hover or on click, and pick which displays it appears on. Every screen gets one by default. A display without a notch gets one drawn in its menu bar, sized to the screen, so an external monitor, an iMac, a Mac mini or a Studio all work.
 
@@ -179,7 +198,8 @@ Press **⌘K** in the open notch and type:
 | `shot` | Take a screenshot |
 | `aurora` | Switch theme |
 | Something you copied | Copy it again |
-| Anything else | Add it to today's to-dos |
+| A question ending in `?` | Ask the AI |
+| Anything else | Add it to today's to-dos, or ask the AI |
 
 <br clear="right">
 
@@ -188,6 +208,8 @@ Press **⌘K** in the open notch and type:
 | To | Do this |
 |---|---|
 | Switch module | ⌘1 to ⌘9, or swipe sideways with two fingers |
+| Ask the AI from any app | ⌘⇧Space |
+| Ask the AI about your screen | ⌘⇧↩ |
 | Change the volume | Scroll on the closed notch |
 | Remove a file from the Shelf | Flick it upwards |
 | Close | Esc, or click anywhere else |
@@ -218,7 +240,7 @@ The timer ring, the Claude pulse, the music bars and the confetti are Core Anima
 
 ## Private by design
 
-Xotch has no account and no analytics, and it doesn't connect to any online service. Your clipboard history, notes, to-dos and files stay on your Mac.
+Xotch has no account and no analytics, and it doesn't connect to any online service unless you add a cloud AI provider. Your clipboard history, notes, to-dos and files stay on your Mac. With a cloud provider, only what you send in the AI chat goes to it: your messages, the context you've chosen and any screenshot you attach. A local model through Ollama or LM Studio keeps even that on your Mac.
 
 Screenshots and recordings are saved in Pictures › Xotch unless you choose another folder, and nothing is uploaded. When the music bars follow the real sound, Xotch only measures how loud it is and records nothing. Crash reports are never sent automatically: if you choose to keep them, you decide whether to email one.
 
@@ -235,11 +257,11 @@ Xotch asks only when you use something that needs it.
 | Notifications | You start your first timer | Telling you when time's up |
 | Paste from other apps (macOS 26) | You choose **Allow** in Clipboard | Keeping your clipboard history |
 | System audio recording | You turn on real sound for the music bars | Measuring how loud the music is |
-| Screen Recording | Your first screenshot or recording in Capture | Taking the picture. Choosing a window to record uses macOS's own picker instead, which needs no permission |
+| Screen Recording | Your first screenshot or recording in Capture, or your first screen question to the AI | Taking the picture. Choosing a window to record uses macOS's own picker instead, which needs no permission |
 | Microphone | Only if you turn on Capture › Microphone | Recording your voice with the screen |
 | Desktop folder (may be asked) | Opening Capture, if it's listing your ⌘⇧3 and ⌘⇧4 screenshots | Finding those screenshots, which macOS saves to Desktop unless you've changed it |
 | Downloads folder | macOS may ask when you turn on download progress | Showing how far downloads have got |
-| Accessibility | Only if you turn on **Settings › Show volume and brightness in the notch** | Reading the volume, mute and brightness keys so the notch can show the level in place of macOS's popup. Xotch reads only those keys and nothing else you type |
+| Accessibility | Only if you turn on **Settings › Media › Show volume and brightness in the notch** | Reading the volume, mute and brightness keys so the notch can show the level in place of macOS's popup. Xotch reads only those keys and nothing else you type |
 
 Without that one setting, Xotch never asks for Accessibility or Input Monitoring.
 
@@ -271,7 +293,7 @@ For live status, press **Add hook** in the Claude Code module. Xotch backs up `~
 <details>
 <summary><b>The notch disappeared.</b></summary>
 
-Xotch steps aside while an app is full screen. To keep it, turn off **Settings › Display › Hide the notch while an app is full screen**.
+Xotch steps aside while an app is full screen. To keep it, turn off **Settings › General › Hide the notch while an app is full screen**.
 </details>
 
 <details>
@@ -301,7 +323,7 @@ Allow Xotch under **System Settings › Privacy & Security › Screen & System A
 <details>
 <summary><b>I don't have a notch.</b></summary>
 
-Then Xotch draws one. On a Mac without a notch (an iMac, a Mac mini, a Studio, an older MacBook) and on any external monitor, it draws a notch in that screen's menu bar, sized to the screen, and everything works the same. By default every display gets one; **Settings › Display** can narrow that to a single screen.
+Then Xotch draws one. On a Mac without a notch (an iMac, a Mac mini, a Studio, an older MacBook) and on any external monitor, it draws a notch in that screen's menu bar, sized to the screen, and everything works the same. By default every display gets one; **Settings › General › Displays** can narrow that to a single screen.
 </details>
 
 <details>
@@ -327,7 +349,7 @@ To **Pictures › Xotch**, and to your clipboard. Choose another folder in **Set
 <details>
 <summary><b>I don't see download progress.</b></summary>
 
-Turn on **Settings › Show download progress**. Progress appears for apps that report it to macOS, such as Safari and Chrome.
+Turn on **Settings › Shelf & Clipboard › Show download progress beside the notch**. Progress appears for apps that report it to macOS, such as Safari and Chrome.
 </details>
 
 <details>

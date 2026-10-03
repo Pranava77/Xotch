@@ -57,13 +57,14 @@ private struct ClipboardView: View {
                     .foregroundStyle(Theme.secondaryInk)
                     .frame(maxHeight: .infinity, alignment: .top)
             } else {
-                NotchScroll {
-                    LazyVStack(spacing: 2) {
+                // A row of cards, newest first: the wide notch shows five at once.
+                NotchScroll(axis: .horizontal) {
+                    LazyHStack(spacing: 10) {
                         ForEach(filtered) { item in
-                            ClipRow(item: item)
+                            ClipCard(item: item)
                         }
                     }
-                    .padding(.bottom, 6)
+                    .padding(.bottom, 4)
                 }
             }
         }
@@ -71,75 +72,125 @@ private struct ClipboardView: View {
     }
 }
 
-private struct ClipRow: View {
+/// One copied thing as a card: where it came from, as much of it as fits,
+/// and when. Click to copy it again; pin and remove appear on hover.
+private struct ClipCard: View {
     let item: ClipItem
     @State private var hovering = false
     private var clipboard: ClipboardService { .shared }
 
     var body: some View {
-        HStack(spacing: 10) {
-            icon
-                .frame(width: 26, height: 26)
-            VStack(alignment: .leading, spacing: 1) {
-                Text(item.preview)
-                    .font(.system(size: 12.5, weight: .medium, design: item.kind == .link ? .default : .default))
-                    .foregroundStyle(item.kind == .link ? Color(red: 0.45, green: 0.72, blue: 1) : Theme.ink)
-                    .lineLimit(item.kind == .text ? 2 : 1)
-                    .truncationMode(.tail)
-                Text(Format.relative(item.date))
-                    .font(.system(size: 10))
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 6) {
+                sourceIcon
+                    .frame(width: 16, height: 16)
+                Text(kindLabel)
+                    .font(.system(size: 10, weight: .semibold))
                     .foregroundStyle(Theme.tertiaryInk)
-            }
-            Spacer(minLength: 6)
-            if hovering || item.pinned {
-                Button { clipboard.togglePin(item) } label: {
-                    Image(systemName: item.pinned ? "pin.fill" : "pin")
+                Spacer(minLength: 0)
+                if item.pinned && !hovering {
+                    Image(systemName: "pin.fill")
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundStyle(Theme.accent)
                 }
-                .buttonStyle(IconButtonStyle(size: 24))
-                .foregroundStyle(item.pinned ? Theme.accent : Theme.ink)
-                .help(item.pinned ? "Unpin" : "Pin: keep when clearing")
             }
+            content
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            Text(Format.relative(item.date))
+                .font(.system(size: 10))
+                .foregroundStyle(Theme.tertiaryInk)
+        }
+        .padding(10)
+        .frame(width: 146, height: 150)
+        .background(RoundedRectangle(cornerRadius: 14, style: .continuous)
+            .fill(hovering ? Theme.raisedFill : Theme.fill))
+        .overlay(alignment: .topTrailing) {
             if hovering {
-                Button { clipboard.delete(item) } label: { Image(systemName: "xmark") }
-                    .buttonStyle(IconButtonStyle(size: 24))
-                    .help("Remove from history")
+                HStack(spacing: 4) {
+                    Button { clipboard.togglePin(item) } label: {
+                        Image(systemName: item.pinned ? "pin.fill" : "pin")
+                    }
+                    .buttonStyle(IconButtonStyle(size: 22))
+                    .foregroundStyle(item.pinned ? Theme.accent : Theme.ink)
+                    .help(item.pinned ? "Unpin" : "Pin: keep when clearing")
+                    Button { clipboard.delete(item) } label: { Image(systemName: "xmark") }
+                        .buttonStyle(IconButtonStyle(size: 22))
+                        .help("Remove from history")
+                }
+                .padding(6)
+                .transition(.opacity)
             }
         }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 6)
-        .background(RoundedRectangle(cornerRadius: 9).fill(hovering ? Theme.fill : .clear))
-        .contentShape(RoundedRectangle(cornerRadius: 9))
-        .onHover { hovering = $0 }
+        .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .onHover { over in withAnimation(Motion.press) { hovering = over } }
         .onTapGesture { clipboard.copy(item) }
         .help("Click to copy")
         .accessibilityElement(children: .combine)
+        .accessibilityLabel(item.preview)
         .accessibilityAddTraits(.isButton)
         .accessibilityHint("Copies this item")
     }
 
-    @ViewBuilder private var icon: some View {
+    private var kindLabel: String {
+        switch item.kind {
+        case .text: "TEXT"
+        case .link: "LINK"
+        case .image: "IMAGE"
+        case .files: (item.paths?.count ?? 1) > 1 ? "\(item.paths?.count ?? 0) FILES" : "FILE"
+        }
+    }
+
+    @ViewBuilder private var content: some View {
         switch item.kind {
         case .image:
             if let image = clipboard.image(for: item) {
                 Image(nsImage: image)
                     .resizable()
                     .aspectRatio(contentMode: .fill)
-                    .clipShape(RoundedRectangle(cornerRadius: 5))
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
             } else {
-                Image(systemName: "photo").foregroundStyle(Theme.secondaryInk)
-            }
-        case .files:
-            Image(nsImage: NSWorkspace.shared.icon(forFile: item.paths?.first ?? "/"))
-                .resizable()
-        case .text, .link:
-            if let source = item.sourceApp,
-               let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: source) {
-                Image(nsImage: NSWorkspace.shared.icon(forFile: url.path))
-                    .resizable()
-            } else {
-                Image(systemName: item.kind == .link ? "link" : "text.alignleft")
+                Image(systemName: "photo")
+                    .font(.system(size: 26))
                     .foregroundStyle(Theme.secondaryInk)
             }
+        case .files:
+            VStack(alignment: .leading, spacing: 6) {
+                Image(nsImage: NSWorkspace.shared.icon(forFile: item.paths?.first ?? "/"))
+                    .resizable()
+                    .frame(width: 40, height: 40)
+                Text(item.preview)
+                    .font(.system(size: 12, weight: .medium))
+                    .lineLimit(2)
+            }
+        case .link:
+            VStack(alignment: .leading, spacing: 3) {
+                if let host = URL(string: item.preview)?.host {
+                    Text(host.replacingOccurrences(of: "www.", with: ""))
+                        .font(.system(size: 13, weight: .semibold))
+                        .lineLimit(1)
+                }
+                Text(item.preview)
+                    .font(.system(size: 11))
+                    .foregroundStyle(Color(red: 0.45, green: 0.72, blue: 1))
+                    .lineLimit(3)
+            }
+        case .text:
+            Text(item.preview)
+                .font(.system(size: 12, weight: .medium))
+                .lineLimit(5)
+        }
+    }
+
+    @ViewBuilder private var sourceIcon: some View {
+        if let source = item.sourceApp,
+           let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: source) {
+            Image(nsImage: NSWorkspace.shared.icon(forFile: url.path))
+                .resizable()
+        } else {
+            Image(systemName: item.kind == .link ? "link" : item.kind == .image ? "photo" : "text.alignleft")
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundStyle(Theme.secondaryInk)
         }
     }
 }

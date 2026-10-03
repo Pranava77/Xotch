@@ -1,0 +1,464 @@
+import AppKit
+import SwiftUI
+
+@MainActor
+final class AIModule: NotchModule {
+    nonisolated static let moduleID = "ai"
+    let id = AIModule.moduleID
+    let title = "AI"
+    let symbol = "sparkles"
+    /// A conversation needs more height than the other modules.
+    var openSize: CGSize { CGSize(width: Layout.openSize.width, height: Layout.tallOpenHeight) }
+    func expandedView() -> AnyView { AnyView(AIChatView()) }
+}
+
+private struct AIChatView: View {
+    @Bindable private var chat = AIChatService.shared
+    private var providers: AIProviderStore { .shared }
+
+    var body: some View {
+        if providers.providers.isEmpty {
+            EmptyStateView(symbol: "sparkles",
+                           title: "Connect an AI",
+                           message: "Run a model on this Mac with Ollama or LM Studio, or add an API key for Claude, OpenAI or Gemini. Keys stay in your Keychain.",
+                           buttonTitle: "Set Up in Settings") { showSettings() }
+        } else {
+            VStack(spacing: 8) {
+                Conversation(showSettings: showSettings)
+                    .frame(maxHeight: .infinity)
+                if let notice = chat.notice {
+                    NoticeRow(text: notice, showSettings: showSettings)
+                }
+                InputBar(showSettings: showSettings)
+            }
+        }
+    }
+
+    private func showSettings() {
+        SettingsWindow.show(.ai)
+    }
+}
+
+// MARK: - Conversation
+
+private struct Conversation: View {
+    let showSettings: () -> Void
+    private var chat: AIChatService { .shared }
+
+    var body: some View {
+        if chat.messages.isEmpty {
+            Welcome()
+        } else {
+            ScrollViewReader { proxy in
+                NotchScroll {
+                    LazyVStack(alignment: .leading, spacing: 10) {
+                        ForEach(chat.messages) { message in
+                            MessageRow(message: message,
+                                       isStreaming: chat.isStreaming && message.id == chat.messages.last?.id)
+                        }
+                        Color.clear.frame(height: 1).id("bottom")
+                    }
+                    .padding(.trailing, 4)
+                }
+                .onAppear { proxy.scrollTo("bottom", anchor: .bottom) }
+                .onChange(of: chat.messages.last?.text) { _, _ in proxy.scrollTo("bottom", anchor: .bottom) }
+                .onChange(of: chat.messages.count) { _, _ in
+                    withAnimation(Motion.switchModule) { proxy.scrollTo("bottom", anchor: .bottom) }
+                }
+            }
+        }
+    }
+}
+
+private struct Welcome: View {
+    private var contexts: AIContextStore { .shared }
+    private var providers: AIProviderStore { .shared }
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 18) {
+            Image(systemName: "sparkles")
+                .font(.system(size: 28, weight: .medium))
+                .foregroundStyle(Theme.accent)
+                .frame(width: 44)
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Ask anything")
+                    .font(.system(size: 15, weight: .semibold))
+                VStack(alignment: .leading, spacing: 4) {
+                    hint("keyboard", "⌘⇧Space opens this chat from any app.")
+                    hint("display", "⌘⇧↩ also sends what's on your screen. So does the screen button below.")
+                    if let context = contexts.active {
+                        hint("person.text.rectangle", "Answers use your “\(context.name)” context.")
+                    } else {
+                        hint("person.text.rectangle", "Add a context — a resume, job description or notes — to tailor answers.")
+                    }
+                    if let provider = providers.active {
+                        hint(provider.isLocal ? "lock" : "cloud",
+                             provider.isLocal ? "\(provider.model) runs locally; nothing goes to the internet."
+                                 : "Messages go to \(provider.name).")
+                    }
+                }
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.top, 6)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    }
+
+    private func hint(_ symbol: String, _ text: String) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: symbol)
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundStyle(Theme.tertiaryInk)
+                .frame(width: 14)
+            Text(text)
+                .font(.system(size: 12))
+                .foregroundStyle(Theme.secondaryInk)
+        }
+    }
+}
+
+private struct MessageRow: View {
+    let message: ChatMessage
+    let isStreaming: Bool
+    @State private var hovering = false
+
+    var body: some View {
+        if message.role == .user {
+            HStack {
+                Spacer(minLength: 90)
+                VStack(alignment: .trailing, spacing: 3) {
+                    if message.hadScreenshot {
+                        Label("Screen", systemImage: "display")
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundStyle(Theme.tertiaryInk)
+                    }
+                    Text(message.text)
+                        .font(.system(size: 12.5))
+                        .textSelection(.enabled)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(Theme.raisedFill, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                }
+            }
+        } else {
+            HStack(alignment: .top, spacing: 8) {
+                Image(systemName: message.isError ? "exclamationmark.triangle.fill" : "sparkles")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(message.isError ? Theme.negative : Theme.accent)
+                    .frame(width: 16)
+                    .padding(.top, 2)
+                VStack(alignment: .leading, spacing: 6) {
+                    if message.text.isEmpty {
+                        ProgressView()
+                            .controlSize(.small)
+                            .frame(height: 16)
+                    } else {
+                        RichText(text: message.text)
+                            .foregroundStyle(message.isError ? Theme.secondaryInk : Theme.ink)
+                    }
+                    if message.isError {
+                        Button("Try Again") { AIChatService.shared.retry() }
+                            .buttonStyle(PillButtonStyle(prominent: false))
+                    }
+                }
+                Spacer(minLength: 20)
+                Button { AIChatService.shared.copy(message) } label: { Image(systemName: "doc.on.doc") }
+                    .buttonStyle(IconButtonStyle(size: 22))
+                    .help("Copy")
+                    .opacity(hovering && !isStreaming && !message.isError ? 1 : 0)
+                    .allowsHitTesting(hovering && !isStreaming && !message.isError)
+            }
+            .contentShape(Rectangle())
+            .onHover { hovering = $0 }
+        }
+    }
+}
+
+/// Inline Markdown, with fenced code shown in a box.
+private struct RichText: View {
+    let text: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            ForEach(Array(Self.segments(text).enumerated()), id: \.offset) { _, segment in
+                if segment.isCode {
+                    Text(segment.text)
+                        .font(.system(size: 11.5, design: .monospaced))
+                        .textSelection(.enabled)
+                        .padding(8)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(Theme.fill, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                } else {
+                    Text(Self.markdown(segment.text))
+                        .font(.system(size: 12.5))
+                        .lineSpacing(2)
+                        .textSelection(.enabled)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        }
+    }
+
+    static func segments(_ text: String) -> [(text: String, isCode: Bool)] {
+        text.components(separatedBy: "```").enumerated().compactMap { index, part in
+            let isCode = index % 2 == 1
+            var body = part
+            // Drop the language tag after the opening fence.
+            if isCode, let newline = body.firstIndex(of: "\n"), !body[..<newline].contains(" ") {
+                body = String(body[body.index(after: newline)...])
+            }
+            body = body.trimmingCharacters(in: .newlines)
+            return body.isEmpty ? nil : (body, isCode)
+        }
+    }
+
+    /// Headings and bullets aren't inline syntax, so they're tidied first.
+    static func markdown(_ text: String) -> AttributedString {
+        let lines = text.split(separator: "\n", omittingEmptySubsequences: false).map { line -> String in
+            var line = String(line)
+            if let range = line.range(of: #"^#{1,6}\s+"#, options: .regularExpression) {
+                line = "**" + String(line[range.upperBound...]) + "**"
+            } else if let range = line.range(of: #"^\s*[-*+]\s+"#, options: .regularExpression) {
+                let indent = String(line[range].prefix { $0 == " " })
+                line.replaceSubrange(range, with: indent + "•  ")
+            }
+            return line
+        }
+        let joined = lines.joined(separator: "\n")
+        let options = AttributedString.MarkdownParsingOptions(interpretedSyntax: .inlineOnlyPreservingWhitespace)
+        return (try? AttributedString(markdown: joined, options: options)) ?? AttributedString(joined)
+    }
+}
+
+private struct NoticeRow: View {
+    let text: String
+    let showSettings: () -> Void
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "exclamationmark.circle.fill")
+                .foregroundStyle(Theme.negative)
+            Text(text)
+                .font(.system(size: 11))
+                .foregroundStyle(Theme.secondaryInk)
+                .lineLimit(2)
+            Spacer(minLength: 4)
+            if text.contains("Screen Recording") {
+                Button("Open Privacy Settings") { PrivacyPane.screenCapture.open() }
+                    .buttonStyle(PillButtonStyle(prominent: false))
+            } else if text.contains("Settings") {
+                Button("Open Settings", action: showSettings)
+                    .buttonStyle(PillButtonStyle(prominent: false))
+            }
+            Button { AIChatService.shared.notice = nil } label: { Image(systemName: "xmark") }
+                .buttonStyle(IconButtonStyle(size: 20))
+        }
+    }
+}
+
+// MARK: - Input
+
+private struct InputBar: View {
+    let showSettings: () -> Void
+    @Bindable private var chat = AIChatService.shared
+    private var providers: AIProviderStore { .shared }
+    private var contexts: AIContextStore { .shared }
+    @FocusState private var focused: Bool
+    @Environment(\.snapshotMode) private var snapshotMode
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Chip(symbol: "person.text.rectangle", text: contexts.active?.name ?? "No context",
+                 dimmed: contexts.active == nil) { contextMenu().popUp(positioning: nil, at: NSEvent.mouseLocation, in: nil) }
+                .help("Background the AI keeps in mind")
+
+            HStack(spacing: 6) {
+                if let attachment = chat.attachment {
+                    AttachmentThumb(jpeg: attachment)
+                }
+                if snapshotMode {
+                    Text(chat.draft.isEmpty ? placeholder : chat.draft)
+                        .foregroundStyle(chat.draft.isEmpty ? Theme.tertiaryInk : Theme.ink)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                } else {
+                    TextField(placeholder, text: $chat.draft, axis: .vertical)
+                        .textFieldStyle(.plain)
+                        .lineLimit(1...4)
+                        .focused($focused)
+                        .onSubmit { chat.send() }
+                        .debugFrame("ai.input")
+                }
+            }
+            .font(.system(size: 13))
+            .padding(.horizontal, 10)
+            .padding(.vertical, 7)
+            .frame(minHeight: 32)
+            .background(Theme.fill, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+
+            Button {
+                Task { await chat.captureScreen() }
+            } label: {
+                if chat.isCapturing {
+                    ProgressView().controlSize(.mini)
+                } else {
+                    Image(systemName: chat.attachment == nil ? "display" : "arrow.clockwise")
+                }
+            }
+            .buttonStyle(IconButtonStyle(size: 28))
+            .help(chat.attachment == nil ? "Attach your screen  ⌘⇧↩" : "Take the screen again")
+            .debugFrame("ai.screen")
+
+            Chip(symbol: providers.active?.isLocal == true ? "desktopcomputer" : "cloud",
+                 text: modelLabel, dimmed: false) { modelMenu().popUp(positioning: nil, at: NSEvent.mouseLocation, in: nil) }
+                .help("Provider and model")
+
+            if chat.isStreaming {
+                Button { chat.stop() } label: { Image(systemName: "stop.fill") }
+                    .buttonStyle(IconButtonStyle(size: 28, prominent: true))
+                    .help("Stop")
+            } else {
+                Button { chat.send() } label: { Image(systemName: "arrow.up") }
+                    .buttonStyle(IconButtonStyle(size: 28, prominent: true))
+                    .disabled(!chat.canSend)
+                    .help("Send  ↩")
+                    .debugFrame("ai.send")
+            }
+            Button { chat.newChat() } label: { Image(systemName: "square.and.pencil") }
+                .buttonStyle(IconButtonStyle(size: 28))
+                .disabled(chat.messages.isEmpty || chat.isStreaming)
+                .help("New chat")
+                .debugFrame("ai.new")
+        }
+        .onAppear(perform: takeFocusIfAsked)
+        .onChange(of: chat.wantsFocus) { _, _ in takeFocusIfAsked() }
+    }
+
+    private var placeholder: String {
+        chat.attachment == nil ? "Ask anything…" : "Ask about your screen…"
+    }
+
+    private var modelLabel: String {
+        guard let provider = providers.active else { return "No provider" }
+        return provider.model.isEmpty ? provider.name : provider.model
+    }
+
+    private func takeFocusIfAsked() {
+        guard chat.wantsFocus else { return }
+        chat.wantsFocus = false
+        // The panel becomes key as the notch opens; focus once it has.
+        Task {
+            try? await Task.sleep(for: .milliseconds(120))
+            focused = true
+        }
+    }
+
+    private func contextMenu() -> NSMenu {
+        let menu = NSMenu()
+        let none = ClosureMenuItem("No context") { contexts.activate(nil) }
+        none.state = contexts.active == nil ? .on : .off
+        menu.addItem(none)
+        for profile in contexts.profiles {
+            let item = ClosureMenuItem(profile.name) { contexts.activate(profile.id) }
+            item.state = profile.id == contexts.activeID ? .on : .off
+            menu.addItem(item)
+        }
+        menu.addItem(.separator())
+        menu.addItem(ClosureMenuItem("Add or Edit Contexts…", handler: showSettings))
+        return menu
+    }
+
+    private func modelMenu() -> NSMenu {
+        let menu = NSMenu()
+        let active = providers.active?.id
+        for provider in providers.providers {
+            // Choosing a provider keeps its model; its submenu switches model.
+            let item = ClosureMenuItem(provider.name) { providers.activate(provider.id) }
+            item.state = provider.id == active ? .on : .off
+            menu.addItem(item)
+
+            let models = providers.models[provider.id] ?? []
+            let listed = provider.model.isEmpty || models.contains(provider.model) ? models : [provider.model] + models
+            guard listed.count > 1 else { continue }
+            let submenu = NSMenu()
+            for model in listed {
+                let choice = ClosureMenuItem(model) {
+                    providers.setModel(model, for: provider.id)
+                    providers.activate(provider.id)
+                }
+                choice.state = model == provider.model ? .on : .off
+                submenu.addItem(choice)
+            }
+            let modelsItem = NSMenuItem(title: "\(provider.name) Models", action: nil, keyEquivalent: "")
+            modelsItem.indentationLevel = 1
+            modelsItem.submenu = submenu
+            menu.addItem(modelsItem)
+        }
+        menu.addItem(.separator())
+        menu.addItem(ClosureMenuItem("Refresh Model Lists") {
+            Task {
+                for provider in providers.providers {
+                    _ = try? await providers.refreshModels(for: provider.id)
+                }
+            }
+        })
+        menu.addItem(ClosureMenuItem("Manage Providers…", handler: showSettings))
+        return menu
+    }
+}
+
+/// A small capsule that opens a menu.
+private struct Chip: View {
+    let symbol: String
+    let text: String
+    let dimmed: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 5) {
+                Image(systemName: symbol)
+                    .font(.system(size: 10, weight: .semibold))
+                Text(text)
+                    .font(.system(size: 11, weight: .medium))
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 8, weight: .bold))
+                    .foregroundStyle(Theme.tertiaryInk)
+            }
+            .foregroundStyle(dimmed ? Theme.secondaryInk : Theme.ink)
+            .padding(.horizontal, 9)
+            .frame(height: 28)
+            .frame(maxWidth: 150)
+            .background(Theme.fill, in: Capsule())
+            .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .fixedSize()
+    }
+}
+
+private struct AttachmentThumb: View {
+    let jpeg: Data
+
+    var body: some View {
+        ZStack(alignment: .topTrailing) {
+            if let image = NSImage(data: jpeg) {
+                Image(nsImage: image)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: 34, height: 22)
+                    .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: 4, style: .continuous).strokeBorder(Theme.hairline))
+            }
+            Button { AIChatService.shared.attachment = nil } label: {
+                Image(systemName: "xmark.circle.fill")
+                    .font(.system(size: 11))
+                    .foregroundStyle(Theme.ink, Theme.surface)
+            }
+            .buttonStyle(.plain)
+            .offset(x: 5, y: -5)
+            .help("Don't send the screen")
+        }
+    }
+}

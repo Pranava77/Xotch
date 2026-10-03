@@ -23,6 +23,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         ModuleRegistry.syncRunning()
         DownloadsService.shared.settingsChanged()
         ScreenManager.shared.start()
+        GlobalHotKeys.update()
         #if DEBUG
         DebugHooks.install()
         #endif
@@ -43,6 +44,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationWillTerminate(_ notification: Notification) {
         NotesService.shared.flush()
+        AIChatService.shared.flush()
         TodoService.shared.stop()
         ClaudeLiveService.shared.stop()
         Diagnostics.shared.sessionEnded()

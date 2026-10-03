@@ -18,6 +18,12 @@ private struct ShelfView: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 SectionLabel(shelf.items.isEmpty ? "Shelf" : "\(shelf.items.count) on the shelf")
+                if !shelf.items.isEmpty {
+                    Text("Drag one out to use it, flick it up to remove it")
+                        .font(.system(size: 11))
+                        .foregroundStyle(Theme.tertiaryInk)
+                        .padding(.leading, 8)
+                }
                 Spacer()
                 if !shelf.items.isEmpty {
                     if shelf.canAirDrop {
@@ -48,12 +54,24 @@ private struct ShelfView: View {
                 NotchScroll(axis: .horizontal, clipsContent: false) {
                     HStack(spacing: 10) {
                         ForEach(shelf.items) { ShelfTile(item: $0) }
+                        // Where the next file goes.
+                        RoundedRectangle(cornerRadius: 14)
+                            .strokeBorder(Theme.tertiaryInk.opacity(0.7), style: StrokeStyle(lineWidth: 1.2, dash: [5, 4]))
+                            .overlay {
+                                VStack(spacing: 5) {
+                                    Image(systemName: "plus")
+                                        .font(.system(size: 16, weight: .semibold))
+                                    Text("Drop more\non the notch")
+                                        .font(.system(size: 10, weight: .medium))
+                                        .multilineTextAlignment(.center)
+                                }
+                                .foregroundStyle(Theme.tertiaryInk)
+                            }
+                            .frame(width: 108, height: 132)
+                            .accessibilityHidden(true)
                     }
                     .padding(.vertical, 2)
                 }
-                Text("Drag a file out to use it. Flick it up to remove it.")
-                    .font(.system(size: 11))
-                    .foregroundStyle(Theme.tertiaryInk)
             }
         }
         .onAppear { shelf.removeMissing() }
@@ -76,13 +94,13 @@ private struct ShelfTile: View {
                         Image(systemName: "doc").font(.system(size: 30)).foregroundStyle(Theme.secondaryInk)
                     }
                 }
-                .frame(width: 76, height: 76)
+                .frame(width: 92, height: 92)
 
                 Text(item.name)
                     .font(.system(size: 11, weight: .medium))
                     .lineLimit(2)
                     .multilineTextAlignment(.center)
-                    .frame(width: 92, height: 28, alignment: .top)
+                    .frame(width: 108, height: 28, alignment: .top)
             }
         }
         .onAppear { shelf.loadThumbnail(for: item) }

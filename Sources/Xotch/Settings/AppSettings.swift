@@ -43,6 +43,11 @@ enum SettingsKey {
     // The key strings still say "life": people who changed them keep their choice.
     static let todoRollover = "lifeRollover"
     static let todoActivity = "lifeActivity"
+    static let hideFromScreenSharing = "hideFromScreenSharing"
+    static let aiQuickAskHotKey = "aiQuickAskHotKey"
+    static let aiScreenHotKey = "aiScreenHotKey"
+    /// The page Settings last showed.
+    static let settingsPane = "settingsPane"
 }
 
 enum DisplayChoice {
@@ -89,6 +94,9 @@ enum AppSettings {
             SettingsKey.captureKeepDays: 7,
             SettingsKey.todoRollover: true,
             SettingsKey.todoActivity: false,
+            SettingsKey.hideFromScreenSharing: false,
+            SettingsKey.aiQuickAskHotKey: true,
+            SettingsKey.aiScreenHotKey: true,
             Diagnostics.shareKey: false,
         ])
     }
@@ -201,5 +209,24 @@ enum AppSettings {
     /// Shows how many to-dos are left beside the notch.
     static var todoActivity: Bool {
         UserDefaults.standard.bool(forKey: SettingsKey.todoActivity)
+    }
+}
+
+// MARK: - AI
+
+extension AppSettings {
+    /// Asks the window server to leave the notch out of screen sharing and recordings.
+    static var hideFromScreenSharing: Bool {
+        UserDefaults.standard.bool(forKey: SettingsKey.hideFromScreenSharing)
+    }
+
+    /// ⌘⇧Space opens the AI chat from any app.
+    static var aiQuickAskHotKey: Bool {
+        UserDefaults.standard.bool(forKey: SettingsKey.aiQuickAskHotKey)
+    }
+
+    /// ⌘⇧Return takes the screen and opens the AI chat.
+    static var aiScreenHotKey: Bool {
+        UserDefaults.standard.bool(forKey: SettingsKey.aiScreenHotKey)
     }
 }

@@ -126,10 +126,7 @@ enum DebugHooks {
                 // Shows the Settings view in its own window and writes the window
                 // number to a file, for `screencapture -l`.
                 let path = String(command.dropFirst("settings:".count))
-                let window = NSWindow(contentViewController: NSHostingController(rootView: SettingsView()))
-                window.title = "Xotch Settings (debug)"
-                window.isReleasedWhenClosed = false
-                window.center()
+                let window = SettingsWindow.makeWindow()
                 window.orderFrontRegardless()
                 debugSettingsWindow = window
                 try? "\(window.windowNumber)".write(toFile: path, atomically: true, encoding: .utf8)
@@ -146,6 +143,10 @@ enum DebugHooks {
                     scroll.contentView.scroll(to: NSPoint(x: 0, y: y))
                     scroll.reflectScrolledClipView(scroll.contentView)
                 }
+            } else if command.hasPrefix("settings-pane:") {
+                // Switches Settings to a page: `settings-pane media`.
+                UserDefaults.standard.set(String(command.dropFirst("settings-pane:".count)),
+                                          forKey: SettingsKey.settingsPane)
             } else if command == "settings-close" {
                 debugSettingsWindow?.close()
                 debugSettingsWindow = nil

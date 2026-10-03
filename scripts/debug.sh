@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Sends a command to a running debug build of Xotch.
-# Usage: scripts/debug.sh settings <file> | settings-scroll <y> | settings-close | key volup|voldown|mute|brightup|brightdown | sound <cue> | open [module] | close | activity | activity-media | activity-timer |
+# Usage: scripts/debug.sh settings <file> | settings-pane <id> | settings-scroll <y> | settings-close | key volup|voldown|mute|brightup|brightdown | sound <cue> | open [module] | close | activity | activity-media | activity-timer |
 #        activity-claude | activity-download | clear-activities [module] | celebrate | palette | ripple |
 #        theme <id> | rebuild <count> | status <file> | snapshot <folder> |
 #        effects <folder> | marketing <folder> | selftest <report file> |

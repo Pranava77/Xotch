@@ -12,9 +12,6 @@ struct XotchApp: App {
         MenuBarExtra("Xotch", systemImage: "rectangle.topthird.inset.filled") {
             MenuContent()
         }
-        Settings {
-            SettingsView()
-        }
     }
 }
 
@@ -40,7 +37,7 @@ private struct MenuContent: View {
             Button("Xotch Quit Unexpectedly: Email Report…") { diagnostics.emailCrashReport() }
         }
         Button("Send Feedback…") { diagnostics.sendFeedback() }
-        SettingsLink { Text("Settings…") }
+        Button("Settings…") { SettingsWindow.show() }
             .keyboardShortcut(",")
         Button("Quit Xotch") { NSApp.terminate(nil) }
             .keyboardShortcut("q")

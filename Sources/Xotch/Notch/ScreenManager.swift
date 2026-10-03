@@ -72,6 +72,21 @@ final class ScreenManager {
         primary?.open(pinned: true)
     }
 
+    /// Opens the main notch on a module and gives it the keyboard, e.g. from a
+    /// global shortcut. Shows the notch even over a full-screen app.
+    func openPrimary(moduleID: String) {
+        guard let primary else { return }
+        primary.revealOverFullScreen()
+        primary.select(moduleID: moduleID)
+        primary.open(pinned: true)
+    }
+
+    /// Looks again at whether each display has a full-screen app, e.g. once a
+    /// notch shown over one has closed.
+    func recheckFullScreen() {
+        checkFullScreen()
+    }
+
     /// Opens the notch without taking focus, e.g. to preview an effect from Settings.
     func openPrimaryForPreview() {
         primary?.open(pinned: false, focus: false)
@@ -108,6 +123,8 @@ final class ScreenManager {
         TodoService.shared.updateActivity()
         MediaKeys.shared.settingsChanged()
         ActivityCenter.shared.settingsChanged()
+        GlobalHotKeys.update()
+        controllers.values.forEach { $0.updateSharing() }
         let hide = AppSettings.hideInFullScreen
         if hide != hideInFullScreen {
             hideInFullScreen = hide

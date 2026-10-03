@@ -55,8 +55,13 @@ enum CommandCatalog {
                 .compactMap { command in score(command, for: text).map { (command, $0) } }
                 .sorted { $0.1 > $1.1 }
                 .map(\.0)
-            // Anything typed that isn't a command can become today's to-do.
-            // It goes after the real matches: "shot" means the screenshot.
+            // Anything typed that isn't a command can become today's to-do, or
+            // a question for the AI. Both go after the real matches: "shot"
+            // means the screenshot. A question mark puts the AI first.
+            let ask = askAI(text)
+            if text.hasSuffix("?"), let ask {
+                results.append(ask)
+            }
             if text.count >= 3, duration(in: text) == nil {
                 results.append(PaletteCommand(
                     id: "todo-add", title: "Add “\(text)” to today", symbol: "plus.circle",
@@ -65,6 +70,9 @@ enum CommandCatalog {
                     TodoService.shared.add(text)
                     actions.select(moduleID: "todos")
                 })
+            }
+            if !text.hasSuffix("?"), let ask {
+                results.append(ask)
             }
             results += clipboardMatches(for: text)
         }
@@ -166,6 +174,19 @@ enum CommandCatalog {
                 })
             }
         }
+        if AIProviderStore.shared.active != nil,
+           ModuleRegistry.visibleNow.contains(where: { $0.id == AIModule.moduleID }) {
+            list.append(PaletteCommand(id: "ai-screen", title: "Ask AI about my screen",
+                                       subtitle: GlobalHotKeys.Action.askAboutScreen.label, symbol: "sparkles",
+                                       tint: Theme.accent, keywords: "question explain help screenshot read") {
+                let chat = AIChatService.shared
+                Task {
+                    await chat.captureScreen()
+                    chat.wantsFocus = true
+                    ScreenManager.shared.show(moduleID: AIModule.moduleID)
+                }
+            })
+        }
         list.append(PaletteCommand(id: "captures-folder", title: "Open the captures folder", symbol: "folder",
                                    keywords: "screenshots recordings pictures finder") { capture.openFolder() })
 
@@ -191,6 +212,17 @@ enum CommandCatalog {
         list.append(PaletteCommand(id: "close", title: "Close the notch", symbol: "chevron.up",
                                    keywords: "hide dismiss") { actions.closeNotch() })
         return list
+    }
+
+    private static func askAI(_ text: String) -> PaletteCommand? {
+        guard text.count >= 3, AIProviderStore.shared.active != nil,
+              ModuleRegistry.visibleNow.contains(where: { $0.id == AIModule.moduleID }) else { return nil }
+        return PaletteCommand(id: "ai-ask", title: "Ask AI “\(text)”", symbol: "sparkles", tint: Theme.accent) {
+            let chat = AIChatService.shared
+            chat.draft = text
+            chat.send()
+            ScreenManager.shared.show(moduleID: AIModule.moduleID)
+        }
     }
 
     private static func clipboardMatches(for text: String) -> [PaletteCommand] {
