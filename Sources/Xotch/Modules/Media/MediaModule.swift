@@ -88,6 +88,7 @@ private struct MediaView: View {
                             Button { media.next() } label: { Image(systemName: "forward.fill") }
                                 .buttonStyle(IconButtonStyle(size: 36))
                                 .accessibilityLabel("Next track")
+                                .debugFrame("media.next")
                         }
                         HStack {
                             Spacer()

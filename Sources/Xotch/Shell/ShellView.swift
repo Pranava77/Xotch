@@ -403,7 +403,7 @@ private struct LiveActivityBar: View {
                 .foregroundStyle(activity.tint)
         case .playing:
             EqualizerBars(tint: activity.tint)
-                .frame(width: 20, height: 14)
+                .frame(width: EqualizerView.width, height: EqualizerView.height)
         case .level(let value):
             LevelBar(value: value, tint: activity.tint)
                 .frame(width: max(activity.earWidth - 30, 30))
@@ -413,18 +413,21 @@ private struct LiveActivityBar: View {
     }
 }
 
-/// Four bars that bounce while music plays. Core Animation runs them in the
-/// window server, so they cost Xotch almost nothing even over hours of music.
+/// A wave of bars across the ear while music plays. Core Animation runs them
+/// in the window server, so they cost Xotch almost nothing even over hours of music.
 private struct EqualizerBars: View {
     let tint: Color
     @Environment(\.snapshotMode) private var snapshotMode
 
+    private static let stillHeights: [CGFloat] = [0.3, 0.55, 0.8, 0.5, 0.95, 0.7, 1, 0.6, 0.85, 0.45, 0.65, 0.35]
+
     var body: some View {
         Group {
             if snapshotMode || Motion.reduceMotion {
-                HStack(spacing: 2) {
-                    ForEach([0.5, 0.9, 0.35, 0.7], id: \.self) { height in
-                        Capsule().fill(tint).frame(width: 3, height: 14 * height)
+                HStack(spacing: EqualizerView.gap) {
+                    ForEach(Array(Self.stillHeights.enumerated()), id: \.offset) { _, height in
+                        Capsule().fill(tint)
+                            .frame(width: EqualizerView.barWidth, height: EqualizerView.height * height)
                     }
                 }
             } else {
@@ -449,10 +452,18 @@ private struct EqualizerLayers: NSViewRepresentable {
 }
 
 /// Bars that follow the music when real audio levels are on (see AudioLevels),
-/// and bounce by themselves otherwise.
+/// bass on the left, and ripple by themselves otherwise.
 final class EqualizerView: NSView {
-    private static let durations: [CFTimeInterval] = [0.42, 0.55, 0.37, 0.49]
-    private static let offsets: [CFTimeInterval] = [0, 0.12, 0.25, 0.06]
+    /// One bar per band of `SpectrumAnalyzer`, spread across most of the ear.
+    static let barCount = SpectrumAnalyzer.bandCount
+    static let barWidth: CGFloat = 2.5
+    static let gap: CGFloat = 2
+    static let height: CGFloat = 16
+    static var width: CGFloat { CGFloat(barCount) * barWidth + CGFloat(barCount - 1) * gap }
+
+    private static let durations: [CFTimeInterval] = [0.42, 0.55, 0.37, 0.49, 0.46, 0.4]
+    /// Each bar starts a little after the one to its left, so a ripple runs across.
+    private static let stagger: CFTimeInterval = 0.06
     private var bars: [CALayer] = []
     private var levelTimer: Timer?
     private var isFollowingLevels = false
@@ -468,9 +479,9 @@ final class EqualizerView: NSView {
     override init(frame: NSRect) {
         super.init(frame: frame)
         wantsLayer = true
-        for _ in 0..<4 {
+        for _ in 0..<Self.barCount {
             let bar = CALayer()
-            bar.cornerRadius = 1.5
+            bar.cornerRadius = Self.barWidth / 2
             bar.backgroundColor = tint.cgColor
             layer?.addSublayer(bar)
             bars.append(bar)
@@ -487,8 +498,8 @@ final class EqualizerView: NSView {
         CATransaction.begin()
         CATransaction.setDisableActions(true)
         for (index, bar) in bars.enumerated() {
-            bar.bounds = CGRect(x: 0, y: 0, width: 3, height: bounds.height)
-            bar.position = CGPoint(x: CGFloat(index) * 5 + 1.5, y: bounds.midY)
+            bar.bounds = CGRect(x: 0, y: 0, width: Self.barWidth, height: bounds.height)
+            bar.position = CGPoint(x: CGFloat(index) * (Self.barWidth + Self.gap) + Self.barWidth / 2, y: bounds.midY)
         }
         CATransaction.commit()
         if !isFollowingLevels {
@@ -538,15 +549,20 @@ final class EqualizerView: NSView {
     }
 
     private func startBouncing() {
+        let middle = CGFloat(bars.count - 1) / 2
         for (index, bar) in bars.enumerated() where bar.animation(forKey: "bounce") == nil {
+            // Shorter towards the ends, so the row reads as one wave.
+            let taper = 1 - 0.45 * pow(abs(CGFloat(index) - middle) / middle, 2)
             let bounce = CABasicAnimation(keyPath: "transform.scale.y")
-            bounce.fromValue = 0.25
-            bounce.toValue = 1.0
-            bounce.duration = Self.durations[index]
+            bounce.fromValue = 0.2
+            bounce.toValue = taper
+            bounce.duration = Self.durations[index % Self.durations.count]
             bounce.autoreverses = true
             bounce.repeatCount = .infinity
             bounce.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
-            bounce.beginTime = CACurrentMediaTime() + Self.offsets[index]
+            // Started in the past, so every bar moves at once instead of
+            // sitting at full height until its turn.
+            bounce.beginTime = CACurrentMediaTime() - Double(bars.count - 1 - index) * Self.stagger
             bar.add(bounce, forKey: "bounce")
         }
     }

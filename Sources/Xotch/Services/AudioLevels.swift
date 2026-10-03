@@ -7,7 +7,7 @@ import Observation
 /// Real playback levels for the music bars beside the notch, from a Core Audio
 /// process tap (macOS 14.2+). Off by default: the first time it runs, macOS asks
 /// for permission to record system audio. Nothing is recorded or kept; each
-/// buffer is reduced to four numbers and dropped.
+/// buffer is reduced to a dozen numbers and dropped.
 ///
 /// The tap only runs while the music bars are on screen and the setting is on.
 /// If macOS denies access the tap hears silence, and the bars fall back to
@@ -33,7 +33,7 @@ final class AudioLevels {
         UserDefaults.standard.bool(forKey: SettingsKey.realAudioLevels)
     }
 
-    /// Four bands (bass to treble), 0...1, or nil when the bars should animate by themselves.
+    /// One level per bar (bass to treble), 0...1, or nil when the bars should animate by themselves.
     func current() -> [Float]? {
         guard let tap else { return nil }
         let reading = tap.reading()
@@ -122,7 +122,8 @@ final class AudioTap: @unchecked Sendable {
     private var procID: AudioDeviceIOProcID?
     private let queue = DispatchQueue(label: "com.pranava.xotch.audio-levels", qos: .userInitiated)
     private let lock = NSLock()
-    private var current = Reading(bands: [0, 0, 0, 0], lastSound: .distantPast)
+    private var current = Reading(bands: [Float](repeating: 0, count: SpectrumAnalyzer.bandCount),
+                                  lastSound: .distantPast)
     private var analyzer: SpectrumAnalyzer?
 
     func reading() -> Reading {
@@ -243,30 +244,38 @@ final class AudioTap: @unchecked Sendable {
     }
 }
 
-/// Turns a stream of samples into four smoothed band levels.
+/// Turns a stream of samples into a dozen smoothed band levels, one per bar.
 final class SpectrumAnalyzer: @unchecked Sendable {
     static let size = 1024
-    /// Band edges in Hz: bass, low mids, high mids, treble.
-    private static let edges: [Double] = [40, 250, 1000, 4000, 12000]
-    /// Higher bands carry less energy; lift them so the bars move evenly.
-    private static let lift: [Float] = [0, 4, 9, 14]
+    static let bandCount = 12
+    /// Bands are spaced evenly in pitch between these, like the keys of a piano.
+    private static let lowest = 40.0
+    private static let highest = 16_000.0
+    /// Higher bands carry less energy; lift them (in dB) so the bars move evenly.
+    private static let lift: [Float] = (0..<bandCount).map { 14 * Float($0) / Float(bandCount - 1) }
 
     private let binRanges: [Range<Int>]
     private let window: [Float]
     private let transform: vDSP.DiscreteFourierTransform<Float>?
     private var pending: [Float] = []
-    private var levels: [Float] = [0, 0, 0, 0]
+    private var levels = [Float](repeating: 0, count: bandCount)
     private(set) var lastPeak: Float = 0
     private var skip = false
 
     init(sampleRate: Double) {
         let binWidth = sampleRate / Double(Self.size)
         let top = Self.size / 2
-        binRanges = (0..<4).map { band in
-            let low = max(1, Int(Self.edges[band] / binWidth))
-            let high = min(top, max(low + 1, Int(Self.edges[band + 1] / binWidth)))
-            return low..<high
+        // At 47 Hz a bin, the lowest bands are narrower than a bin; each band
+        // starts where the last ended, so no two bars read the same bins.
+        var ranges: [Range<Int>] = []
+        var low = 1
+        for band in 0..<Self.bandCount {
+            let edge = Self.lowest * pow(Self.highest / Self.lowest, Double(band + 1) / Double(Self.bandCount))
+            let high = min(top, max(low + 1, Int(edge / binWidth)))
+            ranges.append(low..<high)
+            low = high
         }
+        binRanges = ranges
         window = vDSP.window(ofType: Float.self, usingSequence: .hanningDenormalized, count: Self.size, isHalfWindow: false)
         transform = try? vDSP.DiscreteFourierTransform(previous: nil, count: Self.size, direction: .forward,
                                                         transformType: .complexComplex, ofType: Float.self)
@@ -274,7 +283,7 @@ final class SpectrumAnalyzer: @unchecked Sendable {
     }
 
     /// Returns new levels once a full window has arrived. Every other window
-    /// is skipped: about 23 readings a second is plenty for four bars.
+    /// is skipped: about 23 readings a second is plenty for the bars.
     func add(_ samples: UnsafePointer<Float>, count: Int, stride: Int) -> [Float]? {
         var index = 0
         while index < count {
@@ -294,7 +303,7 @@ final class SpectrumAnalyzer: @unchecked Sendable {
         let windowed = vDSP.multiply(frame, window)
         let (real, imaginary) = transform.transform(real: windowed, imaginary: [Float](repeating: 0, count: Self.size))
         let scale = 2 / Float(Self.size)
-        for band in 0..<4 {
+        for band in 0..<Self.bandCount {
             var sum: Float = 0
             for bin in binRanges[band] {
                 sum += (real[bin] * real[bin] + imaginary[bin] * imaginary[bin]).squareRoot()

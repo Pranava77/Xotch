@@ -35,13 +35,15 @@ Measured on a 14" MacBook Pro (Mac17,9, Apple M5 Pro), macOS 26.6.2, debug build
 
 Every screen gets its own notch and its own panel, so the cost is per screen. On this Mac with the built-in display plus a 3440×1440 ultra-wide — one hardware notch, one drawn in the external's menu bar — a freshly launched debug build sat at **80 MB** with both notches closed, against the 18 MB single-screen figure in the table above. Most of that is the second window's backing store at the panel's full 1236×624, which is allocated whether or not the notch is open.
 
+Measured again on 4 October 2026, on the same two displays, with the panel at 1116×604 (sized for the AI chat's bigger mode): a freshly launched debug build sat at **29 MB** with both notches closed, 62 MB open on the AI chat and 66 MB with the chat made bigger. Rendering every state with `debug.sh snapshot` leaves the process near 220 MB until it's relaunched, so measure after a fresh launch.
+
 To-dos cost nothing while open: a short list, nothing polls, and the only timer is one sleep until midnight.
 
 Recording a 1800×1169 display at 60 fps with system audio cost about 1 percentage point of CPU in Xotch over a closed-notch baseline of 1.0% on a busy Mac. That is the red timer plus handing frames over; ScreenCaptureKit encodes the H.264 in macOS's own processes, so the rest of the cost doesn't appear against Xotch. The resulting file is about 1.9 MB per second of screen.
 
 The Media helper process (`perl` running `MediaRemoteBridge`) uses 0% CPU and about 4 MB.
 
-The music bars cost nothing with their built-in animation. With Settings › "Move the music bars with the real sound" on, Xotch reads the audio tap and updates the bars 20 times a second while they're showing, and stops the tap when they're hidden. Measured back to back: 0.17% with the bars up, 0.00% with them hidden. The analysis runs on every other window of audio whatever is playing; with music, each update also moves four layers. That case hasn't been measured yet, because it needs music playing and the permission granted.
+The music bars cost nothing with their built-in animation. With Settings › "Move the music bars with the real sound" on, Xotch reads the audio tap and updates the bars 20 times a second while they're showing, and stops the tap when they're hidden. Measured back to back: 0.17% with the bars up, 0.00% with them hidden. The analysis runs on every other window of audio whatever is playing; with music, each update also moves twelve layers, one per bar. That case hasn't been measured yet, because it needs music playing and the permission granted.
 
 Measurements are noisy while the Mac is in use: one run with Settings open and the pointer moving read 12–20% for the same state, and 0.17% again once things were quiet.
 

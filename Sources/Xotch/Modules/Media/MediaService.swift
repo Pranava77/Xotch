@@ -45,6 +45,15 @@ final class MediaService {
     @ObservationIgnored private var restarts = 0
     @ObservationIgnored private var startedAt = Date()
     @ObservationIgnored private var isStopped = true
+    /// Pending "nothing is playing" and "no artwork" from the bridge (see `handle`).
+    @ObservationIgnored private var clearTask: Task<Void, Never>?
+    @ObservationIgnored private var artworkClearTask: Task<Void, Never>?
+
+    /// MediaRemote reports no title for a moment between tracks, and no artwork
+    /// for 0.13 s on every play or pause, then sends them again. Waiting this
+    /// long before believing it stops the player blinking to "Nothing playing"
+    /// and the cover flashing when you press Next.
+    private static let nothingGrace: Duration = .seconds(1.5)
 
     func start() {
         isStopped = false
@@ -99,6 +108,10 @@ final class MediaService {
         process = nil
         input = nil
         buffer.removeAll()
+        clearTask?.cancel()
+        clearTask = nil
+        artworkClearTask?.cancel()
+        artworkClearTask = nil
         nowPlaying = nil
         artwork = nil
         ActivityCenter.shared.setOngoing(nil, for: "media")
@@ -140,6 +153,9 @@ final class MediaService {
     }
 
     private func send(_ command: String) {
+        #if DEBUG
+        debugNote("sent \(command)")
+        #endif
         try? input?.write(contentsOf: Data((command + "\n").utf8))
     }
 
@@ -157,24 +173,34 @@ final class MediaService {
 
     private func handle(_ line: Data) {
         guard let object = try? JSONSerialization.jsonObject(with: line) as? [String: Any] else { return }
+        #if DEBUG
+        let debugArtwork = (object["artwork"] as? String).map { $0.isEmpty ? "empty" : "data" } ?? "absent"
+        debugNote("line title=\((object["title"] as? String ?? "").isEmpty ? "EMPTY" : "set") playing=\(object["playing"] ?? "-") artwork=\(debugArtwork)")
+        #endif
         if object["error"] != nil {
             isAvailable = false
             return
         }
         if let encoded = object["artwork"] as? String {
             let image = encoded.isEmpty ? nil : Data(base64Encoded: encoded).flatMap(NSImage.init(data:))
-            withAnimation(Motion.switchModule) {
-                artwork = image
-                tint = image?.vividColor ?? Theme.accent
+            if image == nil, artwork != nil {
+                clearArtworkSoon()
+            } else {
+                artworkClearTask?.cancel()
+                artworkClearTask = nil
+                setArtwork(image)
             }
         }
 
         let title = object["title"] as? String ?? ""
         guard !title.isEmpty else {
-            nowPlaying = nil
-            updateActivity()
+            if nowPlaying != nil {
+                clearSoon()
+            }
             return
         }
+        clearTask?.cancel()
+        clearTask = nil
         let timestamp = (object["timestamp"] as? Double).map { Date(timeIntervalSince1970: $0) }
         nowPlaying = NowPlaying(
             title: title,
@@ -188,6 +214,44 @@ final class MediaService {
             bundleID: object["bundleID"] as? String
         )
         updateActivity()
+    }
+
+    private func setArtwork(_ image: NSImage?) {
+        withAnimation(Motion.switchModule) {
+            artwork = image
+            tint = image?.vividColor ?? Theme.accent
+        }
+    }
+
+    /// Clears the player unless a title comes back first. Further empty
+    /// reports don't restart the wait.
+    private func clearSoon() {
+        guard clearTask == nil else { return }
+        clearTask = Task { [weak self] in
+            try? await Task.sleep(for: Self.nothingGrace)
+            guard let self, !Task.isCancelled else { return }
+            self.clearTask = nil
+            #if DEBUG
+            self.debugNote("cleared nowPlaying")
+            #endif
+            self.nowPlaying = nil
+            self.updateActivity()
+        }
+    }
+
+    /// Drops the cover unless new artwork arrives first.
+    private func clearArtworkSoon() {
+        guard artworkClearTask == nil else { return }
+        artworkClearTask = Task { [weak self] in
+            try? await Task.sleep(for: Self.nothingGrace)
+            guard let self, !Task.isCancelled else { return }
+            self.artworkClearTask = nil
+            #if DEBUG
+            self.debugNote("cleared artwork")
+            #endif
+            self.setArtwork(nil)
+            self.updateActivity()
+        }
     }
 
     private func bridgeExited(_ exited: ObjectIdentifier) {
@@ -229,6 +293,21 @@ final class MediaService {
     }
 
     #if DEBUG
+    /// The last bridge lines, commands and clears, for
+    /// `scripts/debug.sh status`.
+    @ObservationIgnored private(set) var debugLog: [String] = []
+    @ObservationIgnored private var debugLastNote = Date()
+
+    /// Each entry starts with the time since the one before it.
+    private func debugNote(_ text: String) {
+        let gap = Date().timeIntervalSince(debugLastNote)
+        debugLastNote = Date()
+        debugLog.append(String(format: "+%.2fs ", gap) + text)
+        if debugLog.count > 20 {
+            debugLog.removeFirst(debugLog.count - 20)
+        }
+    }
+
     /// An abstract cover: a low sun over layered hills.
     private static let sampleArtwork = NSImage(size: NSSize(width: 300, height: 300), flipped: false) { rect in
         let sky = NSGradient(colors: [NSColor(srgbRed: 0.98, green: 0.45, blue: 0.42, alpha: 1),

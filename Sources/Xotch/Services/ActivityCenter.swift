@@ -213,6 +213,11 @@ final class ActivityCenter {
         return saved
     }
 
+    func debugClearHUD() {
+        hudTask?.cancel()
+        hud = nil
+    }
+
     /// Snapshots set bars of their own; this goes around the stash.
     func debugShowAdiyogi(_ shown: Bool) {
         showsAdiyogi = shown
