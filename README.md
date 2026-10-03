@@ -47,6 +47,7 @@
 | **Notes** | A scratchpad and notes that save as you type |
 | **System** | CPU, memory, network, disk and battery health |
 | **Claude Code** | Today's tokens, your streak, and live session status |
+| **AI** | Chat with a local model or your own API key, ask about your screen, and keep a context like your resume |
 | **Beside the notch** | Timers, music, Claude, recordings, downloads and volume, shown without opening |
 | **Adiyogi** | A small Adiyogi bust in the left ear of the closed notch |
 | **Command palette** | ⌘K to open a module, start a timer, pause music or add a to-do |
@@ -96,7 +97,7 @@ The volume and brightness keys are off by default, because they need Accessibili
     <td width="33%"><img src="docs/images/module-timers.jpg" alt="Timers: a 25-minute focus session ready to start"></td>
   </tr>
   <tr>
-    <td valign="top"><b>Now Playing</b><br><sub>Artwork, a dot-matrix track display and controls for Music, Spotify, your browser, or any other app playing audio.</sub></td>
+    <td valign="top"><b>Now Playing</b><br><sub>Artwork, a dot-matrix track display, controls and a volume slider for Music, Spotify, your browser, or any other app playing audio.</sub></td>
     <td valign="top"><b>Calendar</b><br><sub>The next 7 days, one-click Join for Zoom, Google Meet and Teams, and reminders you can tick off.</sub></td>
     <td valign="top"><b>Timers</b><br><sub>Focus sessions with breaks, countdowns, and a stopwatch with laps.</sub></td>
   </tr>
@@ -106,7 +107,7 @@ The volume and brightness keys are off by default, because they need Accessibili
     <td><img src="docs/images/module-stats.jpg" alt="System: CPU, memory, network, disk and battery health"></td>
   </tr>
   <tr>
-    <td valign="top"><b>Clipboard</b><br><sub>Everything you've copied, searchable and pinnable. Passwords from password managers are skipped.</sub></td>
+    <td valign="top"><b>Clipboard</b><br><sub>Everything you've copied as a row of cards, searchable and pinnable. Passwords from password managers are skipped.</sub></td>
     <td valign="top"><b>Shelf</b><br><sub>Drop files on the notch to keep them handy. Drag them out later, AirDrop them, or flick them away.</sub></td>
     <td valign="top"><b>System</b><br><sub>CPU, memory, network speed, disk space and battery health, updated only while you look.</sub></td>
   </tr>
@@ -118,7 +119,7 @@ Home is a set of live tiles: what's playing (or the time when nothing is), the n
 
 <img src="docs/images/module-todos.jpg" alt="To-dos: today's list under an add field, with a someday list below">
 
-Today's to-dos, and a someday list for everything else. Type one straight into the notch, or press ⌘K anywhere and say what you're doing. Right-click a to-do to move it to today, tomorrow or someday. Anything you don't finish carries over to the next day instead of quietly disappearing.
+Today's to-dos on the left; tomorrow's and a someday list on the right. Type one straight into the notch, or press ⌘K anywhere and say what you're doing. Right-click a to-do to move it to today, tomorrow or someday. Anything you don't finish carries over to the next day instead of quietly disappearing.
 
 ## Screenshots and recordings
 
@@ -141,6 +142,24 @@ See today's tokens, replies and streak, read from Claude Code's logs on your Mac
 Add the hook and every session shows whether it's working, needs you, or is done, right next to the camera. You can leave Claude running and get on with something else.
 
 <br clear="right">
+
+## Ask AI, from anywhere
+
+Press **⌘⇧Space** in any app and the notch opens on a chat, ready to type. Press **⌘⇧↩** and it takes the screen first, so you can ask about the code, the error or the slide in front of you. Xotch leaves its own notch out of the picture.
+
+Choose the AI in **Settings › AI**:
+
+| Provider | Needs |
+|---|---|
+| Ollama | Ollama running on your Mac. Nothing leaves it |
+| OpenAI-compatible server | A URL: LM Studio, llama.cpp, Groq, OpenRouter and others. A key only if the server asks |
+| OpenAI, Anthropic (Claude), Google Gemini | Your API key |
+
+Add as many as you like and switch between them, and between models, from the chip beside the input. Keys are kept in your Keychain, never in Xotch's files. Screen questions need a model that can see images, such as `llama3.2-vision` or `gemma3` in Ollama, or any current Claude, GPT or Gemini model.
+
+A **context** is background the AI keeps in mind: your resume, a job description, or notes on a topic you're preparing for. Paste it in or import a PDF, text or Markdown file, and pick one from the chip on the left. It goes with every question until you choose **No context**.
+
+**Hide the notch from screen sharing and recordings** asks macOS to leave the notch out of shared screens and recordings. Some apps and macOS versions capture it anyway, so check with a test call first.
 
 ## Make it yours
 
@@ -179,7 +198,8 @@ Press **⌘K** in the open notch and type:
 | `shot` | Take a screenshot |
 | `aurora` | Switch theme |
 | Something you copied | Copy it again |
-| Anything else | Add it to today's to-dos |
+| A question ending in `?` | Ask the AI |
+| Anything else | Add it to today's to-dos, or ask the AI |
 
 <br clear="right">
 
@@ -188,6 +208,8 @@ Press **⌘K** in the open notch and type:
 | To | Do this |
 |---|---|
 | Switch module | ⌘1 to ⌘9, or swipe sideways with two fingers |
+| Ask the AI from any app | ⌘⇧Space |
+| Ask the AI about your screen | ⌘⇧↩ |
 | Change the volume | Scroll on the closed notch |
 | Remove a file from the Shelf | Flick it upwards |
 | Close | Esc, or click anywhere else |
@@ -218,7 +240,7 @@ The timer ring, the Claude pulse, the music bars and the confetti are Core Anima
 
 ## Private by design
 
-Xotch has no account and no analytics, and it doesn't connect to any online service. Your clipboard history, notes, to-dos and files stay on your Mac.
+Xotch has no account and no analytics, and it doesn't connect to any online service unless you add a cloud AI provider. Your clipboard history, notes, to-dos and files stay on your Mac. With a cloud provider, only what you send in the AI chat goes to it: your messages, the context you've chosen and any screenshot you attach. A local model through Ollama or LM Studio keeps even that on your Mac.
 
 Screenshots and recordings are saved in Pictures › Xotch unless you choose another folder, and nothing is uploaded. When the music bars follow the real sound, Xotch only measures how loud it is and records nothing. Crash reports are never sent automatically: if you choose to keep them, you decide whether to email one.
 
@@ -235,7 +257,7 @@ Xotch asks only when you use something that needs it.
 | Notifications | You start your first timer | Telling you when time's up |
 | Paste from other apps (macOS 26) | You choose **Allow** in Clipboard | Keeping your clipboard history |
 | System audio recording | You turn on real sound for the music bars | Measuring how loud the music is |
-| Screen Recording | Your first screenshot or recording in Capture | Taking the picture. Choosing a window to record uses macOS's own picker instead, which needs no permission |
+| Screen Recording | Your first screenshot or recording in Capture, or your first screen question to the AI | Taking the picture. Choosing a window to record uses macOS's own picker instead, which needs no permission |
 | Microphone | Only if you turn on Capture › Microphone | Recording your voice with the screen |
 | Desktop folder (may be asked) | Opening Capture, if it's listing your ⌘⇧3 and ⌘⇧4 screenshots | Finding those screenshots, which macOS saves to Desktop unless you've changed it |
 | Downloads folder | macOS may ask when you turn on download progress | Showing how far downloads have got |

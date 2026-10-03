@@ -17,37 +17,66 @@ private struct TodosView: View {
     @Bindable private var service = TodoService.shared
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            header
-            AddField(text: $typed, focused: $focused) {
-                service.add(typed)
-                typed = ""
+        let today = service.todos(on: TodoService.today)
+        let tomorrow = service.todos(on: Self.tomorrow)
+        let someday = service.someday
+        // Today on the left; what's coming up in its own column, so nothing
+        // hides under the fold of a short notch.
+        HStack(alignment: .top, spacing: 14) {
+            VStack(alignment: .leading, spacing: 10) {
+                header
+                AddField(text: $typed, focused: $focused) {
+                    service.add(typed)
+                    typed = ""
+                }
+                if today.isEmpty {
+                    Text(someday.isEmpty && tomorrow.isEmpty
+                         ? "Nothing planned. Type above, or press ⌘K and say what you're doing."
+                         : "Nothing for today. Right-click one on the right to bring it over.")
+                        .font(.system(size: 12))
+                        .foregroundStyle(Theme.tertiaryInk)
+                } else {
+                    NotchScroll {
+                        VStack(alignment: .leading, spacing: 2) {
+                            ForEach(today) { TodoRow(todo: $0) }
+                        }
+                    }
+                }
+                Spacer(minLength: 0)
             }
-            let today = service.todos(on: TodoService.today)
-            let someday = service.someday
-            if today.isEmpty, someday.isEmpty {
-                Text("Nothing planned. Type above, or press ⌘K and say what you're doing.")
-                    .font(.system(size: 12))
-                    .foregroundStyle(Theme.tertiaryInk)
-            } else {
+            .frame(maxWidth: .infinity)
+            Tile(padding: 10) {
                 NotchScroll {
                     VStack(alignment: .leading, spacing: 2) {
-                        ForEach(today) { TodoRow(todo: $0) }
-                        if !someday.isEmpty {
-                            SomedayHeader(count: someday.count, isOpen: $somedayOpen)
-                                .padding(.top, today.isEmpty ? 0 : 10)
-                            if somedayOpen {
-                                ForEach(someday) { TodoRow(todo: $0) }
-                            }
+                        SectionLabel("Tomorrow")
+                            .padding(.horizontal, 6)
+                            .padding(.bottom, 2)
+                        if tomorrow.isEmpty {
+                            Text("Nothing yet")
+                                .font(.system(size: 12))
+                                .foregroundStyle(Theme.tertiaryInk)
+                                .padding(.horizontal, 6)
+                                .frame(height: 24)
+                        } else {
+                            ForEach(tomorrow) { TodoRow(todo: $0) }
+                        }
+                        SomedayHeader(count: someday.count, isOpen: $somedayOpen)
+                            .padding(.top, 8)
+                        if somedayOpen {
+                            ForEach(someday) { TodoRow(todo: $0) }
                         }
                     }
                 }
             }
-            Spacer(minLength: 0)
+            .frame(width: 250)
         }
         .onAppear {
             service.rolloverIfNeeded()
         }
+    }
+
+    private static var tomorrow: Date {
+        TodoService.calendar.date(byAdding: .day, value: 1, to: TodoService.today) ?? TodoService.today
     }
 
     private var header: some View {

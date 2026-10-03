@@ -39,6 +39,7 @@ struct ModuleInfo: Identifiable, Hashable {
 enum ModuleRegistry {
     static let all: [any NotchModule] = [
         HomeModule(),
+        AIModule(),
         MediaModule(),
         CalendarModule(),
         TimersModule(),

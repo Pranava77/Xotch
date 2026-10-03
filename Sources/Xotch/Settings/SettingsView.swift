@@ -141,6 +141,8 @@ struct SettingsView: View {
                     .foregroundStyle(.secondary)
             }
 
+            AISettingsSection()
+
             Section("Features") {
                 Toggle("Celebrate finished focus sessions", isOn: $celebrateFocus)
                 LabeledContent("Try it") {

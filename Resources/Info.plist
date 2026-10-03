@@ -26,6 +26,12 @@
 	<string>14.0</string>
 	<key>LSUIElement</key>
 	<true/>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<!-- Ollama and LM Studio on another Mac on the network serve plain http. -->
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+	</dict>
 	<key>NSAudioCaptureUsageDescription</key>
 	<string>With "Real audio levels" on, Xotch reads how loud the music is to move the bars beside the notch. Nothing is recorded or kept.</string>
 	<key>NSCalendarsFullAccessUsageDescription</key>

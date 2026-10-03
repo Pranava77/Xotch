@@ -35,6 +35,8 @@ final class NotchWindowController: NotchActions {
     private var keyObserver: NSObjectProtocol?
     /// Stepped aside because a full-screen app fills this display.
     private(set) var isHiddenForFullScreen = false
+    /// Shown over a full-screen app by a shortcut; steps aside again on close.
+    private var revealedOverFullScreen = false
 
     var screenFrame: NSRect { model.geometry.screenFrame }
     var hasHardwareNotch: Bool { model.geometry.hasHardwareNotch }
@@ -49,6 +51,7 @@ final class NotchWindowController: NotchActions {
         host.frame = NSRect(origin: .zero, size: geometry.panelFrame.size)
         host.autoresizingMask = [.width, .height]
         panel.contentView = host
+        updateSharing()
         panel.orderFrontRegardless()
 
         // Pressing a button in a module counts as meaning to stay: without this
@@ -91,6 +94,8 @@ final class NotchWindowController: NotchActions {
     }
 
     func setHiddenForFullScreen(_ hidden: Bool) {
+        // Opened over a full-screen app on purpose: leave it until it closes.
+        if hidden, revealedOverFullScreen, model.phase == .open { return }
         guard hidden != isHiddenForFullScreen else { return }
         isHiddenForFullScreen = hidden
         if hidden {
@@ -98,6 +103,22 @@ final class NotchWindowController: NotchActions {
             panel.orderOut(nil)
         } else {
             panel.orderFrontRegardless()
+        }
+    }
+
+    /// For a shortcut used while a full-screen app has hidden the notch.
+    func revealOverFullScreen() {
+        guard isHiddenForFullScreen else { return }
+        isHiddenForFullScreen = false
+        revealedOverFullScreen = true
+        panel.orderFrontRegardless()
+    }
+
+    /// Keeps the notch out of screen sharing and recordings when asked to.
+    func updateSharing() {
+        let sharing: NSWindow.SharingType = AppSettings.hideFromScreenSharing ? .none : .readOnly
+        if panel.sharingType != sharing {
+            panel.sharingType = sharing
         }
     }
 
@@ -225,6 +246,10 @@ final class NotchWindowController: NotchActions {
             panel.orderFrontRegardless()
         }
         panel.ignoresMouseEvents = !hotRect.contains(NSEvent.mouseLocation)
+        if revealedOverFullScreen {
+            revealedOverFullScreen = false
+            ScreenManager.shared.recheckFullScreen()
+        }
     }
 
     private func setPhase(_ phase: NotchPhase) {
