@@ -46,6 +46,8 @@ enum SettingsKey {
     static let hideFromScreenSharing = "hideFromScreenSharing"
     static let aiQuickAskHotKey = "aiQuickAskHotKey"
     static let aiScreenHotKey = "aiScreenHotKey"
+    /// The page Settings last showed.
+    static let settingsPane = "settingsPane"
 }
 
 enum DisplayChoice {

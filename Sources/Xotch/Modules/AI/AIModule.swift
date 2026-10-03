@@ -35,7 +35,7 @@ private struct AIChatView: View {
     }
 
     private func showSettings() {
-        SettingsWindow.show()
+        SettingsWindow.show(.ai)
     }
 }
 

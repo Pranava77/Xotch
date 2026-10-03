@@ -1,8 +1,7 @@
 import SwiftUI
 
-/// Settings › AI: providers and their keys, shortcuts, sharing, and contexts.
-struct AISettingsSection: View {
-    @AppStorage(SettingsKey.hideFromScreenSharing) private var hideFromSharing = false
+/// Settings › AI: providers and their keys, shortcuts, and contexts.
+struct AISettingsPane: View {
     @AppStorage(SettingsKey.aiQuickAskHotKey) private var quickAskHotKey = true
     @AppStorage(SettingsKey.aiScreenHotKey) private var screenHotKey = true
     @State private var editingProvider: ProviderDraft?
@@ -12,6 +11,14 @@ struct AISettingsSection: View {
     private var contexts: AIContextStore { .shared }
 
     var body: some View {
+        Form {
+            providersSection
+            shortcutsSection
+            contextSection
+        }
+    }
+
+    private var providersSection: some View {
         Section {
             ForEach(providers.providers) { provider in
                 HStack(spacing: 10) {
@@ -44,10 +51,9 @@ struct AISettingsSection: View {
             }
             .fixedSize()
         } header: {
-            Text("AI")
+            Text("Providers")
         } footer: {
-            Text("Ollama and LM Studio run models on this Mac, so nothing leaves it. Cloud providers receive your messages, your context and any screenshot you send. API keys are kept in your Keychain.")
-                .foregroundStyle(.secondary)
+            SettingsFootnote("Ollama and LM Studio run models on this Mac, so nothing leaves it. Cloud providers receive your messages, your context and any screenshot you send. API keys are kept in your Keychain.")
         }
         .sheet(item: $editingProvider) { draft in
             ProviderEditor(draft: draft)
@@ -60,7 +66,9 @@ struct AISettingsSection: View {
         } message: { _ in
             Text("Its API key is deleted from the Keychain too.")
         }
+    }
 
+    private var shortcutsSection: some View {
         Section {
             Toggle("\(GlobalHotKeys.Action.quickAsk.label) opens the AI chat from any app", isOn: $quickAskHotKey)
             Toggle("\(GlobalHotKeys.Action.askAboutScreen.label) asks the AI about your screen", isOn: $screenHotKey)
@@ -69,17 +77,17 @@ struct AISettingsSection: View {
                     .font(.callout)
                     .foregroundStyle(.secondary)
             }
-            Toggle("Hide the notch from screen sharing and recordings", isOn: $hideFromSharing)
             LabeledContent("Screen questions") {
                 Button("Screen Recording Settings…") { PrivacyPane.screenCapture.open() }
             }
         } header: {
-            Text("AI shortcuts and privacy")
+            Text("Shortcuts")
         } footer: {
-            Text("Asking about your screen needs Screen Recording permission. Hiding asks macOS to leave the notch out of shared screens and recordings, but some apps and macOS versions capture it anyway — check with a test call before relying on it.")
-                .foregroundStyle(.secondary)
+            SettingsFootnote("Asking about your screen needs Screen Recording permission. To keep the notch out of a shared screen, see Privacy & Feedback.")
         }
+    }
 
+    private var contextSection: some View {
         Section {
             ForEach(contexts.profiles) { profile in
                 HStack(spacing: 10) {
@@ -113,10 +121,9 @@ struct AISettingsSection: View {
                 }
             }
         } header: {
-            Text("AI context")
+            Text("Context")
         } footer: {
-            Text("The context in use goes with every question, so answers fit your resume, a job description or a topic you're studying. Import a PDF, text or Markdown file, or paste it in.")
-                .foregroundStyle(.secondary)
+            SettingsFootnote("The context in use goes with every question, so answers fit your resume, a job description or a topic you're studying. Import a PDF, text or Markdown file, or paste it in.")
         }
         .sheet(item: $editingContext) { profile in
             ContextEditor(profile: profile)

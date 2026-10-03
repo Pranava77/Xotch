@@ -159,7 +159,7 @@ Add as many as you like and switch between them, and between models, from the ch
 
 A **context** is background the AI keeps in mind: your resume, a job description, or notes on a topic you're preparing for. Paste it in or import a PDF, text or Markdown file, and pick one from the chip on the left. It goes with every question until you choose **No context**.
 
-**Hide the notch from screen sharing and recordings** asks macOS to leave the notch out of shared screens and recordings. Some apps and macOS versions capture it anyway, so check with a test call first.
+**Settings › Privacy & Feedback › Hide the notch from screen sharing and recordings** asks macOS to leave the notch out of shared screens and recordings. Some apps and macOS versions capture it anyway, so check with a test call first.
 
 ## Make it yours
 
@@ -180,7 +180,7 @@ A **context** is background the AI keeps in mind: your resume, a job description
 
 **Aero Glass** is Frutiger Aero, the glossy look of Windows Aero and early Mac OS X: a bright band across the top of every button, bevelled edges, aqua-green accents and rounded type, on top of Liquid Glass. The other themes stay flat. A custom theme lets you pick the background, text, accent and glow colours, and turn the gloss on or off. The closed notch always stays black so it blends in with the camera.
 
-**Arcade sound effects** are short 8-bit blips for opening and closing the notch, switching modules, adding, finishing and deleting to-dos, and pinning, with a jingle for a finished timer or a celebration. They're generated in code, so no sound files ship with the app. They're off by default; turn them on in Settings, where there's a volume slider.
+**Arcade sound effects** are short 8-bit blips for opening and closing the notch, switching modules, adding, finishing and deleting to-dos, and pinning, with a jingle for a finished timer or a celebration. They're generated in code, so no sound files ship with the app. They're off by default; turn them on in Settings › General, where there's a volume slider.
 
 You can also reorder or hide any module, choose whether the notch opens on hover or on click, and pick which displays it appears on. Every screen gets one by default. A display without a notch gets one drawn in its menu bar, sized to the screen, so an external monitor, an iMac, a Mac mini or a Studio all work.
 
@@ -261,7 +261,7 @@ Xotch asks only when you use something that needs it.
 | Microphone | Only if you turn on Capture › Microphone | Recording your voice with the screen |
 | Desktop folder (may be asked) | Opening Capture, if it's listing your ⌘⇧3 and ⌘⇧4 screenshots | Finding those screenshots, which macOS saves to Desktop unless you've changed it |
 | Downloads folder | macOS may ask when you turn on download progress | Showing how far downloads have got |
-| Accessibility | Only if you turn on **Settings › Show volume and brightness in the notch** | Reading the volume, mute and brightness keys so the notch can show the level in place of macOS's popup. Xotch reads only those keys and nothing else you type |
+| Accessibility | Only if you turn on **Settings › Media › Show volume and brightness in the notch** | Reading the volume, mute and brightness keys so the notch can show the level in place of macOS's popup. Xotch reads only those keys and nothing else you type |
 
 Without that one setting, Xotch never asks for Accessibility or Input Monitoring.
 
@@ -293,7 +293,7 @@ For live status, press **Add hook** in the Claude Code module. Xotch backs up `~
 <details>
 <summary><b>The notch disappeared.</b></summary>
 
-Xotch steps aside while an app is full screen. To keep it, turn off **Settings › Display › Hide the notch while an app is full screen**.
+Xotch steps aside while an app is full screen. To keep it, turn off **Settings › General › Hide the notch while an app is full screen**.
 </details>
 
 <details>
@@ -323,7 +323,7 @@ Allow Xotch under **System Settings › Privacy & Security › Screen & System A
 <details>
 <summary><b>I don't have a notch.</b></summary>
 
-Then Xotch draws one. On a Mac without a notch (an iMac, a Mac mini, a Studio, an older MacBook) and on any external monitor, it draws a notch in that screen's menu bar, sized to the screen, and everything works the same. By default every display gets one; **Settings › Display** can narrow that to a single screen.
+Then Xotch draws one. On a Mac without a notch (an iMac, a Mac mini, a Studio, an older MacBook) and on any external monitor, it draws a notch in that screen's menu bar, sized to the screen, and everything works the same. By default every display gets one; **Settings › General › Displays** can narrow that to a single screen.
 </details>
 
 <details>
@@ -349,7 +349,7 @@ To **Pictures › Xotch**, and to your clipboard. Choose another folder in **Set
 <details>
 <summary><b>I don't see download progress.</b></summary>
 
-Turn on **Settings › Show download progress**. Progress appears for apps that report it to macOS, such as Safari and Chrome.
+Turn on **Settings › Shelf & Clipboard › Show download progress beside the notch**. Progress appears for apps that report it to macOS, such as Safari and Chrome.
 </details>
 
 <details>
