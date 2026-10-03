@@ -6,13 +6,15 @@
 
 <p align="center">
   <strong>Your MacBook's notch, put to work.</strong><br>
-  To-dos, music, calendar, timers, screenshots and Claude Code, one hover away.
+  An AI assistant, to-dos, music, calendar, timers, screenshots and Claude Code, one hover away.
 </p>
 
 <p align="center">
   <a href="#get-the-beta"><strong>Get the beta</strong></a>
   &nbsp;·&nbsp;
   <a href="#features">Features</a>
+  &nbsp;·&nbsp;
+  <a href="#ask-ai-from-anywhere">Ask AI</a>
   &nbsp;·&nbsp;
   <a href="#light-on-your-battery">Performance</a>
   &nbsp;·&nbsp;
@@ -34,32 +36,71 @@
 
 ## Features
 
+### In the notch
+
 | | |
 |---|---|
 | **Home** | Live tiles: what's playing (or the time), the next meeting, the focus timer, to-dos and Claude |
-| **To-dos** | Today and someday lists; unfinished ones carry over to tomorrow |
-| **Now Playing** | Artwork, a dot-matrix track display and controls for any app playing audio |
+| **AI** | Chat with a model on your Mac or with your own API key, ask about your screen, and keep a context like your resume |
+| **To-dos** | Today, tomorrow and someday lists; unfinished ones carry over |
+| **Now Playing** | Artwork, a dot-matrix track display, controls and a volume slider for any app playing audio |
 | **Calendar** | The next 7 days, one-click Join for Zoom, Meet and Teams, and reminders |
 | **Timers** | Focus sessions with breaks, countdowns, and a stopwatch with laps |
-| **Clipboard** | Searchable, pinnable history that skips password managers |
+| **Clipboard** | Searchable, pinnable history as a row of cards, skipping password managers |
 | **Shelf** | Drop files on the notch, then drag them out or AirDrop them |
 | **Capture** | Screenshots and screen recordings with sound, kept on a shelf |
 | **Notes** | A scratchpad and notes that save as you type |
 | **System** | CPU, memory, network, disk and battery health |
 | **Claude Code** | Today's tokens, your streak, and live session status |
-| **AI** | Chat with a local model or your own API key, ask about your screen, and keep a context like your resume |
+
+### Around it
+
+| | |
+|---|---|
 | **Beside the notch** | Timers, music, Claude, recordings, downloads and volume, shown without opening |
+| **Shortcuts** | ⌘⇧Space asks the AI from any app; ⌘K opens a module, starts a timer, pauses music or adds a to-do |
 | **Adiyogi** | A small Adiyogi bust in the left ear of the closed notch |
-| **Command palette** | ⌘K to open a module, start a timer, pause music or add a to-do |
 | **Themes** | Aero Glass, Midnight, Smoke Glass, Aurora, or your own colours |
 | **Sounds** | Optional 8-bit blips and jingles, generated in code |
 | **Any display** | Monitors without a notch get one drawn in the menu bar |
 
 ## Quiet until you need it
 
-Move the pointer to the notch and it grows a little. Keep it there and Xotch opens, wide and short along the menu bar, with tabs for your first five modules beside the camera and the rest under ···. Click, and it stays open until you press Esc or click somewhere else.
+Move the pointer to the notch and it grows a little. Keep it there and Xotch opens, wide and short along the menu bar, with tabs for your first five modules beside the camera and the rest under ···. Click, and it stays open until you press Esc or click somewhere else. From any app, **⌘⇧Space** opens it straight onto the AI chat.
 
 When the notch is closed and nothing is happening, Xotch uses no processor time at all.
+
+## Ask AI, from anywhere
+
+<img src="docs/images/module-ai.jpg" alt="The AI chat in the open notch: a question about a crash, sent with a screenshot, answered with a one-line Swift fix and a commit message, with the Project notes context and the llama3.2-vision model chosen beside the input">
+
+Press **⌘⇧Space** in any app and the notch opens on a chat, ready to type. Replies stream in as they're written, with code in its own box and a copy button on each answer.
+
+### Your choice of AI
+
+Add one or more in **Settings › AI › Providers**:
+
+| Provider | Needs |
+|---|---|
+| Ollama | Ollama running on your Mac. Nothing leaves it |
+| OpenAI-compatible server | A URL: LM Studio, llama.cpp, Groq, OpenRouter and others. A key only if the server asks |
+| OpenAI, Anthropic (Claude), Google Gemini | Your API key |
+
+**Load List** fetches the models a provider offers, and **Test Connection** checks it answers before you rely on it. Switch provider or model any time from the chip beside the input. Keys are kept in your Keychain, never in Xotch's files.
+
+### Ask about your screen
+
+Press **⌘⇧↩** and Xotch takes the screen under the pointer first, then opens the chat with it attached, so you can ask about the code, the error or the slide in front of you. The screen button beside the input does the same from inside the notch. Xotch leaves its own notch out of the picture, and the screenshot is never saved.
+
+Screen questions need a model that can see images, such as `llama3.2-vision` or `gemma3` in Ollama, or any current Claude, GPT or Gemini model.
+
+### Keep a context
+
+A context is background the AI keeps in mind: your resume, a job description, or notes on a topic you're preparing for. Paste it in or import a PDF, text or Markdown file in **Settings › AI › Context**, then pick one from the chip on the left of the input. It goes with every question until you choose **No context**.
+
+### Out of shared screens
+
+**Settings › Privacy & Feedback › Hide the notch from screen sharing and recordings** asks macOS to leave the notch out of shared screens and recordings. Some apps and macOS versions capture it anyway, so check with a test call first.
 
 ## Beside the camera
 
@@ -115,13 +156,13 @@ The volume and brightness keys are off by default, because they need Accessibili
 
 Home is a set of live tiles: what's playing (or the time when nothing is), the next meeting with its Join button, the focus timer, what's left to do today and Claude's status. Click a tile to open its module. Notes gives you a scratchpad that can sit beside the notch, plus notes that save as you type.
 
-## To-dos
+### To-dos
 
 <img src="docs/images/module-todos.jpg" alt="To-dos: today's list under an add field, with a someday list below">
 
 Today's to-dos on the left; tomorrow's and a someday list on the right. Type one straight into the notch, or press ⌘K anywhere and say what you're doing. Right-click a to-do to move it to today, tomorrow or someday. Anything you don't finish carries over to the next day instead of quietly disappearing.
 
-## Screenshots and recordings
+### Screenshots and recordings
 
 <img src="docs/images/module-capture.jpg" alt="Capture: Screenshot and Record buttons for an area, a window or the screen, with recent captures below" align="right" width="46%">
 
@@ -133,7 +174,7 @@ Screenshots go to your clipboard as you take them, and are saved in **Pictures �
 
 <br clear="right">
 
-## Claude Code, beside the notch
+### Claude Code, beside the notch
 
 <img src="docs/images/module-claude.jpg" alt="Claude Code: today's tokens, a 4-day streak, a 7-day chart and live sessions" align="right" width="46%">
 
@@ -143,23 +184,40 @@ Add the hook and every session shows whether it's working, needs you, or is done
 
 <br clear="right">
 
-## Ask AI, from anywhere
+## Keyboard and gestures
 
-Press **⌘⇧Space** in any app and the notch opens on a chat, ready to type. Press **⌘⇧↩** and it takes the screen first, so you can ask about the code, the error or the slide in front of you. Xotch leaves its own notch out of the picture.
+These work in any app:
 
-Choose the AI in **Settings › AI**:
-
-| Provider | Needs |
+| Shortcut | To |
 |---|---|
-| Ollama | Ollama running on your Mac. Nothing leaves it |
-| OpenAI-compatible server | A URL: LM Studio, llama.cpp, Groq, OpenRouter and others. A key only if the server asks |
-| OpenAI, Anthropic (Claude), Google Gemini | Your API key |
+| ⌘⇧Space | Open the AI chat, ready to type |
+| ⌘⇧↩ | Ask the AI about your screen |
 
-Add as many as you like and switch between them, and between models, from the chip beside the input. Keys are kept in your Keychain, never in Xotch's files. Screen questions need a model that can see images, such as `llama3.2-vision` or `gemma3` in Ollama, or any current Claude, GPT or Gemini model.
+Turn either off in **Settings › AI › Shortcuts**. Hiding the AI module turns both off.
 
-A **context** is background the AI keeps in mind: your resume, a job description, or notes on a topic you're preparing for. Paste it in or import a PDF, text or Markdown file, and pick one from the chip on the left. It goes with every question until you choose **No context**.
+<img src="docs/images/palette.jpg" alt="The command palette over the open notch, suggesting 'Start a 10-minute timer' for the text '10'" align="right" width="46%">
 
-**Settings › Privacy & Feedback › Hide the notch from screen sharing and recordings** asks macOS to leave the notch out of shared screens and recordings. Some apps and macOS versions capture it anyway, so check with a test call first.
+In the open notch, press **⌘K** and type:
+
+| Type | To |
+|---|---|
+| `cal` | Open Calendar |
+| `10 min` | Start a 10-minute timer |
+| `pause` | Pause the music |
+| `shot` | Take a screenshot |
+| `aurora` | Switch theme |
+| Something you copied | Copy it again |
+| A question ending in `?` | Ask the AI |
+| Anything else | Add it to today's to-dos, or ask the AI |
+
+<br clear="right">
+
+| To | Do this |
+|---|---|
+| Switch module | ⌘1 to ⌘9, or swipe sideways with two fingers |
+| Change the volume | Scroll on the closed notch |
+| Remove a file from the Shelf | Flick it upwards |
+| Close | Esc, or click anywhere else |
 
 ## Make it yours
 
@@ -184,35 +242,7 @@ A **context** is background the AI keeps in mind: your resume, a job description
 
 You can also reorder or hide any module, choose whether the notch opens on hover or on click, and pick which displays it appears on. Every screen gets one by default. A display without a notch gets one drawn in its menu bar, sized to the screen, so an external monitor, an iMac, a Mac mini or a Studio all work.
 
-## One shortcut for everything
-
-<img src="docs/images/palette.jpg" alt="The command palette over the open notch, suggesting 'Start a 10-minute timer' for the text '10'" align="right" width="46%">
-
-Press **⌘K** in the open notch and type:
-
-| Type | To |
-|---|---|
-| `cal` | Open Calendar |
-| `10 min` | Start a 10-minute timer |
-| `pause` | Pause the music |
-| `shot` | Take a screenshot |
-| `aurora` | Switch theme |
-| Something you copied | Copy it again |
-| A question ending in `?` | Ask the AI |
-| Anything else | Add it to today's to-dos, or ask the AI |
-
-<br clear="right">
-
-### Shortcuts and gestures
-
-| To | Do this |
-|---|---|
-| Switch module | ⌘1 to ⌘9, or swipe sideways with two fingers |
-| Ask the AI from any app | ⌘⇧Space |
-| Ask the AI about your screen | ⌘⇧↩ |
-| Change the volume | Scroll on the closed notch |
-| Remove a file from the Shelf | Flick it upwards |
-| Close | Esc, or click anywhere else |
+Settings is laid out like System Settings, with a sidebar of pages: General, Appearance, Modules, Media, To-dos & Timers, Shelf & Clipboard, Capture, AI, and Privacy & Feedback.
 
 ## Light on your battery
 
@@ -235,6 +265,8 @@ The budget is under 0.5% CPU and under 80 MB of memory while idle, with nothing 
 | Command palette | 0.10% | 54 MB |
 
 Measured on a 14-inch MacBook Pro with an M5 Pro chip, macOS 26.6.2, averaged over about 10 seconds per state. Recording the screen with system audio costs Xotch about 1% more; macOS does the video encoding in its own processes, so that part doesn't count against Xotch. Adiyogi is drawn once and never animates, so leaving it on doesn't wake Xotch up.
+
+The AI chat does nothing until you send a message. A local model does its work in Ollama or LM Studio, not in Xotch, so that cost shows up in those apps.
 
 The timer ring, the Claude pulse, the music bars and the confetti are Core Animation layers. The window server animates them, and Xotch itself stays idle. Each extra display gets its own notch, so memory goes up per screen: about 80 MB with a second, ultra-wide monitor attached. The full numbers, the fixes behind them and how to reproduce them are in [docs/PERFORMANCE.md](docs/PERFORMANCE.md).
 
@@ -263,7 +295,7 @@ Xotch asks only when you use something that needs it.
 | Downloads folder | macOS may ask when you turn on download progress | Showing how far downloads have got |
 | Accessibility | Only if you turn on **Settings › Media › Show volume and brightness in the notch** | Reading the volume, mute and brightness keys so the notch can show the level in place of macOS's popup. Xotch reads only those keys and nothing else you type |
 
-Without that one setting, Xotch never asks for Accessibility or Input Monitoring.
+Without that one setting, Xotch never asks for Accessibility or Input Monitoring. The AI shortcuts don't need it either.
 
 </details>
 
@@ -275,7 +307,22 @@ Xotch is in private beta. If you have an invite:
 2. Open Xotch. If macOS says it can't check the app, open **System Settings › Privacy & Security** and choose **Open Anyway**. Beta builds aren't signed yet; releases will be.
 3. Move the pointer to the notch. Xotch lives in the menu bar and has no Dock icon.
 
-Xotch needs macOS 14 Sonoma or later, on Apple silicon or Intel, and it's at its best on a MacBook with a notch. A few features need newer versions: Liquid Glass needs macOS 26, music bars that follow the real sound need macOS 14.2, and screen recording needs macOS 15. Screenshots work on all of them.
+Xotch needs macOS 14 Sonoma or later, on Apple silicon or Intel, and it's at its best on a MacBook with a notch. A few features need newer versions: Liquid Glass needs macOS 26, music bars that follow the real sound need macOS 14.2, and screen recording needs macOS 15. Screenshots and screen questions to the AI work on all of them.
+
+<details>
+<summary><b>Set up the AI</b></summary>
+
+<br>
+
+Open the AI module and choose **Set Up in Settings**, or go to **Settings › AI** and choose **Add Provider**.
+
+- **On your Mac with Ollama:** install [Ollama](https://ollama.com), then run `ollama pull llama3.2` in Terminal, or `ollama pull llama3.2-vision` to ask about your screen. Add an Ollama provider and choose **Load List**.
+- **On your Mac with LM Studio:** download a model, start the server from LM Studio's Developer tab, and add an OpenAI-compatible provider at `http://localhost:1234/v1`.
+- **In the cloud:** add OpenAI, Anthropic or Gemini and paste your API key, or an OpenAI-compatible provider for Groq or OpenRouter.
+
+Choose **Test Connection** before saving. The provider marked in the list is the one the chat uses.
+
+</details>
 
 <details>
 <summary><b>Connect Claude Code</b></summary>
@@ -293,13 +340,37 @@ For live status, press **Add hook** in the Claude Code module. Xotch backs up `~
 <details>
 <summary><b>The notch disappeared.</b></summary>
 
-Xotch steps aside while an app is full screen. To keep it, turn off **Settings › General › Hide the notch while an app is full screen**.
+Xotch steps aside while an app is full screen. To keep it, turn off **Settings › General › Hide the notch while an app is full screen**. ⌘⇧Space still brings it back over a full-screen app.
 </details>
 
 <details>
 <summary><b>I can't see Adiyogi.</b></summary>
 
 Check that **Settings › Appearance › Show Adiyogi beside the closed notch** is on. Adiyogi shows in the left ear whenever the notch is closed.
+</details>
+
+<details>
+<summary><b>The AI says it can't reach Ollama or my server.</b></summary>
+
+Open the Ollama app, or run `ollama serve` in Terminal. For LM Studio, start the server in its Developer tab. Then choose **Try Again** in the chat.
+</details>
+
+<details>
+<summary><b>⌘⇧Space or ⌘⇧↩ does nothing.</b></summary>
+
+Check both are on in **Settings › AI › Shortcuts**, and that the AI module isn't hidden in **Settings › Modules**. If Settings says another app already uses the shortcut, turn it off in that app, then switch Xotch's off and on again.
+</details>
+
+<details>
+<summary><b>The AI can't see my screen.</b></summary>
+
+Allow Xotch under **System Settings › Privacy & Security › Screen & System Audio Recording**, then quit Xotch and open it again. The model also has to understand images: `llama3.2-vision` or `gemma3` in Ollama, or any current Claude, GPT or Gemini model.
+</details>
+
+<details>
+<summary><b>macOS keeps asking to let Xotch use the Keychain.</b></summary>
+
+That's where your API keys are kept. Beta builds aren't signed yet, so macOS can ask again after an update; choose **Always Allow**. Signed releases won't keep asking.
 </details>
 
 <details>
@@ -368,8 +439,9 @@ Beta builds aren't signed yet, so macOS can ask again. Signed releases won't.
 <summary><b>How do I uninstall Xotch?</b></summary>
 
 1. If you added the Claude Code hook, press **Remove hook** in the Claude Code module.
-2. Quit Xotch from the menu bar icon and move it to the Trash.
-3. To remove everything else, delete `~/Library/Application Support/Xotch` and `~/Library/Preferences/com.pranava.xotch.plist`.
+2. Remove your AI providers in **Settings › AI**, which deletes their keys from the Keychain. Or delete the items named **Xotch AI key** in Keychain Access afterwards.
+3. Quit Xotch from the menu bar icon and move it to the Trash.
+4. To remove everything else, delete `~/Library/Application Support/Xotch` and `~/Library/Preferences/com.pranava.xotch.plist`.
 </details>
 
 ## Feedback

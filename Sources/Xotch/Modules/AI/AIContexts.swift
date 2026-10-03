@@ -86,4 +86,15 @@ final class AIContextStore {
     private func persist() {
         Storage.save(ContextsFile(profiles: profiles, activeID: activeID), to: "ai-contexts.json")
     }
+
+    #if DEBUG
+    func withSample(_ body: () -> Void) {
+        let saved = (profiles, activeID)
+        let notes = ContextProfile(name: "Project notes", text: "Xotch is a SwiftUI app for the Mac notch.")
+        profiles = [notes]
+        activeID = notes.id
+        body()
+        (profiles, activeID) = saved
+    }
+    #endif
 }
