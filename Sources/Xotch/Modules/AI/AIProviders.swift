@@ -210,4 +210,16 @@ final class AIProviderStore {
     private func persist() {
         Storage.save(ProvidersFile(providers: providers, activeID: activeID), to: "ai-providers.json")
     }
+
+    #if DEBUG
+    func withSample(_ body: () -> Void) {
+        let saved = (providers, activeID)
+        let local = ProviderConfig(kind: .ollama, name: "Ollama", baseURL: ProviderKind.ollama.defaultBaseURL,
+                                   model: "llama3.2-vision")
+        providers = [local, .new(.anthropic)]
+        activeID = local.id
+        body()
+        (providers, activeID) = saved
+    }
+    #endif
 }

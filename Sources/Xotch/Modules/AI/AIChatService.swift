@@ -235,4 +235,36 @@ final class AIChatService {
         }
         return result
     }
+
+    #if DEBUG
+    func withSample(_ body: () -> Void) {
+        let saved = (messages, draft, attachment, notice)
+        var question = ChatMessage(role: .user, text: "Why does this crash when the list is empty?")
+        question.hadScreenshot = true
+        messages = [
+            question,
+            ChatMessage(role: .assistant, text: """
+            `items[index]` is read before the empty check, so an empty list goes out of range. Check first:
+            ```swift
+            guard items.indices.contains(index) else { return nil }
+            ```
+            """),
+            ChatMessage(role: .user, text: "Write the commit message"),
+            ChatMessage(role: .assistant, text: "**Check the index before reading items**, so an empty list no longer crashes."),
+        ]
+        draft = ""
+        attachment = nil
+        notice = nil
+        body()
+        (messages, draft, attachment, notice) = saved
+    }
+
+    /// The welcome screen, for snapshots: the chat set aside, then put back.
+    func withoutMessages(_ body: () -> Void) {
+        let saved = messages
+        messages = []
+        body()
+        messages = saved
+    }
+    #endif
 }

@@ -759,7 +759,13 @@ func withSampleData(_ body: () -> Void) {
     StatsService.shared.withSample {
     ClaudeUsageService.shared.withSample {
     ClaudeLiveService.shared.withSample {
+    AIProviderStore.shared.withSample {
+    AIContextStore.shared.withSample {
+    AIChatService.shared.withSample {
         body()
+    }
+    }
+    }
     }
     }
     }

@@ -21,7 +21,7 @@ private struct AIChatView: View {
             EmptyStateView(symbol: "sparkles",
                            title: "Connect an AI",
                            message: "Run a model on this Mac with Ollama or LM Studio, or add an API key for Claude, OpenAI or Gemini. Keys stay in your Keychain.",
-                           buttonTitle: "Set Up in Settings") { showSettings() }
+                           buttonTitle: "Set up in Settings") { showSettings() }
         } else {
             VStack(spacing: 8) {
                 Conversation(showSettings: showSettings)
@@ -59,6 +59,15 @@ private struct Conversation: View {
                         Color.clear.frame(height: 1).id("bottom")
                     }
                     .padding(.trailing, 4)
+                    .padding(.top, 6)
+                }
+                // Text scrolling up fades out before it reaches the tabs.
+                .mask {
+                    VStack(spacing: 0) {
+                        LinearGradient(colors: [.clear, .black], startPoint: .top, endPoint: .bottom)
+                            .frame(height: 14)
+                        Color.black
+                    }
                 }
                 .onAppear { proxy.scrollTo("bottom", anchor: .bottom) }
                 .onChange(of: chat.messages.last?.text) { _, _ in proxy.scrollTo("bottom", anchor: .bottom) }
@@ -70,50 +79,70 @@ private struct Conversation: View {
     }
 }
 
+/// Before the first message: what the chat can do, as four cards across
+/// the width, beside a short greeting naming the model in use.
 private struct Welcome: View {
     private var contexts: AIContextStore { .shared }
     private var providers: AIProviderStore { .shared }
 
     var body: some View {
         HStack(alignment: .top, spacing: 18) {
-            Image(systemName: "sparkles")
-                .font(.system(size: 28, weight: .medium))
-                .foregroundStyle(Theme.accent)
-                .frame(width: 44)
             VStack(alignment: .leading, spacing: 8) {
+                Image(systemName: "sparkles")
+                    .font(.system(size: 26, weight: .medium))
+                    .foregroundStyle(Theme.accent)
                 Text("Ask anything")
-                    .font(.system(size: 15, weight: .semibold))
-                VStack(alignment: .leading, spacing: 4) {
-                    hint("keyboard", "⌘⇧Space opens this chat from any app.")
-                    hint("display", "⌘⇧↩ also sends what's on your screen. So does the screen button below.")
-                    if let context = contexts.active {
-                        hint("person.text.rectangle", "Answers use your “\(context.name)” context.")
-                    } else {
-                        hint("person.text.rectangle", "Add a context — a resume, job description or notes — to tailor answers.")
-                    }
-                    if let provider = providers.active {
-                        hint(provider.isLocal ? "lock" : "cloud",
-                             provider.isLocal ? "\(provider.model) runs locally; nothing goes to the internet."
-                                 : "Messages go to \(provider.name).")
-                    }
+                    .font(.system(size: 18, weight: .semibold))
+                if let provider = providers.active {
+                    Label(provider.model, systemImage: provider.isLocal ? "lock.fill" : "cloud.fill")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(Theme.secondaryInk)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
                 }
             }
-            Spacer(minLength: 0)
+            .frame(width: 150, alignment: .leading)
+            .padding(.top, 4)
+            LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
+                card("keyboard", "From any app", "⌘⇧Space opens this chat wherever you are.")
+                card("display", "About your screen", "⌘⇧↩, or the screen button below, sends what's on screen with your question.")
+                if let context = contexts.active {
+                    card("person.text.rectangle", "Using “\(context.name)”", "Answers draw on this context. Switch it from the menu below.")
+                } else {
+                    card("person.text.rectangle", "Add a context", "A resume, job description or notes, sent with every question.")
+                }
+                if let provider = providers.active {
+                    card(provider.isLocal ? "lock" : "cloud",
+                         provider.isLocal ? "Stays on this Mac" : "Sent to \(provider.name)",
+                         provider.isLocal ? "\(provider.model) runs locally; nothing goes to the internet."
+                             : "Your messages go to \(provider.name) to be answered.")
+                } else {
+                    card("cpu", "Pick a model", "Choose one from the menu below.")
+                }
+            }
         }
-        .padding(.top, 6)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 
-    private func hint(_ symbol: String, _ text: String) -> some View {
-        HStack(spacing: 8) {
-            Image(systemName: symbol)
-                .font(.system(size: 10, weight: .semibold))
-                .foregroundStyle(Theme.tertiaryInk)
-                .frame(width: 14)
+    private func card(_ symbol: String, _ title: String, _ text: String) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 6) {
+                Image(systemName: symbol)
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(Theme.accent)
+                    .frame(width: 14)
+                Text(title)
+                    .font(.system(size: 12, weight: .semibold))
+                    .lineLimit(1)
+            }
             Text(text)
-                .font(.system(size: 12))
+                .font(.system(size: 11))
                 .foregroundStyle(Theme.secondaryInk)
+                .fixedSize(horizontal: false, vertical: true)
         }
+        .padding(10)
+        .frame(maxWidth: .infinity, minHeight: 74, alignment: .topLeading)
+        .background(Theme.fill, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 }
 
@@ -139,6 +168,7 @@ private struct MessageRow: View {
                         .padding(.vertical, 6)
                         .background(Theme.raisedFill, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                 }
+                .frame(maxWidth: 440, alignment: .trailing)
             }
         } else {
             HStack(alignment: .top, spacing: 8) {
@@ -157,10 +187,12 @@ private struct MessageRow: View {
                             .foregroundStyle(message.isError ? Theme.secondaryInk : Theme.ink)
                     }
                     if message.isError {
-                        Button("Try Again") { AIChatService.shared.retry() }
+                        Button("Try again") { AIChatService.shared.retry() }
                             .buttonStyle(PillButtonStyle(prominent: false))
                     }
                 }
+                // About 80 characters a line: easier to read than the full width.
+                .frame(maxWidth: 540, alignment: .leading)
                 Spacer(minLength: 20)
                 Button { AIChatService.shared.copy(message) } label: { Image(systemName: "doc.on.doc") }
                     .buttonStyle(IconButtonStyle(size: 22))
@@ -429,7 +461,8 @@ private struct Chip: View {
             .foregroundStyle(dimmed ? Theme.secondaryInk : Theme.ink)
             .padding(.horizontal, 9)
             .frame(height: 28)
-            .frame(maxWidth: 150)
+            // Wide enough that a model name keeps its distinguishing end.
+            .frame(maxWidth: 220)
             .background(Theme.fill, in: Capsule())
             .contentShape(Capsule())
         }
