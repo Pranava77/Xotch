@@ -258,5 +258,13 @@ final class AIChatService {
         body()
         (messages, draft, attachment, notice) = saved
     }
+
+    /// The welcome screen, for snapshots: the chat set aside, then put back.
+    func withoutMessages(_ body: () -> Void) {
+        let saved = messages
+        messages = []
+        body()
+        messages = saved
+    }
     #endif
 }

@@ -67,6 +67,11 @@ enum MarketingShots {
                 // The chat opens taller than the other modules.
                 save("module-ai", open(AIModule.moduleID),
                      size: CGSize(width: openSize.width, height: Layout.tallOpenHeight + 40), scale: 1.5)
+                // And before the first message.
+                AIChatService.shared.withoutMessages {
+                    save("ai-welcome", open(AIModule.moduleID),
+                         size: CGSize(width: openSize.width, height: Layout.tallOpenHeight + 40), scale: 1.5)
+                }
                 let palette = open("home")
                 palette.isPinned = true
                 palette.palette.isOpen = true
