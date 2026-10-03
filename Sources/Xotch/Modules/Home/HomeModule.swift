@@ -104,8 +104,10 @@ private struct HomeView: View {
                             .font(.system(size: 18, weight: .semibold))
                     }
                     .accessibilityLabel(playing.isPlaying ? "Pause" : "Play")
+                    .debugFrame("home.playpause")
                     Button { media.next() } label: { Image(systemName: "forward.fill") }
                         .accessibilityLabel("Next")
+                        .debugFrame("home.next")
                     Spacer()
                 }
                 .font(.system(size: 14, weight: .semibold))

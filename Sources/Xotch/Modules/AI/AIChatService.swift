@@ -40,6 +40,10 @@ final class AIChatService {
     var notice: String?
     /// Set when the input should take the keyboard as soon as it's on screen.
     var wantsFocus = false
+    /// The chat fills a bigger notch. Remembered between launches.
+    var isExpanded = UserDefaults.standard.bool(forKey: SettingsKey.aiExpanded) {
+        didSet { UserDefaults.standard.set(isExpanded, forKey: SettingsKey.aiExpanded) }
+    }
 
     @ObservationIgnored private var task: Task<Void, Never>?
     @ObservationIgnored private lazy var saver = SaveScheduler { [weak self] in
@@ -154,6 +158,11 @@ final class AIChatService {
         send()
     }
 
+    /// The notch follows `AIModule.openSize`, so it grows or shrinks with this.
+    func toggleExpanded() {
+        withAnimation(Motion.switchModule) { isExpanded.toggle() }
+    }
+
     func copy(_ message: ChatMessage) {
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(message.text, forType: .string)
@@ -194,11 +203,17 @@ final class AIChatService {
     // MARK: - Request
 
     private var systemPrompt: String {
+        let room = isExpanded
+            ? "The panel is large right now, so a fuller answer is fine when the question needs one."
+            : "Replies appear in a small panel, so keep them short: a few sentences or a tight list."
         var prompt = """
-        You are the assistant inside Xotch, an app that lives in the Mac's notch. Replies appear in a small \
-        panel, so lead with the answer and keep it short: a few sentences or a tight list. Use code blocks only \
-        for code. When a screenshot is attached it shows the user's screen right now; read it closely and \
-        answer about what it shows.
+        You are the assistant inside Xotch, an app that lives in the Mac's notch. \(room) When a screenshot \
+        is attached it shows the user's screen right now; read it closely and answer about what it shows.
+
+        Format replies in Markdown so they're easy to scan. Lead with the answer in one sentence, then the \
+        detail. Use short paragraphs, bullets for options, numbered lists for steps, a table to compare \
+        things, and **bold** for the key term. Add ## headings only when a reply has several parts. Put code \
+        in fenced blocks with the language named, and use them only for code.
         """
         if let context = AIContextStore.shared.active, !context.text.isEmpty {
             prompt += """
@@ -257,6 +272,44 @@ final class AIChatService {
         notice = nil
         body()
         (messages, draft, attachment, notice) = saved
+    }
+
+    /// A reply that uses every kind of block, for snapshots.
+    func withRichSample(_ body: () -> Void) {
+        let saved = messages
+        messages = [
+            ChatMessage(role: .user, text: "How do I ship the beta to testers?"),
+            ChatMessage(role: .assistant, text: """
+            Build a release, check its signature, then zip it with **package-beta.sh**.
+
+            ## Steps
+            1. Bump the version in `Info.plist`.
+            2. Run the script:
+               - it builds in release
+               - it checks the signature
+            3. Send the zip.
+
+            | Script | What it makes |
+            |---|---|
+            | `package-beta.sh` | A zip for testers |
+            | `package-dmg.sh` | A disk image |
+
+            > Testers on macOS 14 need to right-click › Open the first time.
+
+            ```bash
+            ./scripts/package-beta.sh
+            ```
+            """),
+        ]
+        body()
+        messages = saved
+    }
+
+    func withExpanded(_ body: () -> Void) {
+        let saved = isExpanded
+        isExpanded = true
+        body()
+        isExpanded = saved
     }
 
     /// The welcome screen, for snapshots: the chat set aside, then put back.

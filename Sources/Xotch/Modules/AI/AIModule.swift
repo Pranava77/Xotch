@@ -7,8 +7,12 @@ final class AIModule: NotchModule {
     let id = AIModule.moduleID
     let title = "AI"
     let symbol = "sparkles"
-    /// A conversation needs more height than the other modules.
-    var openSize: CGSize { CGSize(width: Layout.openSize.width, height: Layout.tallOpenHeight) }
+    /// A conversation needs more height than the other modules, and the
+    /// expand button gives it more room still.
+    var openSize: CGSize {
+        AIChatService.shared.isExpanded ? Layout.expandedAISize
+            : CGSize(width: Layout.openSize.width, height: Layout.tallOpenHeight)
+    }
     func expandedView() -> AnyView { AnyView(AIChatView()) }
 }
 
@@ -150,6 +154,7 @@ private struct MessageRow: View {
     let message: ChatMessage
     let isStreaming: Bool
     @State private var hovering = false
+    private var isExpanded: Bool { AIChatService.shared.isExpanded }
 
     var body: some View {
         if message.role == .user {
@@ -168,7 +173,7 @@ private struct MessageRow: View {
                         .padding(.vertical, 6)
                         .background(Theme.raisedFill, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                 }
-                .frame(maxWidth: 440, alignment: .trailing)
+                .frame(maxWidth: isExpanded ? 600 : 440, alignment: .trailing)
             }
         } else {
             HStack(alignment: .top, spacing: 8) {
@@ -191,8 +196,9 @@ private struct MessageRow: View {
                             .buttonStyle(PillButtonStyle(prominent: false))
                     }
                 }
-                // About 80 characters a line: easier to read than the full width.
-                .frame(maxWidth: 540, alignment: .leading)
+                // About 80 characters a line (100 when bigger): easier to
+                // read than the full width.
+                .frame(maxWidth: isExpanded ? 760 : 540, alignment: .leading)
                 Spacer(minLength: 20)
                 Button { AIChatService.shared.copy(message) } label: { Image(systemName: "doc.on.doc") }
                     .buttonStyle(IconButtonStyle(size: 22))
@@ -203,62 +209,6 @@ private struct MessageRow: View {
             .contentShape(Rectangle())
             .onHover { hovering = $0 }
         }
-    }
-}
-
-/// Inline Markdown, with fenced code shown in a box.
-private struct RichText: View {
-    let text: String
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            ForEach(Array(Self.segments(text).enumerated()), id: \.offset) { _, segment in
-                if segment.isCode {
-                    Text(segment.text)
-                        .font(.system(size: 11.5, design: .monospaced))
-                        .textSelection(.enabled)
-                        .padding(8)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(Theme.fill, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-                } else {
-                    Text(Self.markdown(segment.text))
-                        .font(.system(size: 12.5))
-                        .lineSpacing(2)
-                        .textSelection(.enabled)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-            }
-        }
-    }
-
-    static func segments(_ text: String) -> [(text: String, isCode: Bool)] {
-        text.components(separatedBy: "```").enumerated().compactMap { index, part in
-            let isCode = index % 2 == 1
-            var body = part
-            // Drop the language tag after the opening fence.
-            if isCode, let newline = body.firstIndex(of: "\n"), !body[..<newline].contains(" ") {
-                body = String(body[body.index(after: newline)...])
-            }
-            body = body.trimmingCharacters(in: .newlines)
-            return body.isEmpty ? nil : (body, isCode)
-        }
-    }
-
-    /// Headings and bullets aren't inline syntax, so they're tidied first.
-    static func markdown(_ text: String) -> AttributedString {
-        let lines = text.split(separator: "\n", omittingEmptySubsequences: false).map { line -> String in
-            var line = String(line)
-            if let range = line.range(of: #"^#{1,6}\s+"#, options: .regularExpression) {
-                line = "**" + String(line[range.upperBound...]) + "**"
-            } else if let range = line.range(of: #"^\s*[-*+]\s+"#, options: .regularExpression) {
-                let indent = String(line[range].prefix { $0 == " " })
-                line.replaceSubrange(range, with: indent + "•  ")
-            }
-            return line
-        }
-        let joined = lines.joined(separator: "\n")
-        let options = AttributedString.MarkdownParsingOptions(interpretedSyntax: .inlineOnlyPreservingWhitespace)
-        return (try? AttributedString(markdown: joined, options: options)) ?? AttributedString(joined)
     }
 }
 
@@ -360,6 +310,14 @@ private struct InputBar: View {
                 .disabled(chat.messages.isEmpty || chat.isStreaming)
                 .help("New chat")
                 .debugFrame("ai.new")
+            Button { chat.toggleExpanded() } label: {
+                Image(systemName: chat.isExpanded ? "arrow.down.right.and.arrow.up.left"
+                                                  : "arrow.up.left.and.arrow.down.right")
+            }
+            .buttonStyle(IconButtonStyle(size: 28))
+            .help(chat.isExpanded ? "Make smaller" : "Make bigger")
+            .accessibilityLabel(chat.isExpanded ? "Make the chat smaller" : "Make the chat bigger")
+            .debugFrame("ai.expand")
         }
         .onAppear(perform: takeFocusIfAsked)
         .onChange(of: chat.wantsFocus) { _, _ in takeFocusIfAsked() }

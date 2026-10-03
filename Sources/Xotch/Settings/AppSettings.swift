@@ -46,6 +46,8 @@ enum SettingsKey {
     static let hideFromScreenSharing = "hideFromScreenSharing"
     static let aiQuickAskHotKey = "aiQuickAskHotKey"
     static let aiScreenHotKey = "aiScreenHotKey"
+    /// The AI chat was made bigger with its expand button.
+    static let aiExpanded = "aiExpanded"
     /// The page Settings last showed.
     static let settingsPane = "settingsPane"
 }
@@ -97,6 +99,7 @@ enum AppSettings {
             SettingsKey.hideFromScreenSharing: false,
             SettingsKey.aiQuickAskHotKey: true,
             SettingsKey.aiScreenHotKey: true,
+            SettingsKey.aiExpanded: false,
             Diagnostics.shareKey: false,
         ])
     }

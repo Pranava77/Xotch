@@ -114,6 +114,8 @@ enum DebugHooks {
                     "activity: \(ActivityCenter.shared.current?.moduleID ?? "-") waiting=\(ActivityCenter.shared.waitingCount)",
                     "theme: \(ThemeStore.shared.palette.id) shaders ready=\(ShaderKit.shared.isReady) compile=\(ShaderKit.shared.compileTime.map { "\($0)" } ?? "-") failure=\(ShaderKit.shared.failure ?? "-")",
                     "audio levels: \(AudioLevels.shared.status)",
+                    "media: hasNowPlaying=\(MediaService.shared.nowPlaying != nil) title=\(MediaService.shared.nowPlaying?.title ?? "-") hasArtwork=\(MediaService.shared.artwork != nil)",
+                    "media log: \(MediaService.shared.debugLog.joined(separator: " | "))",
                     "clipboard access: \(ClipboardService.shared.access)",
                     "todos: open today=\(TodoService.shared.openToday) total=\(TodoService.shared.todos.count)",
                     Storage.damaged.isEmpty ? "store: all files read cleanly"
@@ -211,6 +213,7 @@ enum DebugHooks {
         lines.append("notes: \(NotesService.shared.notes.count) notes")
         lines += captureSelfTest()
         lines += todoSelfTest()
+        lines += chatMarkdownSelfTest()
         lines += retroSoundSelfTest()
         lines += mediaKeysSelfTest()
 
@@ -320,10 +323,13 @@ enum DebugHooks {
         }
         lines.append("shaders: ready=\(kit.isReady) compile=\(kit.compileTime.map { "\($0)" } ?? "-") failure=\(kit.failure ?? "-")")
 
-        lines.append("spectrum 80 Hz: \(spectrum(frequency: 80)) (bass highest)")
-        lines.append("spectrum 2.5 kHz: \(spectrum(frequency: 2500)) (third band highest)")
-        lines.append("spectrum 7 kHz: \(spectrum(frequency: 7000)) (treble highest)")
-        lines.append("spectrum silence: \(spectrum(frequency: 0)) (all 0)")
+        // Bands are bass to treble, one per bar beside the notch.
+        let bandCount = SpectrumAnalyzer.bandCount
+        lines.append(spectrumCheck("80 Hz", frequency: 80, peakIn: 0...2))
+        lines.append(spectrumCheck("2.5 kHz", frequency: 2500, peakIn: bandCount / 2...bandCount - 3))
+        lines.append(spectrumCheck("7 kHz", frequency: 7000, peakIn: bandCount - 3...bandCount - 1))
+        let silence = spectrum(frequency: 0)
+        lines.append("spectrum silence: \(format(silence)) → \(silence.allSatisfy { $0 == 0 } ? "PASS" : "FAILED: not all 0")")
         lines.append("audio levels: enabled=\(AudioLevels.shared.isEnabled) status=\(AudioLevels.shared.status)")
         let volume = SystemVolume.volume
         lines.append("volume: device=\(SystemVolume.outputDevice() != nil) readable=\(volume != nil) settable=\(SystemVolume.canSetVolume) muted=\(SystemVolume.isMuted) symbol=\(SystemVolume.symbol(for: volume ?? 0, muted: SystemVolume.isMuted))")
@@ -425,6 +431,54 @@ enum DebugHooks {
 
     /// Adds a real to-do, ticks it, moves it and deletes it: the same calls the
     /// buttons make, so a broken save shows up here.
+    /// Parses replies the way they arrive, finished and half-streamed, and
+    /// checks the blocks the chat would draw.
+    private static func chatMarkdownSelfTest() -> [String] {
+        func kinds(_ text: String) -> String {
+            ChatMarkdown.blocks(text).map { block in
+                switch block {
+                case .heading(let level, _): "h\(level)"
+                case .paragraph: "p"
+                case .list(let items): "list(" + items.map { "\($0.isOrdered ? "n" : "b")\($0.indent)" }.joined(separator: ",") + ")"
+                case .code(let language, _): "code(\(language ?? "-"))"
+                case .quote: "quote"
+                case .table(let header, let rows): "table(\(header.count)x\(rows.count))"
+                case .rule: "rule"
+                }
+            }.joined(separator: " ")
+        }
+        let cases: [(String, String, String)] = [
+            ("full", """
+            ## Plan for C#
+            Three steps:
+            1. Install it
+            2. Configure
+               - set the key
+               - restart
+            3. Run
+
+            | Tool | Cost |
+            |---|:---:|
+            | A | Free |
+
+            > Note this.
+
+            ---
+            ```swift
+            print("hi")
+            ```
+            """, "h2 p list(n0,n0,b1,b1,n0) table(2x1) quote rule code(swift)"),
+            ("streaming code", "Try this:\n```swift\nlet a = 1", "p code(swift)"),
+            ("streaming table", "| a | b |", "p"),
+            ("loose list", "1. one\n\n2. two\n\nAfter.", "list(n0,n0) p"),
+            ("not a list", "**Bold** start\n2024 was a year", "p"),
+        ]
+        return cases.map { name, text, expected in
+            let got = kinds(text)
+            return "chat markdown \(name): \(got) → \(got == expected ? "PASS" : "FAILED: expected \(expected)")"
+        }
+    }
+
     @MainActor
     private static func todoSelfTest() -> [String] {
         var lines: [String] = []
@@ -493,8 +547,20 @@ enum DebugHooks {
         return text
     }
 
-    /// Four band levels after a few windows of a sine wave.
-    private static func spectrum(frequency: Double) -> String {
+    /// Which band a sine wave lights up most, and whether that's where it belongs.
+    private static func spectrumCheck(_ name: String, frequency: Double, peakIn expected: ClosedRange<Int>) -> String {
+        let levels = spectrum(frequency: frequency)
+        let peak = levels.indices.max { levels[$0] < levels[$1] } ?? -1
+        let verdict = expected.contains(peak) ? "PASS" : "FAILED: expected band \(expected.lowerBound)–\(expected.upperBound)"
+        return "spectrum \(name): \(format(levels)) peak band \(peak) → \(verdict)"
+    }
+
+    private static func format(_ levels: [Float]) -> String {
+        levels.map { String(format: "%.2f", $0) }.joined(separator: " ")
+    }
+
+    /// Band levels after a few windows of a sine wave.
+    private static func spectrum(frequency: Double) -> [Float] {
         let analyzer = SpectrumAnalyzer(sampleRate: 48_000)
         var phase = 0.0
         var levels: [Float] = []
@@ -508,7 +574,7 @@ enum DebugHooks {
                 levels = result
             }
         }
-        return levels.map { String(format: "%.2f", $0) }.joined(separator: " ")
+        return levels
     }
 
     /// Draws each Metal effect into an image, so they can be checked without
@@ -644,6 +710,19 @@ enum DebugHooks {
                     $0.selectedModuleID = module.id
                 }
             }
+            // Every kind of block in a reply, at both sizes.
+            AIChatService.shared.withRichSample {
+                render("4-open-ai-rich") {
+                    $0.phase = .open
+                    $0.selectedModuleID = AIModule.moduleID
+                }
+                AIChatService.shared.withExpanded {
+                    render("4-open-ai-expanded") {
+                        $0.phase = .open
+                        $0.selectedModuleID = AIModule.moduleID
+                    }
+                }
+            }
         }
         withSampleData {
             // A volume key pressed while the notch is open: the level takes the header.
@@ -654,9 +733,9 @@ enum DebugHooks {
                 $0.phase = .open
                 $0.selectedModuleID = "home"
             }
-            ActivityCenter.shared.showHUD(LiveActivity(moduleID: "brightness", symbol: "sun.max.fill",
-                                                       content: .level(0.82), tint: Theme.ink, earWidth: 96),
-                                          for: .milliseconds(10))
+            // Its timer can't fire while the snapshots run, so it would cover
+            // every activity rendered after this.
+            ActivityCenter.shared.debugClearHUD()
         }
         withSampleData {
             CaptureService.shared.debugSetRecording(since: Date().addingTimeInterval(-75))
@@ -716,6 +795,13 @@ enum DebugHooks {
                                        tint: .yellow, earWidth: 170), for: "notes")
         render("3-activity-note") { _ in }
         center.setOngoing(nil, for: "notes")
+        // The music wave on its own, then with Adiyogi taking the left ear.
+        center.setOngoing(LiveActivity(moduleID: "media", symbol: "music.note", content: .playing, tint: .pink), for: "media")
+        render("3-activity-music") { _ in }
+        center.debugShowAdiyogi(true)
+        render("3-activity-music-adiyogi") { _ in }
+        center.debugShowAdiyogi(false)
+        center.setOngoing(nil, for: "media")
         let end = Date().addingTimeInterval(18 * 60)
         center.setOngoing(LiveActivity(moduleID: "timers", symbol: TimerKind.focus.symbol,
                                        content: .countdown(until: end), tint: TimerKind.focus.tint,

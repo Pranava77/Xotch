@@ -55,9 +55,14 @@ enum Layout {
 
     /// Height for modules that need more room down the screen, like the AI chat.
     static let tallOpenHeight: CGFloat = 340
+    /// The AI chat after its expand button: room for long answers and tables.
+    static let expandedAISize = CGSize(width: 1000, height: 560)
 
     /// The largest any module asks for; the panel has to hold it.
-    static var maxOpenSize: CGSize { CGSize(width: openSize.width, height: tallOpenHeight) }
+    static var maxOpenSize: CGSize {
+        CGSize(width: max(openSize.width, expandedAISize.width),
+               height: max(openSize.height, tallOpenHeight, expandedAISize.height))
+    }
 
     /// The panel never resizes, so it's sized for the largest state.
     static var panelSize: CGSize {
