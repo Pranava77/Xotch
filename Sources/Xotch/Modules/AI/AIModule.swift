@@ -57,8 +57,8 @@ private struct Conversation: View {
                 NotchScroll {
                     LazyVStack(alignment: .leading, spacing: 10) {
                         ForEach(chat.messages) { message in
-                            MessageRow(message: message,
-                                       isStreaming: chat.isStreaming && message.id == chat.messages.last?.id)
+                            let isLast = message.id == chat.messages.last?.id
+                            MessageRow(message: message, isStreaming: chat.isStreaming && isLast, isLast: isLast)
                         }
                         Color.clear.frame(height: 1).id("bottom")
                     }
@@ -153,7 +153,7 @@ private struct Welcome: View {
 private struct MessageRow: View {
     let message: ChatMessage
     let isStreaming: Bool
-    @State private var hovering = false
+    let isLast: Bool
     private var isExpanded: Bool { AIChatService.shared.isExpanded }
 
     var body: some View {
@@ -167,48 +167,152 @@ private struct MessageRow: View {
                             .foregroundStyle(Theme.tertiaryInk)
                     }
                     Text(message.text)
-                        .font(.system(size: 12.5))
+                        .font(.system(size: 13))
                         .textSelection(.enabled)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 6)
-                        .background(Theme.raisedFill, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 7)
+                        .background(Theme.accent.opacity(0.16), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .strokeBorder(Theme.accent.opacity(0.22)))
                 }
                 .frame(maxWidth: isExpanded ? 600 : 440, alignment: .trailing)
             }
         } else {
-            HStack(alignment: .top, spacing: 8) {
-                Image(systemName: message.isError ? "exclamationmark.triangle.fill" : "sparkles")
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(message.isError ? Theme.negative : Theme.accent)
-                    .frame(width: 16)
-                    .padding(.top, 2)
-                VStack(alignment: .leading, spacing: 6) {
-                    if message.text.isEmpty {
-                        ProgressView()
-                            .controlSize(.small)
-                            .frame(height: 16)
-                    } else {
-                        RichText(text: message.text)
-                            .foregroundStyle(message.isError ? Theme.secondaryInk : Theme.ink)
-                    }
-                    if message.isError {
-                        Button("Try again") { AIChatService.shared.retry() }
-                            .buttonStyle(PillButtonStyle(prominent: false))
-                    }
-                }
+            ReplyCard(message: message, isStreaming: isStreaming, isLast: isLast)
                 // About 80 characters a line (100 when bigger): easier to
                 // read than the full width.
-                .frame(maxWidth: isExpanded ? 760 : 540, alignment: .leading)
-                Spacer(minLength: 20)
-                Button { AIChatService.shared.copy(message) } label: { Image(systemName: "doc.on.doc") }
-                    .buttonStyle(IconButtonStyle(size: 22))
-                    .help("Copy")
-                    .opacity(hovering && !isStreaming && !message.isError ? 1 : 0)
-                    .allowsHitTesting(hovering && !isStreaming && !message.isError)
-            }
-            .contentShape(Rectangle())
-            .onHover { hovering = $0 }
+                .frame(maxWidth: isExpanded ? 790 : 580, alignment: .leading)
         }
+    }
+}
+
+/// An answer in a soft card: who wrote it and when on top, then the reply,
+/// then what you can do with it. The last answer offers follow-up questions.
+private struct ReplyCard: View {
+    let message: ChatMessage
+    let isStreaming: Bool
+    let isLast: Bool
+    @State private var hovering = false
+    @State private var copied = false
+    private var chat: AIChatService { .shared }
+
+    var body: some View {
+        let parts = ChatMarkdown.splitFollowUps(message.text)
+        VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: 9) {
+                header
+                if parts.body.isEmpty {
+                    ProgressView()
+                        .controlSize(.small)
+                        .frame(height: 16)
+                } else {
+                    RichText(text: parts.body, isStreaming: isStreaming)
+                        .foregroundStyle(message.isError ? Theme.secondaryInk : Theme.ink)
+                }
+                if message.isError {
+                    Button("Try again") { chat.retry() }
+                        .buttonStyle(PillButtonStyle(prominent: false))
+                } else if !isStreaming, !parts.body.isEmpty {
+                    actions
+                        .opacity(isLast || hovering ? 1 : 0)
+                        .allowsHitTesting(isLast || hovering)
+                }
+            }
+            .padding(.horizontal, 13)
+            .padding(.top, 10)
+            .padding(.bottom, message.isError || isStreaming ? 12 : 7)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Theme.fill, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(Theme.hairline))
+            .onHover { hovering = $0 }
+
+            if isLast, !isStreaming, !parts.followUps.isEmpty {
+                FollowUps(questions: parts.followUps)
+                    .transition(.opacity)
+            }
+        }
+    }
+
+    private var header: some View {
+        HStack(spacing: 5) {
+            Image(systemName: message.isError ? "exclamationmark.triangle.fill" : "sparkles")
+                .font(.system(size: 10.5, weight: .semibold))
+                .foregroundStyle(message.isError ? Theme.negative : Theme.accent)
+            Text(message.model ?? "AI")
+                .font(.system(size: 10.5, weight: .semibold))
+                .foregroundStyle(Theme.secondaryInk)
+                .lineLimit(1)
+                .truncationMode(.middle)
+            Text("·")
+                .foregroundStyle(Theme.tertiaryInk)
+            Text(message.date, format: .dateTime.hour().minute())
+                .font(.system(size: 10.5))
+                .foregroundStyle(Theme.tertiaryInk)
+        }
+        .font(.system(size: 10.5))
+    }
+
+    /// Copy for every answer; the rest change the last one.
+    private var actions: some View {
+        HStack(spacing: 2) {
+            action(copied ? "Copied" : "Copy", copied ? "checkmark" : "doc.on.doc", tint: copied ? Theme.positive : nil) {
+                chat.copy(message)
+                copied = true
+                Task {
+                    try? await Task.sleep(for: .seconds(1.2))
+                    copied = false
+                }
+            }
+            if isLast {
+                action("Retry", "arrow.clockwise") { chat.regenerate(message, as: .retry) }
+                action("Shorter", "minus.circle") { chat.regenerate(message, as: .shorter) }
+                action("Longer", "plus.circle") { chat.regenerate(message, as: .longer) }
+            }
+        }
+        .padding(.leading, -6)
+    }
+
+    private func action(_ title: String, _ symbol: String, tint: Color? = nil,
+                        perform: @escaping () -> Void) -> some View {
+        Button(action: perform) {
+            Label(title, systemImage: symbol)
+                .font(.system(size: 10.5, weight: .medium))
+                .foregroundStyle(tint ?? Theme.secondaryInk)
+                .padding(.horizontal, 7)
+                .padding(.vertical, 4)
+        }
+        .buttonStyle(HoverButtonStyle(cornerRadius: 7))
+        .debugFrame("ai.reply.\(title.lowercased())")
+    }
+}
+
+/// Questions the model suggests asking next, one click each.
+private struct FollowUps: View {
+    let questions: [String]
+
+    var body: some View {
+        HStack(spacing: 6) {
+            ForEach(questions, id: \.self) { question in
+                Button { AIChatService.shared.ask(question) } label: {
+                    HStack(spacing: 5) {
+                        Image(systemName: "arrow.turn.down.right")
+                            .font(.system(size: 9, weight: .bold))
+                            .foregroundStyle(Theme.accent)
+                        Text(question)
+                            .font(.system(size: 11.5, weight: .medium))
+                            .lineLimit(1)
+                    }
+                    .padding(.horizontal, 10)
+                    .frame(height: 26)
+                    .background(Theme.accent.opacity(0.1), in: Capsule())
+                    .overlay(Capsule().strokeBorder(Theme.accent.opacity(0.25)))
+                    .contentShape(Capsule())
+                }
+                .buttonStyle(.plain)
+                .help("Ask “\(question)”")
+            }
+        }
+        .padding(.leading, 4)
     }
 }
 

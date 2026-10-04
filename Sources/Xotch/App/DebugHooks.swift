@@ -116,6 +116,7 @@ enum DebugHooks {
                     "audio levels: \(AudioLevels.shared.status)",
                     "media: hasNowPlaying=\(MediaService.shared.nowPlaying != nil) title=\(MediaService.shared.nowPlaying?.title ?? "-") hasArtwork=\(MediaService.shared.artwork != nil)",
                     "media log: \(MediaService.shared.debugLog.joined(separator: " | "))",
+                    "ai: messages=\(AIChatService.shared.messages.count) streaming=\(AIChatService.shared.isStreaming) provider=\(AIProviderStore.shared.active.map { "\($0.kind)/\($0.model)" } ?? "-") notice=\(AIChatService.shared.notice ?? "-") last=\(AIChatService.shared.messages.last.map { "\($0.role) \($0.text.count) chars error=\($0.isError)" } ?? "-")",
                     "clipboard access: \(ClipboardService.shared.access)",
                     "todos: open today=\(TodoService.shared.openToday) total=\(TodoService.shared.todos.count)",
                     Storage.damaged.isEmpty ? "store: all files read cleanly"
@@ -164,6 +165,19 @@ enum DebugHooks {
                 // Plays one cue whether or not sounds are switched on: `debug.sh sound complete`.
                 if let cue = RetroCue(rawValue: String(command.dropFirst("sound:".count))) {
                     RetroSound.play(cue, force: true)
+                }
+            } else if command.hasPrefix("ai-ask:") {
+                // Asks the AI chat a question without the UI: `debug.sh ai-ask "…"`.
+                AIChatService.shared.ask(String(command.dropFirst("ai-ask:".count)))
+            } else if command.hasPrefix("ai-rewrite:") {
+                // Shorter, longer or retry on the last reply: `debug.sh ai-rewrite shorter`.
+                let chat = AIChatService.shared
+                if let last = chat.messages.last {
+                    switch command.dropFirst("ai-rewrite:".count) {
+                    case "shorter": chat.regenerate(last, as: .shorter)
+                    case "longer": chat.regenerate(last, as: .longer)
+                    default: chat.regenerate(last, as: .retry)
+                    }
                 }
             } else if command.hasPrefix("theme:") {
                 ThemeStore.shared.select(String(command.dropFirst("theme:".count)))
@@ -473,10 +487,56 @@ enum DebugHooks {
             ("loose list", "1. one\n\n2. two\n\nAfter.", "list(n0,n0) p"),
             ("not a list", "**Bold** start\n2024 was a year", "p"),
         ]
-        return cases.map { name, text, expected in
+        var lines = cases.map { name, text, expected in
             let got = kinds(text)
             return "chat markdown \(name): \(got) → \(got == expected ? "PASS" : "FAILED: expected \(expected)")"
         }
+
+        // Code colours: which kinds of token a line splits into.
+        func shape(_ code: String, _ language: String?) -> String {
+            CodeHighlighter.tokens(code, language: language)
+                .filter { !$0.0.trimmingCharacters(in: .whitespaces).isEmpty || $0.1 != .plain }
+                .map { "\($0.1)" }.joined(separator: ",")
+        }
+        let code: [(String, String, String?, String)] = [
+            ("swift", #"let name = "Xotch" // hi"#, "swift", "keyword,plain,string,comment"),
+            ("shell", #"echo "$HOME" # where"#, "bash", "plain,string,comment"),
+            ("type and number", "View(width: 42)", "swift", "type,plain,number,plain"),
+            ("python", "def f(): return None", "python", "keyword,plain,keyword,keyword"),
+        ]
+        for (name, text, language, expected) in code {
+            let got = shape(text, language)
+            lines.append("code colours \(name): \(got) → \(got == expected ? "PASS" : "FAILED: expected \(expected)")")
+        }
+
+        // Follow-up questions: finished, half-streamed, missing.
+        let follow: [(String, String, String)] = [
+            ("finished", "Answer.\nFollow-ups: One? | Two? | Three?", "Answer.|One?,Two?,Three?"),
+            ("bold label", "Answer.\n**Follow-ups:** One | Two", "Answer.|One,Two"),
+            ("streaming", "Answer.\nFollow-u", "Answer.|"),
+            ("none", "Answer.\nFine.", "Answer.\nFine.|"),
+        ]
+        for (name, text, expected) in follow {
+            let parts = ChatMarkdown.splitFollowUps(text)
+            let got = parts.body + "|" + parts.followUps.joined(separator: ",")
+            lines.append("follow-ups \(name): \(got.replacingOccurrences(of: "\n", with: "⏎")) → \(got == expected ? "PASS" : "FAILED")")
+        }
+
+        // Callouts.
+        let callouts: [(String, ChatMarkdown.Callout?, String)] = [
+            ("**Note:** testers need it", .info, "testers need it"),
+            ("[!WARNING] Back up first", .warning, "Back up first"),
+            ("Tip: press ⌘K", .tip, "press ⌘K"),
+            ("Just a quote", nil, ""),
+            ("Note that this is a plain quote", nil, ""),
+            ("**Important**: keep the key safe", .warning, "keep the key safe"),
+        ]
+        for (text, kind, body) in callouts {
+            let got = ChatMarkdown.callout(text)
+            let ok = got?.kind == kind && (kind == nil || got?.body == body)
+            lines.append("callout “\(text)”: \(got.map { "\($0.kind) “\($0.body)”" } ?? "none") → \(ok ? "PASS" : "FAILED")")
+        }
+        return lines
     }
 
     @MainActor
@@ -721,6 +781,25 @@ enum DebugHooks {
                         $0.phase = .open
                         $0.selectedModuleID = AIModule.moduleID
                     }
+                }
+            }
+            AIChatService.shared.withCodeSample {
+                render("4-open-ai-code") {
+                    $0.phase = .open
+                    $0.selectedModuleID = AIModule.moduleID
+                }
+                // Tall enough for the action bar and follow-up chips.
+                AIChatService.shared.withExpanded {
+                    render("4-open-ai-code-expanded") {
+                        $0.phase = .open
+                        $0.selectedModuleID = AIModule.moduleID
+                    }
+                }
+            }
+            AIChatService.shared.withStreamingSample {
+                render("4-open-ai-streaming") {
+                    $0.phase = .open
+                    $0.selectedModuleID = AIModule.moduleID
                 }
             }
         }

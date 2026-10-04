@@ -197,7 +197,9 @@ final class AIProviderStore {
     @discardableResult
     func refreshModels(for id: UUID) async throws -> [String] {
         guard let config = provider(id: id) else { return [] }
-        let list = try await AIBackends.backend(for: config.kind).models(baseURL: config.baseURL, apiKey: config.apiKey)
+        // Off the main thread: the Keychain may wait on a prompt.
+        let apiKey = await Task.detached { config.apiKey }.value
+        let list = try await AIBackends.backend(for: config.kind).models(baseURL: config.baseURL, apiKey: apiKey)
         models[id] = list
         return list
     }

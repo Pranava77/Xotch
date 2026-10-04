@@ -12,11 +12,13 @@ struct ChatMessage: Codable, Identifiable, Equatable {
     var isError = false
     /// A screenshot went with this message. The image itself is never saved.
     var hadScreenshot = false
+    /// The model that wrote a reply.
+    var model: String?
     /// Kept in memory only, so it can go with follow-up questions.
     var imageJPEG: Data?
 
     private enum CodingKeys: String, CodingKey {
-        case id, role, text, date, isError, hadScreenshot
+        case id, role, text, date, isError, hadScreenshot, model
     }
 }
 
@@ -115,15 +117,49 @@ final class AIChatService {
             self.attachment = nil
         }
         messages.append(question)
-        let reply = ChatMessage(role: .assistant, text: "")
+        streamReply(from: provider, turns: turns())
+    }
+
+    /// How a reply is asked for again.
+    enum Rewrite {
+        case retry, shorter, longer
+    }
+
+    /// Replaces the last reply. Shorter and longer show the model its old
+    /// answer and ask for a new one; retry asks the question afresh.
+    func regenerate(_ reply: ChatMessage, as rewrite: Rewrite) {
+        guard !isStreaming, reply.role == .assistant, messages.last?.id == reply.id,
+              let provider = AIProviderStore.shared.active, !provider.model.isEmpty else { return }
+        var turns = turns()
+        messages.removeLast()
+        switch rewrite {
+        case .retry:
+            turns = self.turns()
+        case .shorter:
+            turns.append(ChatTurn(role: .user, text: "Answer that again, about half as long. Reply with the new answer only."))
+        case .longer:
+            turns.append(ChatTurn(role: .user, text: "Answer that again in more depth, with more detail and examples. Reply with the new answer only."))
+        }
+        notice = nil
+        streamReply(from: provider, turns: turns)
+    }
+
+    private func streamReply(from provider: ProviderConfig, turns: [ChatTurn]) {
+        var reply = ChatMessage(role: .assistant, text: "")
+        reply.model = provider.model
         messages.append(reply)
         saver.schedule()
 
-        let request = ChatRequest(baseURL: provider.baseURL, model: provider.model, apiKey: provider.apiKey,
-                                  system: systemPrompt, turns: turns())
+        let system = systemPrompt
         let backend = AIBackends.backend(for: provider.kind)
         isStreaming = true
         task = Task { [weak self] in
+            // The Keychain can stop to ask whether this build may read the key
+            // (every rebuild of a debug build does). Asked on the main thread,
+            // that froze the whole notch until someone answered.
+            let apiKey = await Task.detached { provider.apiKey }.value
+            let request = ChatRequest(baseURL: provider.baseURL, model: provider.model, apiKey: apiKey,
+                                      system: system, turns: turns)
             do {
                 for try await piece in backend.stream(request) {
                     self?.append(piece, to: reply.id)
@@ -133,6 +169,13 @@ final class AIChatService {
             }
             self?.finish(reply.id)
         }
+    }
+
+    /// Asks a follow-up chip's question.
+    func ask(_ question: String) {
+        guard !isStreaming else { return }
+        draft = question
+        send()
     }
 
     func stop() {
@@ -165,7 +208,7 @@ final class AIChatService {
 
     func copy(_ message: ChatMessage) {
         NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(message.text, forType: .string)
+        NSPasteboard.general.setString(ChatMarkdown.splitFollowUps(message.text).body, forType: .string)
     }
 
     func flush() {
@@ -213,7 +256,11 @@ final class AIChatService {
         Format replies in Markdown so they're easy to scan. Lead with the answer in one sentence, then the \
         detail. Use short paragraphs, bullets for options, numbered lists for steps, a table to compare \
         things, and **bold** for the key term. Add ## headings only when a reply has several parts. Put code \
-        in fenced blocks with the language named, and use them only for code.
+        in fenced blocks with the language named, and use them only for code. For a note, tip or warning, \
+        use a quote that starts "Note:", "Tip:" or "Warning:".
+
+        End every reply with one last line in exactly this form, three short questions (under eight words \
+        each) the user might ask next: Follow-ups: first question | second question | third question
         """
         if let context = AIContextStore.shared.active, !context.text.isEmpty {
             prompt += """
@@ -237,11 +284,13 @@ final class AIChatService {
         for (index, message) in messages.enumerated() where !message.isError && !message.text.isEmpty {
             let role: ChatTurn.Role = message.role == .user ? .user : .assistant
             let image = index == latestImage ? message.imageJPEG : nil
+            // Follow-up suggestions are for the user, not the conversation.
+            let text = role == .assistant ? ChatMarkdown.splitFollowUps(message.text).body : message.text
             if let last = result.last, last.role == role {
-                result[result.count - 1] = ChatTurn(role: role, text: last.text + "\n\n" + message.text,
+                result[result.count - 1] = ChatTurn(role: role, text: last.text + "\n\n" + text,
                                                     imageJPEG: image ?? last.imageJPEG)
             } else {
-                result.append(ChatTurn(role: role, text: message.text, imageJPEG: image))
+                result.append(ChatTurn(role: role, text: text, imageJPEG: image))
             }
         }
         result = Array(result.suffix(30))
@@ -277,9 +326,7 @@ final class AIChatService {
     /// A reply that uses every kind of block, for snapshots.
     func withRichSample(_ body: () -> Void) {
         let saved = messages
-        messages = [
-            ChatMessage(role: .user, text: "How do I ship the beta to testers?"),
-            ChatMessage(role: .assistant, text: """
+        var reply = ChatMessage(role: .assistant, text: """
             Build a release, check its signature, then zip it with **package-beta.sh**.
 
             ## Steps
@@ -293,16 +340,62 @@ final class AIChatService {
             |---|---|
             | `package-beta.sh` | A zip for testers |
             | `package-dmg.sh` | A disk image |
+            | `build-app.sh` | The app itself |
 
-            > Testers on macOS 14 need to right-click › Open the first time.
+            > **Note:** testers on macOS 14 need to right-click › Open the first time.
 
             ```bash
-            ./scripts/package-beta.sh
+            # Build, check and zip
+            VERSION="0.3.0"
+            ./scripts/build-app.sh release
+            codesign --verify --deep build/Xotch.app
+            ./scripts/package-beta.sh "$VERSION"
             ```
-            """),
-        ]
+            Follow-ups: How do testers install it? | Can I notarise it? | What about a DMG?
+            """)
+        reply.model = "gemini-3.1-flash-lite"
+        messages = [ChatMessage(role: .user, text: "How do I ship the beta to testers?"), reply]
         body()
         messages = saved
+    }
+
+    /// A finished reply with code, for snapshots: colours, line numbers, the
+    /// action bar and follow-up chips.
+    func withCodeSample(_ body: () -> Void) {
+        let saved = messages
+        var reply = ChatMessage(role: .assistant, text: """
+            Use `guard` to leave early when the index is out of range:
+            ```swift
+            func item(at index: Int) -> String? {
+                // Out of range: nothing to return
+                guard items.indices.contains(index) else { return nil }
+                let title = items[index].title
+                return title.isEmpty ? "Untitled" : title
+            }
+            ```
+            Follow-ups: What about negative indexes? | Can I use if let? | Show a test for it
+            """)
+        reply.model = "gemini-3.1-flash-lite"
+        messages = [ChatMessage(role: .user, text: "How do I avoid the crash on an empty list?"), reply]
+        body()
+        messages = saved
+    }
+
+    /// A reply arriving, for snapshots: the cursor shows, the chips don't.
+    func withStreamingSample(_ body: () -> Void) {
+        let saved = (messages, isStreaming)
+        var reply = ChatMessage(role: .assistant, text: """
+            Swift's `guard` exits early when a condition fails, so the rest of the function can assume it holds.
+
+            - It keeps the happy path unindented
+            - The else branch must leave the scope
+            Follow-ups: When should I use if
+            """)
+        reply.model = "gemini-3.1-flash-lite"
+        messages = [ChatMessage(role: .user, text: "What does guard do in Swift?"), reply]
+        isStreaming = true
+        body()
+        (messages, isStreaming) = saved
     }
 
     func withExpanded(_ body: () -> Void) {

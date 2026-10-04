@@ -74,7 +74,7 @@ When the notch is closed and nothing is happening, Xotch uses no processor time 
 
 <img src="docs/images/module-ai.jpg" alt="The AI chat in the open notch: a question about a crash, sent with a screenshot, answered with a one-line Swift fix and a commit message, with the Project notes context and the llama3.2-vision model chosen beside the input">
 
-Press **⌘⇧Space** in any app and the notch opens on a chat, ready to type. Replies stream in as they're written, with code in its own box and a copy button on each answer.
+Press **⌘⇧Space** in any app and the notch opens on a chat, ready to type. Replies stream in as they're written, each in a card naming the model: the answer first, then headings, numbered steps, tables, Note and Tip callouts, and code coloured by language with line numbers. Under the last answer you can copy it, retry, or ask for it shorter or longer, and three suggested follow-up questions are a click away.
 
 ### Your choice of AI
 
