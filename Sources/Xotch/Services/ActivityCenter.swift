@@ -73,15 +73,53 @@ final class ActivityCenter {
     private(set) var showsAdiyogi = false
     /// Goes up by one for each celebration; views watch it to play one.
     private(set) var celebrations = 0
+    /// Which ongoing activity the ear shows while several are live. It moves
+    /// on every few seconds, so music gets a turn while Claude works.
+    private(set) var rotation = 0
     @ObservationIgnored private var queue: [LiveActivity] = []
     @ObservationIgnored private var bannerTask: Task<Void, Never>?
     @ObservationIgnored private var hudTask: Task<Void, Never>?
+    @ObservationIgnored private var rotationTask: Task<Void, Never>?
     @ObservationIgnored private var demoIndex = 0
+
+    /// How long each live activity stays in the ear before the next.
+    private static let turn: Duration = .seconds(6)
 
     var current: LiveActivity? {
         if let hud { return hud }
         if let banner { return banner }
-        return orderedOngoing.first
+        return shownOngoing
+    }
+
+    /// Ongoing activities, most important first.
+    var liveOngoing: [LiveActivity] { orderedOngoing }
+
+    /// True while the ear takes turns between several live activities.
+    var isRotating: Bool {
+        hud == nil && banner == nil && sticky == nil && ongoing.count > 1
+    }
+
+    /// Where the shown activity sits among the live ones, for the dots
+    /// beside the ear. Nil while only one is live, or a banner is up.
+    var livePosition: (index: Int, count: Int)? {
+        guard hud == nil, banner == nil else { return nil }
+        let list = orderedOngoing
+        guard list.count > 1, let shown = shownOngoing,
+              let index = list.firstIndex(where: { $0.moduleID == shown.moduleID }) else { return nil }
+        return (index, list.count)
+    }
+
+    /// Never rotated away: a recording, so a click on the ear still stops it,
+    /// and anything urgent, like Claude waiting for an answer.
+    private var sticky: LiveActivity? {
+        orderedOngoing.first { $0.moduleID == "capture" || $0.pulse == .urgent }
+    }
+
+    private var shownOngoing: LiveActivity? {
+        if let sticky { return sticky }
+        let list = orderedOngoing
+        guard !list.isEmpty else { return nil }
+        return list[rotation % list.count]
     }
 
     /// Live things not shown right now.
@@ -117,17 +155,20 @@ final class ActivityCenter {
         } else {
             hud = activity
         }
+        updateRotation()
         hudTask?.cancel()
         hudTask = Task { [weak self] in
             try? await Task.sleep(for: duration)
             guard !Task.isCancelled else { return }
             withAnimation(Motion.activity) { self?.hud = nil }
+            self?.updateRotation()
         }
     }
 
     /// Sets or clears a module's ongoing activity. Keeps the same id while the
     /// module stays live, so updates don't replay the entrance animation.
     func setOngoing(_ activity: LiveActivity?, for moduleID: String) {
+        defer { updateRotation() }
         guard var activity else {
             if ongoing[moduleID] != nil {
                 withAnimation(Motion.activity) { ongoing[moduleID] = nil }
@@ -140,8 +181,47 @@ final class ActivityCenter {
                 withAnimation(Motion.activity) { ongoing[moduleID] = activity }
             }
         } else {
-            withAnimation(Motion.activity) { ongoing[moduleID] = activity }
+            withAnimation(Motion.activity) {
+                ongoing[moduleID] = activity
+                // Something new starts its turn straight away.
+                if let index = orderedOngoing.firstIndex(where: { $0.moduleID == moduleID }) {
+                    rotation = index
+                }
+            }
+            restartRotation()
         }
+    }
+
+    /// The next live activity, now; the click on the right ear.
+    func showNext() {
+        guard isRotating else { return }
+        withAnimation(Motion.turn) { rotation += 1 }
+        Haptics.tick()
+        restartRotation()
+    }
+
+    /// Runs the turn-taking while it's needed, and only then.
+    private func updateRotation() {
+        if isRotating {
+            guard rotationTask == nil else { return }
+            rotationTask = Task { [weak self] in
+                while !Task.isCancelled {
+                    try? await Task.sleep(for: Self.turn)
+                    guard let self, !Task.isCancelled else { return }
+                    withAnimation(Motion.turn) { self.rotation += 1 }
+                }
+            }
+        } else {
+            rotationTask?.cancel()
+            rotationTask = nil
+        }
+    }
+
+    /// A full turn for whatever is showing now.
+    private func restartRotation() {
+        rotationTask?.cancel()
+        rotationTask = nil
+        updateRotation()
     }
 
     /// Called at launch and whenever a setting changes.
@@ -165,6 +245,7 @@ final class ActivityCenter {
     }
 
     private func advance() {
+        defer { updateRotation() }
         guard !queue.isEmpty else {
             withAnimation(Motion.activity) { banner = nil }
             return
@@ -207,6 +288,7 @@ final class ActivityCenter {
     func debugStash() -> [String: LiveActivity] {
         let saved = ongoing
         ongoing = [:]
+        updateRotation()
         stashedAdiyogi = showsAdiyogi
         showsAdiyogi = false
         isStashed = true
@@ -216,6 +298,11 @@ final class ActivityCenter {
     func debugClearHUD() {
         hudTask?.cancel()
         hud = nil
+        updateRotation()
+    }
+
+    var debugRotation: String {
+        "rotation=\(rotation) rotating=\(isRotating) sticky=\(sticky?.moduleID ?? "-") shown=\(current?.moduleID ?? "-")"
     }
 
     /// Snapshots set bars of their own; this goes around the stash.
@@ -229,6 +316,7 @@ final class ActivityCenter {
         }
         isStashed = false
         showsAdiyogi = stashedAdiyogi
+        updateRotation()
     }
     #endif
 }
