@@ -25,6 +25,14 @@ enum Theme {
     static var fontDesign: Font.Design { isRetro ? .rounded : .default }
     static let positive = Color(red: 0.2, green: 0.84, blue: 0.47)
     static let negative = Color(red: 1.0, green: 0.36, blue: 0.33)
+    static let warning = Color(red: 1.0, green: 0.7, blue: 0.25)
+
+    // Code in AI replies. Every theme is dark, so these are light pastels.
+    static let codeKeyword = Color(red: 1.0, green: 0.48, blue: 0.72)
+    static let codeString = Color(red: 0.62, green: 0.9, blue: 0.55)
+    static let codeNumber = Color(red: 1.0, green: 0.74, blue: 0.45)
+    static let codeType = Color(red: 0.45, green: 0.83, blue: 1.0)
+    static var codeComment: Color { ink.opacity(0.42) }
 }
 
 enum Layout {
