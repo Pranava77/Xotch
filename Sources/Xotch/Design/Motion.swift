@@ -11,6 +11,10 @@ enum Motion {
     static var activity: Animation { pick(.spring(duration: 0.5, bounce: 0.32)) }
     static var switchModule: Animation { pick(.spring(duration: 0.38, bounce: 0.18)) }
     static var press: Animation { pick(.spring(duration: 0.2, bounce: 0.4)) }
+    /// The ear's turn-taking, every few seconds: a short fade, because a
+    /// spring keeps SwiftUI drawing every frame until it settles (measured:
+    /// bursts of 11–37% CPU per turn).
+    static var turn: Animation { .easeInOut(duration: 0.25) }
 
     static var reduceMotion: Bool {
         NSWorkspace.shared.accessibilityDisplayShouldReduceMotion

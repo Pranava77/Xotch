@@ -50,10 +50,13 @@ final class NotchViewModel {
 
     /// Width of each ear. They stay equal so the notch stays centred on the
     /// camera. Adiyogi keeps the left ear and an activity's icon moves to the
-    /// right; alone he needs only a narrow pair.
+    /// right; alone he needs only a narrow pair. While live activities take
+    /// turns, the ears fit the widest of them, so the notch doesn't change
+    /// width with every turn.
     var earWidth: CGFloat {
         let adiyogi = activities.showsAdiyogi
-        let right = activities.current.map { $0.earWidth + (adiyogi ? Layout.inlineIconWidth : 0) } ?? 0
+        let shown = activities.isRotating ? activities.liveOngoing : [activities.current].compactMap { $0 }
+        let right = shown.map { $0.earWidth + (adiyogi ? Layout.inlineIconWidth : 0) }.max() ?? 0
         let left: CGFloat = adiyogi ? AdiyogiMark.earWidth
             : (activities.current == nil ? 0 : Layout.leftIconEarWidth)
         return max(left, right, activities.current == nil ? 0 : Layout.earWidth)

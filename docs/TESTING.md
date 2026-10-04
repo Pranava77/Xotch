@@ -89,7 +89,8 @@ These need hardware or situations a script can't create. Tick them before a beta
 - [ ] Type part of something you copied: "Copy …" appears and copies it.
 - [ ] Start a timer: the ring around the icon fills over the whole timer; pause it and the ring stops.
 - [ ] Claude Code working: a soft pulse behind the sparkle; waiting for you: a faster pulse.
-- [ ] Music and a timer at once: the timer shows, with one dot for the music waiting.
+- [ ] Music and a timer at once: they take turns every 6 s, the notch keeps one width, and two dots show which is up. Clicking the right ear skips to the next without opening the notch.
+- [ ] A screen recording, or Claude waiting for you (fast pulse), stays in the ear while other things are live.
 - [ ] Settings › Features › Celebrate: confetti falls from the notch and the trackpad taps twice. A finished focus session does the same, unless "Celebrate finished focus sessions" is off.
 - [ ] Closed notch: Adiyogi sits at the outer edge of the left ear; a live activity's icon moves to the right ear beside its status, and Settings › Appearance hides the figure.
 - [ ] Updating from a build that had Revenue, Analytics or Weather: those modules are gone from the header tabs, the more grid and Settings, and Keychain Access has no `com.pranava.xotch` items for them.

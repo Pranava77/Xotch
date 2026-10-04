@@ -111,7 +111,7 @@ enum DebugHooks {
                 let lines = [
                     "screens: \(ScreenManager.shared.debugSummary)",
                     "ongoing: [\(ActivityCenter.shared.debugOngoingIDs)]",
-                    "activity: \(ActivityCenter.shared.current?.moduleID ?? "-") waiting=\(ActivityCenter.shared.waitingCount)",
+                    "activity: \(ActivityCenter.shared.current?.moduleID ?? "-") waiting=\(ActivityCenter.shared.waitingCount) \(ActivityCenter.shared.debugRotation)",
                     "theme: \(ThemeStore.shared.palette.id) shaders ready=\(ShaderKit.shared.isReady) compile=\(ShaderKit.shared.compileTime.map { "\($0)" } ?? "-") failure=\(ShaderKit.shared.failure ?? "-")",
                     "audio levels: \(AudioLevels.shared.status)",
                     "media: hasNowPlaying=\(MediaService.shared.nowPlaying != nil) title=\(MediaService.shared.nowPlaying?.title ?? "-") hasArtwork=\(MediaService.shared.artwork != nil)",
@@ -803,11 +803,15 @@ enum DebugHooks {
         center.debugShowAdiyogi(false)
         center.setOngoing(nil, for: "media")
         let end = Date().addingTimeInterval(18 * 60)
+        // The newest live activity takes the ear first; the dots show the round.
+        center.setOngoing(LiveActivity(moduleID: "media", symbol: "music.note", content: .playing, tint: .pink), for: "media")
         center.setOngoing(LiveActivity(moduleID: "timers", symbol: TimerKind.focus.symbol,
                                        content: .countdown(until: end), tint: TimerKind.focus.tint,
                                        progress: .timed(start: end.addingTimeInterval(-25 * 60), end: end)), for: "timers")
-        center.setOngoing(LiveActivity(moduleID: "media", symbol: "music.note", content: .playing, tint: .pink), for: "media")
         render("3-activity-ring-waiting") { _ in }
+        // A turn later, music has the ear and the second dot is lit.
+        center.showNext()
+        render("3-activity-turns-next") { _ in }
         center.setOngoing(nil, for: "timers")
         center.setOngoing(nil, for: "media")
         center.setOngoing(LiveActivity(moduleID: "claude", symbol: "sparkle", content: .text("Editing"),

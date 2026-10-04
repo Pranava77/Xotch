@@ -345,19 +345,25 @@ struct AdiyogiMark: View {
     }
 }
 
-/// Up to three dots: how many other live activities are waiting their turn.
+/// One dot per live activity, the one in the ear brighter: they take turns
+/// there, and the dots show where in the round it is.
 struct WaitingDots: View {
+    let index: Int
     let count: Int
 
+    private static let maxDots = 4
+
     var body: some View {
+        let shown = min(count, Self.maxDots)
         VStack(spacing: 2.5) {
-            ForEach(0..<min(count, 3), id: \.self) { _ in
+            ForEach(0..<shown, id: \.self) { dot in
                 Circle()
-                    .fill(Theme.tertiaryInk)
+                    .fill(dot == min(index, shown - 1) ? Theme.ink : Theme.tertiaryInk.opacity(0.7))
                     .frame(width: 3, height: 3)
             }
         }
+        .animation(Motion.turn, value: index)
         .accessibilityElement()
-        .accessibilityLabel(count == 1 ? "1 more activity waiting" : "\(count) more activities waiting")
+        .accessibilityLabel("\(index + 1) of \(count) live activities")
     }
 }

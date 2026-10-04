@@ -9,7 +9,8 @@ import Observation
 /// for permission to record system audio. Nothing is recorded or kept; each
 /// buffer is reduced to a dozen numbers and dropped.
 ///
-/// The tap only runs while the music bars are on screen and the setting is on.
+/// The tap only runs while the music bars are on screen (and for half a minute
+/// after) and the setting is on.
 /// If macOS denies access the tap hears silence, and the bars fall back to
 /// their built-in animation.
 @MainActor
@@ -28,6 +29,12 @@ final class AudioLevels {
     private(set) var status: Status = .off
     @ObservationIgnored private var tap: AudioTap?
     @ObservationIgnored private var viewers = 0
+    /// Keeps the tap running for a while after the bars leave the screen.
+    @ObservationIgnored private var lingerTask: Task<Void, Never>?
+
+    /// The ear takes turns between live activities, so the bars come and go
+    /// every few seconds; restarting the tap each time would be wasteful.
+    private static let linger: Duration = .seconds(30)
 
     var isEnabled: Bool {
         UserDefaults.standard.bool(forKey: SettingsKey.realAudioLevels)
@@ -48,12 +55,21 @@ final class AudioLevels {
     /// A view that shows levels appeared; the tap runs while any are on screen.
     func acquire() {
         viewers += 1
+        lingerTask?.cancel()
+        lingerTask = nil
         update()
     }
 
     func release() {
         viewers = max(0, viewers - 1)
-        update()
+        guard viewers == 0 else { return }
+        lingerTask?.cancel()
+        lingerTask = Task { [weak self] in
+            try? await Task.sleep(for: Self.linger)
+            guard let self, !Task.isCancelled else { return }
+            self.lingerTask = nil
+            self.update()
+        }
     }
 
     func settingsChanged() {
@@ -66,7 +82,7 @@ final class AudioLevels {
     @ObservationIgnored private let control = DispatchQueue(label: "com.pranava.xotch.audio-levels.control")
 
     private func update() {
-        let shouldRun = viewers > 0 && isEnabled
+        let shouldRun = (viewers > 0 || lingerTask != nil) && isEnabled
         if shouldRun, tap == nil {
             guard #available(macOS 14.2, *) else {
                 status = .failed("Needs macOS 14.2 or later.")

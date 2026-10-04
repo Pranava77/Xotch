@@ -40,7 +40,7 @@ struct ShellView: View {
                                     adiyogi: model.activities.showsAdiyogi,
                                     earWidth: model.earWidth,
                                     notchSize: model.closedSize,
-                                    waiting: model.activities.waitingCount,
+                                    position: model.activities.livePosition,
                                     namespace: namespace)
                         .transition(.blurFade)
                 }
@@ -313,7 +313,8 @@ private struct LiveActivityBar: View {
     let adiyogi: Bool
     let earWidth: CGFloat
     let notchSize: CGSize
-    let waiting: Int
+    /// Which of several live activities is showing, for the dots.
+    let position: (index: Int, count: Int)?
     let namespace: Namespace.ID
 
     var body: some View {
@@ -325,6 +326,8 @@ private struct LiveActivityBar: View {
                 } else if let activity {
                     icon(activity)
                         .matchedGeometryEffect(id: "icon-\(activity.moduleID)", in: namespace)
+                        .id(activity.id)
+                        .transition(.opacity)
                 }
             }
             .padding(.leading, 12)
@@ -340,8 +343,16 @@ private struct LiveActivityBar: View {
                         icon(activity)
                             .scaleEffect(0.85)
                             .matchedGeometryEffect(id: "icon-\(activity.moduleID)", in: namespace)
+                            .id(activity.id)
+                            .transition(.opacity)
                     }
+                    // A new identity per activity: taking turns then fades one
+                    // view out and the next in. Changing the text in place
+                    // made SwiftUI morph the glyphs, drawing them on the CPU
+                    // every frame (measured: about 4% CPU with turns every 6 s).
                     trailing(activity)
+                        .id(activity.id)
+                        .transition(.opacity)
                 }
             }
                 .font(.system(size: 12.5, weight: .semibold, design: .rounded))
@@ -351,8 +362,8 @@ private struct LiveActivityBar: View {
                 .padding(.trailing, 12)
                 .frame(width: earWidth, alignment: .trailing)
                 .overlay(alignment: .trailing) {
-                    if waiting > 0 {
-                        WaitingDots(count: waiting)
+                    if let position {
+                        WaitingDots(index: position.index, count: position.count)
                             .padding(.trailing, 4)
                             .transition(.opacity)
                     }
@@ -379,10 +390,15 @@ private struct LiveActivityBar: View {
                     ProgressRing(progress: progress, tint: activity.tint)
                         .frame(width: 23, height: 23)
                 }
-                Image(systemName: activity.symbol)
+                let symbol = Image(systemName: activity.symbol)
                     .font(.system(size: activity.progress == nil ? 13 : 10, weight: .semibold))
                     .foregroundStyle(activity.tint)
-                    .popOnChange(of: activity.id)
+                // Pops for something new, not for each turn in the round.
+                if position == nil {
+                    symbol.popOnChange(of: activity.id)
+                } else {
+                    symbol
+                }
             }
             .frame(width: 26, height: 26)
         }

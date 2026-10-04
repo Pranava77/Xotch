@@ -284,6 +284,13 @@ final class NotchWindowController: NotchActions {
                 CaptureService.shared.stopRecording()
                 return
             }
+            if isOnRightEar(NSEvent.mouseLocation), model.activities.isRotating {
+                // Next live activity; don't open on the way.
+                openTask?.cancel()
+                suppressHover = true
+                model.activities.showNext()
+                return
+            }
             open(pinned: true)
         case .open where !model.isPinned:
             model.isPinned = true
@@ -301,6 +308,11 @@ final class NotchWindowController: NotchActions {
         // With Adiyogi in the left ear, only the right ear is the recording's.
         let offset = location.x - model.screenRect.midX
         return activities.showsAdiyogi ? offset > model.closedSize.width / 2 : abs(offset) > model.closedSize.width / 2
+    }
+
+    /// Right of the camera housing, on the ear that shows an activity.
+    private func isOnRightEar(_ location: NSPoint) -> Bool {
+        model.showsActivity && location.x - model.screenRect.midX > model.closedSize.width / 2
     }
 
     func togglePin() {
