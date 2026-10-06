@@ -629,6 +629,15 @@ enum DebugHooks {
         let expected = [MascotMotion.Reaction.heart, MascotMotion.Reaction.sparkle, MascotMotion.Reaction.delighted,
                         MascotMotion.Reaction.dizzy, MascotMotion.Reaction.heart]
         lines.append("mascot boops: \(boops) → \(boops == expected ? "PASS" : "FAILED: expected \(expected)")")
+
+        // The layer view nests breath, squash and sprite, and starts breathing.
+        let view = MascotLayerView(breath: 0.025, phase: 0.3)
+        view.frame = NSRect(x: 0, y: 0, width: 132, height: 132)
+        view.layout()
+        view.show(MascotSprites.cut("fox-directions")?[MascotMotion.Cell.center])
+        let state = view.debugState
+        let wanted = Motion.reduceMotion ? "layers=true breathing=false" : "layers=true breathing=true"
+        lines.append("mascot layers: \(state) → \(state == wanted ? "PASS" : "FAILED: expected \(wanted)")")
         return lines
     }
 

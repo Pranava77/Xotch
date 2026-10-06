@@ -203,33 +203,20 @@ struct MascotView: View {
         let image = reaction.flatMap { cells?.reactions[$0] }
             ?? cells?.directions[snapshotMode ? MascotMotion.Cell.downLeft : tracker.direction(for: anchor)]
         Group {
-            if let image {
-                Image(decorative: image, scale: 1)
-                    .resizable()
-                    .interpolation(.high)
-                    .aspectRatio(contentMode: .fit)
+            if snapshotMode {
+                // ImageRenderer can't draw AppKit views, so snapshots get a still picture.
+                if let image {
+                    Image(decorative: image, scale: 1)
+                        .resizable()
+                        .interpolation(.high)
+                        .aspectRatio(contentMode: .fit)
+                }
             } else {
-                Color.clear
+                MascotLayer(image: image, squashes: squashes, breath: size < 60 ? 0.015 : 0.025,
+                            phase: Double(abs(anchor.hashValue % 1000)) / 1000)
             }
         }
         .frame(width: size, height: size)
-        .keyframeAnimator(initialValue: Squash(), trigger: squashes) { content, squash in
-            content.scaleEffect(x: squash.x, y: squash.y, anchor: .bottom)
-        } keyframes: { _ in
-            // page-mascot's squash: 420 ms, wide then tall then settling.
-            KeyframeTrack(\.x) {
-                CubicKeyframe(1.10, duration: 0.076)
-                CubicKeyframe(0.95, duration: 0.113)
-                CubicKeyframe(1.03, duration: 0.113)
-                CubicKeyframe(1, duration: 0.118)
-            }
-            KeyframeTrack(\.y) {
-                CubicKeyframe(0.86, duration: 0.076)
-                CubicKeyframe(1.08, duration: 0.113)
-                CubicKeyframe(0.97, duration: 0.113)
-                CubicKeyframe(1, duration: 0.118)
-            }
-        }
         .background {
             if !snapshotMode {
                 ScreenCenterReader { tracker.setCenter($0, for: anchor) }
@@ -271,10 +258,153 @@ struct MascotView: View {
         }
     }
 
-    private struct Squash {
-        var x: CGFloat = 1
-        var y: CGFloat = 1
+}
+
+/// The mascot drawn by Core Animation, so its motion runs in the window
+/// server and costs Xotch nothing between changes:
+/// - a turn of the head, or a reaction, crossfades instead of snapping;
+/// - it breathes, a slow rise and settle, forever;
+/// - a boop squashes it, wide then tall then settling.
+/// Reduce Motion keeps it still and swaps pictures at once.
+private struct MascotLayer: NSViewRepresentable {
+    let image: CGImage?
+    let squashes: Int
+    /// How far a breath stretches it, as a fraction of its height.
+    let breath: CGFloat
+    /// Where in the breath it starts, 0...1, so two mascots don't breathe in step.
+    let phase: Double
+
+    func makeNSView(context: Context) -> MascotLayerView {
+        MascotLayerView(breath: breath, phase: phase)
     }
+
+    func updateNSView(_ view: MascotLayerView, context: Context) {
+        view.show(image)
+        view.squash(count: squashes)
+    }
+}
+
+final class MascotLayerView: NSView {
+    /// Breathes: scaled from the bottom edge, so the feet stay put.
+    private let body = CALayer()
+    /// Squashes on a boop, inside the breath.
+    private let spring = CALayer()
+    /// The picture.
+    private let sprite = CALayer()
+    private let breath: CGFloat
+    private let phase: Double
+    private var squashes = 0
+    private var shown: CGImage?
+
+    /// How long a turn of the head takes to fade across.
+    static let fade: CFTimeInterval = 0.18
+    static let breathLength: CFTimeInterval = 2.6
+
+    init(breath: CGFloat, phase: Double) {
+        self.breath = breath
+        self.phase = phase
+        super.init(frame: .zero)
+        wantsLayer = true
+        for layer in [body, spring] {
+            layer.anchorPoint = CGPoint(x: 0.5, y: 0)
+        }
+        sprite.contentsGravity = .resizeAspect
+        sprite.minificationFilter = .trilinear
+        layer?.addSublayer(body)
+        body.addSublayer(spring)
+        spring.addSublayer(sprite)
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) is not used")
+    }
+
+    override func layout() {
+        super.layout()
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        for layer in [body, spring] {
+            layer.bounds = bounds
+            layer.position = CGPoint(x: bounds.midX, y: 0)
+        }
+        // body and spring are positioned by their bottom edge.
+        body.position = CGPoint(x: bounds.midX, y: bounds.minY)
+        spring.position = CGPoint(x: bounds.midX, y: 0)
+        sprite.frame = bounds
+        CATransaction.commit()
+        breathe()
+    }
+
+    override func viewDidChangeBackingProperties() {
+        super.viewDidChangeBackingProperties()
+        sprite.contentsScale = window?.backingScaleFactor ?? 2
+    }
+
+    func show(_ image: CGImage?) {
+        guard image !== shown else { return }
+        let first = shown == nil
+        shown = image
+        if !first, !Motion.reduceMotion {
+            let fade = CATransition()
+            fade.type = .fade
+            fade.duration = Self.fade
+            fade.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+            sprite.add(fade, forKey: "turn")
+        }
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        sprite.contents = image
+        CATransaction.commit()
+    }
+
+    /// page-mascot's 420 ms squash, played once per boop.
+    func squash(count: Int) {
+        guard count != squashes else { return }
+        squashes = count
+        guard !Motion.reduceMotion else { return }
+        let times: [NSNumber] = [0, 0.18, 0.45, 0.72, 1]
+        let x = CAKeyframeAnimation(keyPath: "transform.scale.x")
+        x.values = [1, 1.10, 0.95, 1.03, 1]
+        let y = CAKeyframeAnimation(keyPath: "transform.scale.y")
+        y.values = [1, 0.86, 1.08, 0.97, 1]
+        let group = CAAnimationGroup()
+        for track in [x, y] {
+            track.keyTimes = times
+            track.timingFunctions = [CAMediaTimingFunction(name: .easeIn), CAMediaTimingFunction(name: .easeOut),
+                                     CAMediaTimingFunction(name: .easeInEaseOut), CAMediaTimingFunction(name: .easeInEaseOut)]
+        }
+        group.animations = [x, y]
+        group.duration = 0.42
+        spring.add(group, forKey: "squash")
+    }
+
+    private func breathe() {
+        guard !Motion.reduceMotion, body.animation(forKey: "breath") == nil, bounds.height > 0 else { return }
+        let up = CABasicAnimation(keyPath: "transform.scale.y")
+        up.fromValue = 1
+        up.toValue = 1 + breath
+        let narrow = CABasicAnimation(keyPath: "transform.scale.x")
+        narrow.fromValue = 1
+        narrow.toValue = 1 - breath * 0.4
+        let group = CAAnimationGroup()
+        group.animations = [up, narrow]
+        group.duration = Self.breathLength / 2
+        group.autoreverses = true
+        group.repeatCount = .infinity
+        group.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+        group.timeOffset = phase * Self.breathLength
+        body.add(group, forKey: "breath")
+    }
+
+    override func hitTest(_ point: NSPoint) -> NSView? { nil }
+
+    #if DEBUG
+    /// For the self-test: whether the layers are set up to move.
+    var debugState: String {
+        "layers=\(sprite.superlayer === spring && spring.superlayer === body) breathing=\(body.animation(forKey: "breath") != nil)"
+    }
+    #endif
 }
 
 /// Reports the centre of the view it sits behind, in screen coordinates,

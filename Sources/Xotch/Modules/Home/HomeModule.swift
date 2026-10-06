@@ -5,6 +5,10 @@ final class HomeModule: NotchModule {
     let id = "home"
     let title = "Home"
     let symbol = "house"
+    /// Wider when the mascot has its own tile, so nothing else shrinks.
+    var openSize: CGSize {
+        AppSettings.homeMascot ? CGSize(width: 860, height: Layout.openSize.height) : Layout.openSize
+    }
     func expandedView() -> AnyView { AnyView(HomeView()) }
 }
 
@@ -33,6 +37,9 @@ private struct HomeView: View {
                 }
             }
             .frame(width: 300)
+            if homeMascot {
+                mascotTile
+            }
             LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
                 if !hidden.contains("calendar") { nextEventTile }
                 if !hidden.contains("timers") { timerTile }
@@ -66,24 +73,32 @@ private struct HomeView: View {
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
             }
-            .overlay(alignment: .topTrailing) {
-                mascot(size: 104)
-                    .offset(x: 6, y: -6)
-            }
         }
     }
 
-    /// The page mascot, watching the pointer; a click boops it.
-    @ViewBuilder private func mascot(size: CGFloat) -> some View {
-        if homeMascot {
-            Button { MascotTracker.shared.boop("home") } label: {
-                MascotView(anchor: "home", size: size,
-                           character: MascotCharacter.all.first { $0.id == mascotCharacter } ?? MascotCharacter.all[0])
+    /// The page mascot in a tile of its own, standing on the bottom edge and
+    /// watching the pointer. A click boops it; it doesn't open a module.
+    private var mascotTile: some View {
+        let character = MascotCharacter.all.first { $0.id == mascotCharacter } ?? MascotCharacter.all[0]
+        return Button { MascotTracker.shared.boop("home") } label: {
+            ZStack(alignment: .bottom) {
+                MascotView(anchor: "home", size: 132, character: character)
+                    .offset(y: 6)
+                Text(character.name.uppercased())
+                    .font(.system(size: 10, weight: .bold, design: .rounded))
+                    .tracking(1.2)
+                    .foregroundStyle(Theme.tertiaryInk)
+                    .frame(maxHeight: .infinity, alignment: .top)
+                    .padding(.top, 12)
             }
-            .buttonStyle(.plain)
-            .help("Boop")
-            .debugFrame("home.mascot")
+            .frame(width: 150, height: 184)
+            .background(Theme.fill, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         }
+        .buttonStyle(.plain)
+        .help("Boop \(character.name)")
+        .debugFrame("home.mascot")
     }
 
     private func mediaTile(_ playing: NowPlaying) -> some View {
@@ -101,7 +116,6 @@ private struct HomeView: View {
                             .lineLimit(1)
                     }
                     Spacer(minLength: 0)
-                    mascot(size: 56)
                 }
                 // Ticks only while the song plays, so a paused track costs nothing.
                 TimelineView(.animation(minimumInterval: 1, paused: !playing.isPlaying)) { context in
