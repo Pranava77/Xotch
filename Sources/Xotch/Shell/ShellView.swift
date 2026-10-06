@@ -37,7 +37,8 @@ struct ShellView: View {
                 }
                 if model.showsActivity {
                     LiveActivityBar(activity: model.activities.current,
-                                    adiyogi: model.activities.showsAdiyogi,
+                                    companion: model.activities.companion,
+                                    mascotAnchor: model.earMascotAnchor,
                                     earWidth: model.earWidth,
                                     notchSize: model.closedSize,
                                     position: model.activities.livePosition,
@@ -310,7 +311,9 @@ private struct PinButton: View {
 private struct LiveActivityBar: View {
     let activity: LiveActivity?
     /// Holds the left ear; an activity's icon then moves to the right ear.
-    let adiyogi: Bool
+    let companion: EarCompanion
+    let mascotAnchor: String
+    private var adiyogi: Bool { companion != .none }
     let earWidth: CGFloat
     let notchSize: CGSize
     /// Which of several live activities is showing, for the dots.
@@ -320,7 +323,10 @@ private struct LiveActivityBar: View {
     var body: some View {
         HStack(spacing: 0) {
             Group {
-                if adiyogi {
+                if companion == .mascot {
+                    MascotView(anchor: mascotAnchor, size: 30)
+                        .transition(.opacity)
+                } else if companion == .adiyogi {
                     AdiyogiMark()
                         .transition(.opacity)
                 } else if let activity {

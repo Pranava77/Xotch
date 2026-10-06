@@ -271,6 +271,10 @@ final class ScreenManager {
         #endif
         let location = NSEvent.mouseLocation
         controllers.values.forEach { $0.pointerMoved(to: location) }
+        // A few comparisons; a mascot redraws only when its head turns.
+        if MascotTracker.shared.isTracking {
+            MascotTracker.shared.pointerMoved(location)
+        }
     }
 
     private func pointerPressed() {

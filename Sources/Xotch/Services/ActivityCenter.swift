@@ -69,8 +69,9 @@ final class ActivityCenter {
     private(set) var hud: LiveActivity?
     private(set) var banner: LiveActivity?
     private(set) var ongoing: [String: LiveActivity] = [:]
-    /// Adiyogi at the outer edge of the left ear.
-    private(set) var showsAdiyogi = false
+    /// What sits at the outer edge of the left ear: Adiyogi, the mascot, or nothing.
+    private(set) var companion: EarCompanion = .none
+    var showsCompanion: Bool { companion != .none }
     /// Goes up by one for each celebration; views watch it to play one.
     private(set) var celebrations = 0
     /// Which ongoing activity the ear shows while several are live. It moves
@@ -226,15 +227,15 @@ final class ActivityCenter {
 
     /// Called at launch and whenever a setting changes.
     func settingsChanged() {
-        let on = AppSettings.adiyogiEar
+        let next = AppSettings.earCompanion
         #if DEBUG
         if isStashed {
-            stashedAdiyogi = on
+            stashedCompanion = next
             return
         }
         #endif
-        guard on != showsAdiyogi else { return }
-        withAnimation(Motion.activity) { showsAdiyogi = on }
+        guard next != companion else { return }
+        withAnimation(Motion.activity) { companion = next }
     }
 
     /// Confetti and a haptic, e.g. for a finished focus session.
@@ -281,16 +282,16 @@ final class ActivityCenter {
     /// Which ongoing activities are live, for `scripts/debug.sh status`.
     var debugOngoingIDs: String { ongoing.keys.sorted().joined(separator: ",") }
 
-    @ObservationIgnored private var stashedAdiyogi = false
+    @ObservationIgnored private var stashedCompanion: EarCompanion = .none
     @ObservationIgnored private var isStashed = false
 
-    /// Sets live activities (and Adiyogi) aside for snapshots, and returns them.
+    /// Sets live activities (and the ear companion) aside for snapshots, and returns them.
     func debugStash() -> [String: LiveActivity] {
         let saved = ongoing
         ongoing = [:]
         updateRotation()
-        stashedAdiyogi = showsAdiyogi
-        showsAdiyogi = false
+        stashedCompanion = companion
+        companion = .none
         isStashed = true
         return saved
     }
@@ -306,8 +307,8 @@ final class ActivityCenter {
     }
 
     /// Snapshots set bars of their own; this goes around the stash.
-    func debugShowAdiyogi(_ shown: Bool) {
-        showsAdiyogi = shown
+    func debugShowCompanion(_ shown: EarCompanion) {
+        companion = shown
     }
 
     func debugRestore(_ saved: [String: LiveActivity]) {
@@ -315,7 +316,7 @@ final class ActivityCenter {
             ongoing[moduleID] = activity
         }
         isStashed = false
-        showsAdiyogi = stashedAdiyogi
+        companion = stashedCompanion
         updateRotation()
     }
     #endif

@@ -110,7 +110,7 @@ enum MarketingShots {
                     center.setOngoing(nil, for: activity.moduleID)
                 }
                 // Adiyogi resting in the left ear of an otherwise quiet notch.
-                center.debugShowAdiyogi(true)
+                center.debugShowCompanion(.adiyogi)
                 save("ears-adiyogi", model { _ in }, size: earSize, scale: 2)
             }
             center.debugRestore(samples)

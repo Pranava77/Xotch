@@ -335,6 +335,14 @@ final class MediaService {
         return true
     }
 
+    /// Nothing playing, for snapshots of Home's clock.
+    func withNothingPlaying(_ body: () -> Void) {
+        let saved = nowPlaying
+        nowPlaying = nil
+        body()
+        nowPlaying = saved
+    }
+
     func withSample(_ body: () -> Void) {
         let saved = (nowPlaying, artwork, tint)
         nowPlaying = NowPlaying(title: "Midnight City", artist: "M83", album: "Hurry Up, We're Dreaming",

@@ -18,6 +18,8 @@ private struct HomeView: View {
     private var todos: TodoService { .shared }
     private var claude: ClaudeLiveService { .shared }
     @AppStorage(SettingsKey.hiddenModules) private var hiddenModules = ""
+    @AppStorage(SettingsKey.homeMascot) private var homeMascot = true
+    @AppStorage(SettingsKey.mascotCharacter) private var mascotCharacter = "fox"
     @Environment(\.snapshotDate) private var snapshotDate
 
     var body: some View {
@@ -64,6 +66,23 @@ private struct HomeView: View {
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
             }
+            .overlay(alignment: .topTrailing) {
+                mascot(size: 104)
+                    .offset(x: 6, y: -6)
+            }
+        }
+    }
+
+    /// The page mascot, watching the pointer; a click boops it.
+    @ViewBuilder private func mascot(size: CGFloat) -> some View {
+        if homeMascot {
+            Button { MascotTracker.shared.boop("home") } label: {
+                MascotView(anchor: "home", size: size,
+                           character: MascotCharacter.all.first { $0.id == mascotCharacter } ?? MascotCharacter.all[0])
+            }
+            .buttonStyle(.plain)
+            .help("Boop")
+            .debugFrame("home.mascot")
         }
     }
 
@@ -82,6 +101,7 @@ private struct HomeView: View {
                             .lineLimit(1)
                     }
                     Spacer(minLength: 0)
+                    mascot(size: 56)
                 }
                 // Ticks only while the song plays, so a paused track costs nothing.
                 TimelineView(.animation(minimumInterval: 1, paused: !playing.isPlaying)) { context in

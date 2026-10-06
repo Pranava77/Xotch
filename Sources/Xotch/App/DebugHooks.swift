@@ -117,6 +117,7 @@ enum DebugHooks {
                     "media: hasNowPlaying=\(MediaService.shared.nowPlaying != nil) title=\(MediaService.shared.nowPlaying?.title ?? "-") hasArtwork=\(MediaService.shared.artwork != nil)",
                     "media log: \(MediaService.shared.debugLog.joined(separator: " | "))",
                     "ai steps: \((AIChatService.shared.messages.last?.rounds ?? []).flatMap(\.steps).map { "\($0.call.name):\($0.status.rawValue)" }.joined(separator: ", "))",
+                    "mascot: companion=\(ActivityCenter.shared.companion.rawValue) character=\(AppSettings.mascotCharacter) looking=\(MascotTracker.shared.directions.sorted { $0.key < $1.key }.map { "\($0.key):\($0.value)" }.joined(separator: ","))",
                     "ai log: \(AIChatService.shared.debugLog.joined(separator: " | "))",
                     "ai: messages=\(AIChatService.shared.messages.count) streaming=\(AIChatService.shared.isStreaming) provider=\(AIProviderStore.shared.active.map { "\($0.kind)/\($0.model)" } ?? "-") notice=\(AIChatService.shared.notice ?? "-") last=\(AIChatService.shared.messages.last.map { "\($0.role) \($0.text.count) chars error=\($0.isError)" } ?? "-")",
                     "clipboard access: \(ClipboardService.shared.access)",
@@ -178,6 +179,12 @@ enum DebugHooks {
                     "\(tool.name) [\(tool.asks ? "asks" : "looks")] \(tool.description) \(String(decoding: tool.spec.parameters, as: UTF8.self))"
                 }
                 try? (lines.joined(separator: "\n") + "\n").write(toFile: path, atomically: true, encoding: .utf8)
+            } else if command.hasPrefix("default:") {
+                // Sets a string setting, as Settings would: `debug.sh default earCompanion=mascot`.
+                let pair = command.dropFirst("default:".count).split(separator: "=", maxSplits: 1).map(String.init)
+                if pair.count == 2 {
+                    UserDefaults.standard.set(pair[1], forKey: pair[0])
+                }
             } else if command == "ai-stop" {
                 AIChatService.shared.stop()
             } else if command.hasPrefix("ai-provider:") {
@@ -264,6 +271,7 @@ enum DebugHooks {
         lines += captureSelfTest()
         lines += todoSelfTest()
         lines += chatMarkdownSelfTest()
+        lines += mascotSelfTest()
         lines += await harnessSelfTest()
         lines += retroSoundSelfTest()
         lines += mediaKeysSelfTest()
@@ -482,6 +490,51 @@ enum DebugHooks {
 
     /// Adds a real to-do, ticks it, moves it and deletes it: the same calls the
     /// buttons make, so a broken save shows up here.
+    /// The page mascots: every sheet loads and cuts into equal cells, the
+    /// head turns the right way, and boops go blink, payoff, dizzy.
+    @MainActor
+    private static func mascotSelfTest() -> [String] {
+        var lines: [String] = []
+        var broken: [String] = []
+        for character in MascotCharacter.all {
+            for sheet in ["directions", "reactions"] {
+                guard let cells = MascotSprites.cut(character.id + "-" + sheet), cells.count == 9,
+                      Set(cells.map { "\($0.width)x\($0.height)" }).count == 1 else {
+                    broken.append(character.id + "-" + sheet)
+                    continue
+                }
+            }
+        }
+        lines.append("mascot sheets: \(MascotCharacter.all.count) characters\(broken.isEmpty ? "" : ", broken: " + broken.joined(separator: ",")) → \(broken.isEmpty ? "PASS" : "FAILED")")
+
+        typealias Cell = MascotMotion.Cell
+        func look(_ degreesBelow: Double, _ distance: Double = 200, from previous: Int = Cell.center) -> Int {
+            let radians = degreesBelow * .pi / 180
+            // Screen coordinates are y up, so "below" is a negative dy.
+            return MascotMotion.direction(dx: cos(radians) * distance, dy: -sin(radians) * distance, previous: previous)
+        }
+        let cases: [(String, Int, Int)] = [
+            ("pointer to the right", look(0), Cell.right),
+            ("below and left", look(135), Cell.downLeft),
+            ("straight below", look(90), Cell.down),
+            ("above", look(-90), Cell.up),
+            ("within 70 pt", look(45, 40), Cell.center),
+            ("27° below, was right (hysteresis)", look(27, from: Cell.right), Cell.right),
+            ("27° below, was centre", look(27), Cell.downRight),
+        ]
+        for (name, got, expected) in cases {
+            lines.append("mascot looks \(name): \(got) → \(got == expected ? "PASS" : "FAILED: expected \(expected)")")
+        }
+
+        var counter = BoopCounter()
+        let start = Date()
+        let boops = [0, 0.5, 1.0, 1.4, 4.0].map { counter.boop(at: start.addingTimeInterval($0)) }
+        let expected = [MascotMotion.Reaction.heart, MascotMotion.Reaction.sparkle, MascotMotion.Reaction.delighted,
+                        MascotMotion.Reaction.dizzy, MascotMotion.Reaction.heart]
+        lines.append("mascot boops: \(boops) → \(boops == expected ? "PASS" : "FAILED: expected \(expected)")")
+        return lines
+    }
+
     /// The AI harness without a network: tool schemas, a canned stream from
     /// each provider, Gemini's thought signature making the round trip, and
     /// a to-do added then undone.
@@ -899,6 +952,13 @@ enum DebugHooks {
                 }
             }
             // Every kind of block in a reply, at both sizes.
+            // Home with nothing playing: the clock, and the mascot beside it.
+            MediaService.shared.withNothingPlaying {
+                render("4-open-home-mascot") {
+                    $0.phase = .open
+                    $0.selectedModuleID = "home"
+                }
+            }
             AIChatService.shared.withRichSample {
                 render("4-open-ai-rich") {
                     $0.phase = .open
@@ -1010,12 +1070,16 @@ enum DebugHooks {
                                        tint: .yellow, earWidth: 170), for: "notes")
         render("3-activity-note") { _ in }
         center.setOngoing(nil, for: "notes")
+        // The mascot in the left ear, watching (down and left in snapshots).
+        center.debugShowCompanion(.mascot)
+        render("3-activity-mascot") { _ in }
+        center.debugShowCompanion(.none)
         // The music wave on its own, then with Adiyogi taking the left ear.
         center.setOngoing(LiveActivity(moduleID: "media", symbol: "music.note", content: .playing, tint: .pink), for: "media")
         render("3-activity-music") { _ in }
-        center.debugShowAdiyogi(true)
+        center.debugShowCompanion(.adiyogi)
         render("3-activity-music-adiyogi") { _ in }
-        center.debugShowAdiyogi(false)
+        center.debugShowCompanion(.none)
         center.setOngoing(nil, for: "media")
         let end = Date().addingTimeInterval(18 * 60)
         // The newest live activity takes the ear first; the dots show the round.
