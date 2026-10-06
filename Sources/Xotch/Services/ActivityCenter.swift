@@ -36,7 +36,9 @@ struct LiveActivity: Identifiable, Equatable {
     var tint: Color
     /// Shown instead of the symbol, e.g. album art.
     var image: NSImage?
-    var earWidth: CGFloat = Layout.earWidth
+    /// The longest text the ear shows before it's cut short; the ear
+    /// otherwise fits the content exactly (see `EarMetrics`).
+    var maxContentWidth: CGFloat = 150
     /// How long a banner stays. Ongoing activities ignore it.
     var duration: Duration = .seconds(4)
     var progress: ActivityProgress?
@@ -50,7 +52,7 @@ struct LiveActivity: Identifiable, Equatable {
     static func == (lhs: LiveActivity, rhs: LiveActivity) -> Bool {
         lhs.id == rhs.id && lhs.moduleID == rhs.moduleID && lhs.symbol == rhs.symbol
             && lhs.content == rhs.content && lhs.tint == rhs.tint
-            && lhs.image === rhs.image && lhs.earWidth == rhs.earWidth
+            && lhs.image === rhs.image && lhs.maxContentWidth == rhs.maxContentWidth
             && lhs.progress == rhs.progress && lhs.pulse == rhs.pulse
     }
 }
@@ -79,10 +81,14 @@ final class ActivityCenter {
     /// Which ongoing activity the ear shows while several are live. It moves
     /// on every few seconds, so music gets a turn while Claude works.
     private(set) var rotation = 0
+    /// Goes up when a running clock in the ear gains or loses a digit, so the
+    /// ears fit it again (see `EarMetrics.clockTemplate`).
+    private(set) var clockTick = 0
     @ObservationIgnored private var queue: [LiveActivity] = []
     @ObservationIgnored private var bannerTask: Task<Void, Never>?
     @ObservationIgnored private var hudTask: Task<Void, Never>?
     @ObservationIgnored private var rotationTask: Task<Void, Never>?
+    @ObservationIgnored private var clockTask: Task<Void, Never>?
     @ObservationIgnored private var demoIndex = 0
 
     /// How long each live activity stays in the ear before the next.
@@ -171,7 +177,10 @@ final class ActivityCenter {
     /// Sets or clears a module's ongoing activity. Keeps the same id while the
     /// module stays live, so updates don't replay the entrance animation.
     func setOngoing(_ activity: LiveActivity?, for moduleID: String) {
-        defer { updateRotation() }
+        defer {
+            updateRotation()
+            scheduleClockRefit()
+        }
         guard var activity else {
             if ongoing[moduleID] != nil {
                 withAnimation(Motion.activity) { ongoing[moduleID] = nil }
@@ -217,6 +226,29 @@ final class ActivityCenter {
         } else {
             rotationTask?.cancel()
             rotationTask = nil
+        }
+    }
+
+    /// Wakes once when the next running clock changes its number of digits,
+    /// a second early, as `EarMetrics` looks a second ahead.
+    private func scheduleClockRefit() {
+        clockTask?.cancel()
+        clockTask = nil
+        let now = Date()
+        let steps = EarMetrics.clockSteps.map { $0 - 1 }
+        let next = ongoing.values.compactMap { activity -> Date? in
+            switch activity.content {
+            case .countdown(let until): steps.map { until.addingTimeInterval(-$0) }.filter { $0 > now }.min()
+            case .stopwatch(let since): steps.map { since.addingTimeInterval($0) }.filter { $0 > now }.min()
+            default: nil
+            }
+        }.min()
+        guard let next else { return }
+        clockTask = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(next.timeIntervalSinceNow + 0.05))
+            guard let self, !Task.isCancelled else { return }
+            withAnimation(Motion.activity) { self.clockTick += 1 }
+            self.scheduleClockRefit()
         }
     }
 
@@ -268,7 +300,7 @@ final class ActivityCenter {
         let samples = [
             LiveActivity(moduleID: "timers", symbol: "checkmark.circle.fill", content: .text("Done"), tint: Theme.positive),
             LiveActivity(moduleID: "capture", symbol: "camera.viewfinder", content: .text("Saved"),
-                         tint: CaptureService.tint, earWidth: 96),
+                         tint: CaptureService.tint),
             LiveActivity(moduleID: "shelf", symbol: "tray.full.fill", content: .text("3 files"), tint: .cyan),
             LiveActivity(moduleID: "clipboard", symbol: "doc.on.clipboard.fill", content: .text("Copied"), tint: Theme.accent),
         ]

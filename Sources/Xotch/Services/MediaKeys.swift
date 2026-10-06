@@ -172,13 +172,13 @@ final class MediaKeys {
     func showVolume(_ value: Double) {
         ActivityCenter.shared.showHUD(LiveActivity(
             moduleID: "volume", symbol: SystemVolume.symbol(for: value, muted: SystemVolume.isMuted),
-            content: .level(SystemVolume.isMuted ? 0 : value), tint: Theme.ink, earWidth: 96))
+            content: .level(SystemVolume.isMuted ? 0 : value), tint: Theme.ink))
     }
 
     func showBrightness(_ value: Double) {
         ActivityCenter.shared.showHUD(LiveActivity(
             moduleID: "brightness", symbol: Brightness.symbol(for: value),
-            content: .level(value), tint: Theme.ink, earWidth: 96))
+            content: .level(value), tint: Theme.ink))
     }
 }
 

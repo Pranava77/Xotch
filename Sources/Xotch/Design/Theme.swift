@@ -40,13 +40,11 @@ enum Layout {
     /// ask for more room (see `NotchModule.openSize`).
     /// Wide and short: it spreads along the menu bar rather than down the screen.
     static let openSize = CGSize(width: 740, height: 260)
-    /// Default width of each "ear" beside the hardware notch in the activity state.
-    static let earWidth: CGFloat = 78
-    /// Room for an activity's icon when it moves into the right ear, because
-    /// Adiyogi has the left one.
-    static let inlineIconWidth: CGFloat = 28
-    /// A left ear holding just an activity's icon and the edge padding.
-    static let leftIconEarWidth: CGFloat = 52
+    /// The "ears" beside the hardware notch fit what they hold (see
+    /// `EarMetrics`): this much from the outer edge to the content…
+    static let earOuterPadding: CGFloat = 12
+    /// …and this much between the content and the camera housing.
+    static let earInnerGap: CGFloat = 8
     /// How much the closed notch grows while the pointer rests on it.
     static let peekGrowth = CGSize(width: 18, height: 6)
     /// Size of the drawn notch on displays that don't have one. A flat width

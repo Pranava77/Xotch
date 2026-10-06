@@ -50,11 +50,11 @@ enum DebugHooks {
                                              for: "timers")
         case "activity-claude":
             ActivityCenter.shared.setOngoing(LiveActivity(moduleID: "claude", symbol: "sparkle", content: .text("Editing"),
-                                                          tint: ClaudeLiveService.tint, earWidth: 110, pulse: .calm),
+                                                          tint: ClaudeLiveService.tint, pulse: .calm),
                                              for: "claude")
         case "activity-download":
             ActivityCenter.shared.setOngoing(LiveActivity(moduleID: "downloads", symbol: "arrow.down", content: .text("62%"),
-                                                          tint: Theme.accent, earWidth: 90, progress: .fraction(0.62)),
+                                                          tint: Theme.accent, progress: .fraction(0.62)),
                                              for: "downloads")
         case "activity-recording":
             ActivityCenter.shared.setOngoing(CaptureService.recordingActivity(since: Date().addingTimeInterval(-42)),
@@ -287,6 +287,7 @@ enum DebugHooks {
         lines += todoSelfTest()
         lines += chatMarkdownSelfTest()
         lines += mascotSelfTest()
+        lines += earMetricsSelfTest()
         lines += await dictationSelfTest()
         lines += await harnessSelfTest()
         lines += retroSoundSelfTest()
@@ -638,6 +639,41 @@ enum DebugHooks {
         let state = view.debugState
         let wanted = Motion.reduceMotion ? "layers=true breathing=false" : "layers=true breathing=true"
         lines.append("mascot layers: \(state) → \(state == wanted ? "PASS" : "FAILED: expected \(wanted)")")
+        return lines
+    }
+
+    /// The ears fit their content: what `EarMetrics` works out from the font
+    /// matches what SwiftUI lays out, for text and for running clocks.
+    @MainActor
+    private static func earMetricsSelfTest() -> [String] {
+        func laidOut<V: View>(_ view: V) -> CGFloat {
+            NSHostingView(rootView: view
+                .font(.system(size: EarMetrics.fontSize, weight: .semibold, design: .rounded))
+                .monospacedDigit()
+                .fixedSize()).fittingSize.width
+        }
+        var misses: [String] = []
+        for text in ["Editing", "Needs you", "Done", "62%", "100%", "3 left", "Writing…", "Copied"] {
+            let worked = EarMetrics.textWidth(text), real = laidOut(Text(text))
+            if worked < real || worked - real > 1 { misses.append("\(text) \(worked)≠\(real)") }
+        }
+        let now = Date()
+        for seconds in [5.0, 65, 605, 3605, 36005] {
+            let down = LiveActivity(moduleID: "t", symbol: "timer", content: .countdown(until: now.addingTimeInterval(seconds)), tint: .white)
+            let up = LiveActivity(moduleID: "t", symbol: "timer", content: .stopwatch(since: now.addingTimeInterval(-seconds)), tint: .white)
+            let realDown = laidOut(Text(timerInterval: now...now.addingTimeInterval(seconds), countsDown: true))
+            let realUp = laidOut(Text(now.addingTimeInterval(-seconds), style: .timer))
+            for (name, worked, real) in [("countdown", EarMetrics.contentWidth(down, at: now), realDown),
+                                         ("stopwatch", EarMetrics.contentWidth(up, at: now), realUp)]
+            where worked < real || worked - real > 1 {
+                misses.append("\(name) \(Int(seconds))s \(worked)≠\(real)")
+            }
+        }
+        var lines = ["ear widths match layout: \(misses.isEmpty ? "PASS" : "FAILED: " + misses.joined(separator: ", "))"]
+        let long = LiveActivity(moduleID: "notes", symbol: "note.text",
+                                content: .text("A very long first line of a note that would fill the menu bar"), tint: .white)
+        let capped = EarMetrics.contentWidth(long)
+        lines.append("ear caps long text: \(capped) → \(capped == long.maxContentWidth ? "PASS" : "FAILED")")
         return lines
     }
 
@@ -1113,7 +1149,7 @@ enum DebugHooks {
         withSampleData {
             // A volume key pressed while the notch is open: the level takes the header.
             ActivityCenter.shared.showHUD(LiveActivity(moduleID: "volume", symbol: "speaker.wave.2.fill",
-                                                       content: .level(0.56), tint: Theme.ink, earWidth: 96),
+                                                       content: .level(0.56), tint: Theme.ink),
                                           for: .seconds(30))
             render("4-open-key-hud") {
                 $0.phase = .open
@@ -1178,12 +1214,12 @@ enum DebugHooks {
         render("3-activity-timer") { _ in }
         center.setOngoing(nil, for: "timers")
         center.setOngoing(LiveActivity(moduleID: "notes", symbol: "note.text", content: .text("Call the bank before 5"),
-                                       tint: .yellow, earWidth: 170), for: "notes")
+                                       tint: .yellow), for: "notes")
         render("3-activity-note") { _ in }
         center.setOngoing(nil, for: "notes")
         // Dictating: the microphone and its waveform, held in the ear.
         center.setOngoing(LiveActivity(moduleID: "dictation", symbol: "mic.fill", content: .listening,
-                                       tint: DictationService.tint, earWidth: 96, pulse: .calm), for: "dictation")
+                                       tint: DictationService.tint, pulse: .calm), for: "dictation")
         render("3-activity-dictation") { _ in }
         center.setOngoing(nil, for: "dictation")
         // The mascot in the left ear, watching (down and left in snapshots).
@@ -1210,18 +1246,18 @@ enum DebugHooks {
         center.setOngoing(nil, for: "timers")
         center.setOngoing(nil, for: "media")
         center.setOngoing(LiveActivity(moduleID: "claude", symbol: "sparkle", content: .text("Editing"),
-                                       tint: ClaudeLiveService.tint, earWidth: 110, pulse: .calm), for: "claude")
+                                       tint: ClaudeLiveService.tint, pulse: .calm), for: "claude")
         render("3-activity-claude") { _ in }
         center.setOngoing(nil, for: "claude")
         center.setOngoing(LiveActivity(moduleID: "downloads", symbol: "arrow.down", content: .text("62%"),
-                                       tint: Theme.accent, earWidth: 90, progress: .fraction(0.62)), for: "downloads")
+                                       tint: Theme.accent, progress: .fraction(0.62)), for: "downloads")
         render("3-activity-download") { _ in }
         center.setOngoing(nil, for: "downloads")
         center.setOngoing(CaptureService.recordingActivity(since: Date().addingTimeInterval(-42)), for: "capture")
         render("3-activity-recording") { _ in }
         center.setOngoing(nil, for: "capture")
         center.setOngoing(LiveActivity(moduleID: "volume", symbol: "speaker.wave.2.fill", content: .level(0.56),
-                                       tint: Theme.ink, earWidth: 96), for: "volume")
+                                       tint: Theme.ink), for: "volume")
         render("3-activity-volume") { _ in }
         center.setOngoing(nil, for: "volume")
         NotesService.shared.start()

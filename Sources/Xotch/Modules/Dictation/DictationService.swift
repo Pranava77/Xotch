@@ -162,7 +162,7 @@ final class DictationService {
         streamTask = nil
         phase = .finishing
         ActivityCenter.shared.setOngoing(LiveActivity(moduleID: "dictation", symbol: "waveform", content: .text("Writing…"),
-                                                      tint: Self.tint, earWidth: 96), for: "dictation")
+                                                      tint: Self.tint), for: "dictation")
         let samples = audio.all()
         let target = target
         Task {
@@ -309,12 +309,12 @@ final class DictationService {
 
     private func showListening() {
         ActivityCenter.shared.setOngoing(LiveActivity(moduleID: "dictation", symbol: "mic.fill", content: .listening,
-                                                      tint: Self.tint, earWidth: 96, pulse: .calm), for: "dictation")
+                                                      tint: Self.tint, pulse: .calm), for: "dictation")
     }
 
     private func banner(symbol: String, text: String, tint: Color) {
         ActivityCenter.shared.post(LiveActivity(moduleID: "dictation", symbol: symbol, content: .text(text),
-                                                tint: tint, earWidth: 150, duration: .seconds(2.5)))
+                                                tint: tint, duration: .seconds(2.5)))
     }
 
     private func fail(_ message: String) {

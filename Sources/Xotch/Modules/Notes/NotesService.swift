@@ -100,7 +100,7 @@ final class NotesService {
         }
         ActivityCenter.shared.setOngoing(
             LiveActivity(moduleID: "notes", symbol: "note.text", content: .text(firstLine),
-                         tint: Color(red: 1, green: 0.84, blue: 0.3), earWidth: 170),
+                         tint: Color(red: 1, green: 0.84, blue: 0.3)),
             for: "notes"
         )
     }

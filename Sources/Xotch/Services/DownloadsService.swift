@@ -70,8 +70,7 @@ final class DownloadsService {
         update()
         if finished {
             ActivityCenter.shared.post(LiveActivity(moduleID: "downloads", symbol: "arrow.down.circle.fill",
-                                                    content: .text("Done"), tint: Theme.accent,
-                                                    earWidth: 90, duration: .seconds(3)))
+                                                    content: .text("Done"), tint: Theme.accent, duration: .seconds(3)))
         }
     }
 
@@ -96,7 +95,7 @@ final class DownloadsService {
         let label = tracked.count > 1 ? "\(tracked.count) files" : (known ? "\(Int(fraction * 100))%" : "…")
         ActivityCenter.shared.setOngoing(
             LiveActivity(moduleID: "downloads", symbol: "arrow.down", content: .text(label),
-                         tint: Theme.accent, earWidth: 90,
+                         tint: Theme.accent,
                          progress: .fraction(known ? fraction : 0)),
             for: "downloads"
         )

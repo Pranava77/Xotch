@@ -53,18 +53,22 @@ final class NotchViewModel {
         phase != .open && (activities.current != nil || activities.showsCompanion)
     }
 
-    /// Width of each ear. They stay equal so the notch stays centred on the
-    /// camera. Adiyogi keeps the left ear and an activity's icon moves to the
-    /// right; alone he needs only a narrow pair. While live activities take
-    /// turns, the ears fit the widest of them, so the notch doesn't change
-    /// width with every turn.
+    /// Width of each ear: exactly what the wider side holds, and no more. They
+    /// stay equal so the notch stays centred on the camera. A companion keeps
+    /// the left ear and an activity's icon moves to the right. While live
+    /// activities take turns, each turn fits its own, and the notch springs
+    /// between them with the turn.
     var earWidth: CGFloat {
-        let adiyogi = activities.showsCompanion
-        let shown = activities.isRotating ? activities.liveOngoing : [activities.current].compactMap { $0 }
-        let right = shown.map { $0.earWidth + (adiyogi ? Layout.inlineIconWidth : 0) }.max() ?? 0
-        let left: CGFloat = adiyogi ? activities.companion.earWidth
-            : (activities.current == nil ? 0 : Layout.leftIconEarWidth)
-        return max(left, right, activities.current == nil ? 0 : Layout.earWidth)
+        _ = activities.clockTick  // A running clock gains a digit.
+        let companion = activities.showsCompanion
+        let padding = Layout.earOuterPadding + Layout.earInnerGap
+        var right: CGFloat = 0
+        var left: CGFloat = companion ? activities.companion.earWidth : 0
+        if let activity = activities.current {
+            right = padding + EarMetrics.contentWidth(activity) + (companion ? EarMetrics.inlineIcon : 0)
+            if !companion { left = padding + EarMetrics.iconSide }
+        }
+        return ceil(max(left, right))
     }
 
     var bodySize: CGSize {
