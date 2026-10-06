@@ -199,14 +199,6 @@ enum CommandCatalog {
                                        keywords: "files remove empty") { ShelfService.shared.removeAll() })
         }
 
-        let store = ThemeStore.shared
-        for palette in store.choices where palette.id != store.selectedID {
-            list.append(PaletteCommand(id: "theme-\(palette.id)", title: "Use the \(palette.name) theme",
-                                       symbol: "paintpalette", tint: palette.accent.color,
-                                       keywords: "appearance colour color look") { store.select(palette.id) }
-            )
-        }
-
         list.append(PaletteCommand(id: "pin", title: actions.isPinned ? "Unpin the notch" : "Keep the notch open",
                                    symbol: "pin", keywords: "pin unpin stay") { actions.togglePin() })
         list.append(PaletteCommand(id: "close", title: "Close the notch", symbol: "chevron.up",
@@ -360,7 +352,7 @@ private struct PaletteBackground: View {
         let shape = RoundedRectangle(cornerRadius: 16, style: .continuous)
         Group {
             if glassAvailable(snapshot: snapshotMode) {
-                Color.clear.xotchGlass(shape, tint: Theme.surface.opacity(0.3), gloss: 0.5)
+                Color.clear.xotchGlass(shape, tint: Theme.surface.opacity(0.3))
             } else {
                 shape.fill(Theme.surface)
                     .overlay(shape.fill(Theme.fill))

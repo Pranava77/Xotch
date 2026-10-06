@@ -65,9 +65,9 @@
   <tr>
     <td valign="top">
       <h3>Make it yours</h3>
-      <p>A page mascot watches your pointer from the ear and from Home, and reacts when you click it. Pick from twelve characters, four themes or your own colours, and choose which modules appear.</p>
+      <p>A page mascot watches your pointer from the ear and from Home, and reacts when you click it. Pick from twelve characters, put a mirror on Home for a look before a call, and choose which modules appear.</p>
     </td>
-    <td><img src="docs/images/theme-aurora.jpg" alt="Home in the Aurora theme"></td>
+    <td><img src="docs/images/ears-mascot.jpg" alt="A small mascot in the ear beside the notch"></td>
   </tr>
 </table>
 

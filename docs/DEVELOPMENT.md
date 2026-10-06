@@ -27,7 +27,6 @@ With a debug build running:
 ./scripts/debug.sh record screen     # start recording: screen, window or area; record-stop ends it
 ./scripts/debug.sh celebrate         # confetti (and the sound, if it's on)
 ./scripts/debug.sh palette           # open the command palette; also ripple
-./scripts/debug.sh theme aero        # aero, midnight, smoke, aurora or custom
 ./scripts/debug.sh snapshot ~/Desktop/xotch-snapshots     # render every state to PNG (sample data)
 ./scripts/debug.sh effects ~/Desktop/xotch-effects        # render the Metal and Core Animation effects to PNG
 ./scripts/debug.sh marketing /tmp/xotch-images            # regenerate the README's product images (sample data)
@@ -101,7 +100,8 @@ The Revenue, Analytics and Weather modules were removed. On first launch after t
 
 | Feature | How it works | Cost |
 |---|---|---|
-| Themes | `ThemeStore` holds the palette (background, text, accent, glow, solid or glass, and a `style` of modern or retro). The closed notch always stays black. | — |
+| Look | One look for now: `Theme` holds macOS-dark constants (white text, the orange accent, translucent fills), the open notch draws `NSVisualEffectView`'s dark `.hudWindow` material (`Design/Surface.swift`) and the closed notch is black. Controls are Liquid Glass on macOS 26 (`xotchGlass`), flat fills before that and in snapshots. Themes of Xotch's own come later. | — |
+| Mirror | Home's mirror tile starts `MirrorCamera` (an `AVCaptureSession` on its own queue) only after a click, and stops it when the tile is clicked again or Home goes away. `MirrorPreviewView`'s backing layer is the `AVCaptureVideoPreviewLayer`, mirrored through its connection. | Camera only while looking |
 | Arcade sounds | `RetroSound` plays cues that `RetroSynth` renders from pulse, triangle and noise waves through `AVAudioEngine`; the engine stops after 5 s idle | — |
 | Glass | `.glassEffect()` on macOS 26; an `NSVisualEffectView` blur on 14–15 (`defaults write com.pranava.xotch forceBlurFallback -bool YES` to see it on 26) | window server |
 | Drop ripple, artwork glow, LED display | Metal shaders compiled at runtime (`Design/Shaders.swift`). The glow and LED display are drawn once and moved by Core Animation; only the one-second ripple draws frame by frame. | ~0.1% while Now Playing is open |
@@ -110,7 +110,7 @@ The Revenue, Analytics and Weather modules were removed. On first launch after t
 | Adiyogi | A `Canvas` drawing in the left ear (`AdiyogiMark`), drawn once and never animated; also the README icon | 0% |
 | Celebration | `CAEmitterLayer` confetti and a double haptic when a focus session finishes (Settings › Features) | 0% |
 | Screen recording | `SCStream` with an `SCRecordingOutput` writes the movie itself (macOS 15+). Xotch's own windows are filtered out, so the notch never appears in a recording. | measured below |
-| Command palette | `CommandCatalog` builds commands from the modules, timers, music, themes and clipboard; fuzzy matching | — |
+| Command palette | `CommandCatalog` builds commands from the modules, timers, music and clipboard; fuzzy matching | — |
 
 The plan called for SwiftUI's `.layerEffect`, which needs a `.metallib` that only Xcode's Metal compiler can build, so it's done without it for now.
 
@@ -132,9 +132,8 @@ Captures are saved to `~/Pictures/Xotch` by default. Pictures is one of the few 
 - **Rollover:** unfinished to-dos from before today move to today once a day, at midnight or first launch (`rolloverIfNeeded`), unless "Carry unfinished to-dos over" is off. The setting keeps its old `lifeRollover` key so saved choices survive.
 - **Beside the notch:** with the setting on, "3 left" shows as an ongoing activity.
 
-### Aero glass and arcade sounds
+### Arcade sounds
 
-- **Retro is a `Palette.style`, not a separate code path.** `xotchGlass` (real Liquid Glass on macOS 26, a flat fill before that and in snapshots) is unchanged; in a retro palette it also adds `xotchGloss`, one overlay with a specular band over the top half, a lit top edge and a dark lower edge. `PillButtonStyle`, `IconButtonStyle`, `Tile`, the search field, `NotchSwitchStyle`, the header tabs and the command palette all go through it, and `strength` scales it down for big surfaces. `style` is optional so themes saved before it existed still decode, as modern.
 - **Sounds are synthesised, not shipped.** `RetroSynth.render` is pure (no audio hardware), so the self-test can check every cue's length, peak and edges. `RetroSound` keeps four voices, cuts the oldest when a fifth arrives so quick repeats never queue, and stops its engine 5 s after the last sound so it doesn't keep the audio hardware awake. Nothing is created while the setting is off. `scripts/debug.sh sound <cue>` plays one whatever the setting is.
 
 ### Volume and brightness keys
@@ -211,7 +210,7 @@ Sources/Xotch/
 ├─ Modules/    NotchModule protocol, ModuleRegistry, one folder per module (Service + Module/View)
 ├─ Services/   ActivityCenter (HUD, banners, ongoing activities), Storage, Haptics, Permissions,
 │              AudioLevels, SystemVolume, DownloadsService, CelebrationSound
-├─ Design/     Motion (spring presets), Theme, Palette (themes), Surface (glass), Shaders,
+├─ Design/     Motion (spring presets), Theme, RGBA, Surface (the dark material), Shaders,
 │              Layout, shared components
 └─ Settings/   AppSettings (UserDefaults keys), SettingsView
 ```

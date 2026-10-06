@@ -60,7 +60,7 @@
 | **Beside the notch** | Timers, music, Claude, recordings, downloads and volume, shown without opening |
 | **Shortcuts** | ⌘⇧Space asks the AI from any app; ⌘K opens a module, starts a timer, pauses music or adds a to-do |
 | **Adiyogi** | A small Adiyogi bust in the left ear of the closed notch |
-| **Themes** | Aero Glass, Midnight, Smoke Glass, Aurora, or your own colours |
+| **Mirror** | Click the tile on Home to see yourself through the camera; it's off again when the notch closes |
 | **Sounds** | Optional 8-bit blips and jingles, generated in code |
 | **Any display** | Monitors without a notch get one drawn in the menu bar |
 
@@ -233,7 +233,6 @@ In the open notch, press **⌘K** and type:
 | `10 min` | Start a 10-minute timer |
 | `pause` | Pause the music |
 | `shot` | Take a screenshot |
-| `aurora` | Switch theme |
 | Something you copied | Copy it again |
 | A question ending in `?` | Ask the AI |
 | Anything else | Add it to today's to-dos, or ask the AI |
@@ -249,22 +248,9 @@ In the open notch, press **⌘K** and type:
 
 ## Make it yours
 
-<table>
-  <tr>
-    <td width="25%"><img src="images/theme-aero.jpg" alt="The Aero Glass theme: sky-blue glass with a bright specular band and glossy aqua buttons"></td>
-    <td width="25%"><img src="images/theme-midnight.jpg" alt="The Midnight theme: a solid black notch"></td>
-    <td width="25%"><img src="images/theme-smoke.jpg" alt="The Smoke Glass theme: a frosted notch showing a blur of the wallpaper"></td>
-    <td width="25%"><img src="images/theme-aurora.jpg" alt="The Aurora theme: a deep blue notch with a violet glow"></td>
-  </tr>
-  <tr>
-    <td align="center"><b>Aero Glass</b><br><sub>The default: glossy 2000s glass</sub></td>
-    <td align="center"><b>Midnight</b></td>
-    <td align="center"><b>Smoke Glass</b><br><sub>Liquid Glass on macOS 26</sub></td>
-    <td align="center"><b>Aurora</b></td>
-  </tr>
-</table>
+**The look** is macOS's own dark material, like Control Center: the open notch is translucent dark, so a hint of what's behind shows through, and the closed notch stays black so it blends in with the camera. Themes of Xotch's own will come later.
 
-**Aero Glass** is Frutiger Aero, the glossy look of Windows Aero and early Mac OS X: a bright band across the top of every button, bevelled edges, aqua-green accents and rounded type, on top of Liquid Glass. The other themes stay flat. A custom theme lets you pick the background, text, accent and glow colours, and turn the gloss on or off. The closed notch always stays black so it blends in with the camera.
+**The mirror** is a tile on Home. Click it and the camera comes on, flipped like a mirror, for a look before a call. Click again, switch tabs or close the notch and it's off; the camera never starts just because the notch opened. Turn the tile off in Settings › Appearance.
 
 **Arcade sound effects** are short 8-bit blips for opening and closing the notch, switching modules, adding, finishing and deleting to-dos, and pinning, with a jingle for a finished timer or a celebration. They're generated in code, so no sound files ship with the app. They're off by default; turn them on in Settings › General, where there's a volume slider.
 

@@ -9,6 +9,7 @@ enum PrivacyPane: String {
     case microphone = "Privacy_Microphone"
     case notifications = "Privacy_Notifications"
     case accessibility = "Privacy_Accessibility"
+    case camera = "Privacy_Camera"
 
     func open() {
         guard let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?\(rawValue)") else { return }

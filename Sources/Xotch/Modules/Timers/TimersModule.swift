@@ -73,7 +73,7 @@ private struct TimersView: View {
                     .font(.system(size: 12, weight: .semibold))
                     .frame(width: 16)
                 Text(item.rawValue)
-                    .font(.system(size: 12.5, weight: .semibold, design: Theme.fontDesign))
+                    .font(.system(size: 12.5, weight: .semibold))
                 Spacer(minLength: 0)
                 // Something is counting in this mode while you look at another.
                 if isLive(item) {
@@ -170,7 +170,6 @@ private struct PlayButton: View {
                 .foregroundStyle(RGBA(tint).onColor)
                 .frame(width: 44, height: 44)
                 .background(Circle().fill(tint))
-                .xotchGloss(Circle(), strength: 0.6)
                 .shadow(color: tint.opacity(0.45), radius: 8, y: 2)
                 .contentShape(Circle())
         }

@@ -24,7 +24,6 @@ enum MarketingShots {
         let stashed = center.debugStash()
         defer { center.debugRestore(stashed) }
         let geometry = NotchGeometry(screen: screen)
-        let theme = ThemeStore.shared
         let clock = Calendar.current.date(bySettingHour: 9, minute: 41, second: 0, of: .now) ?? .now
 
         func model(_ configure: (NotchViewModel) -> Void) -> NotchViewModel {
@@ -56,13 +55,13 @@ enum MarketingShots {
         }
 
         let openSize = CGSize(width: 840, height: 300)
-        // Home is wider while the mascot has its tile.
-        let homeSize = CGSize(width: 1000, height: 300)
+        // Home is wider while the mascot and the mirror have tiles.
+        let homeSize = CGSize(width: Layout.homeWidth(sideTiles: 2) + 140, height: 300)
         let earSize = CGSize(width: 520, height: 50)
 
         withSampleData {
-            theme.withPalette(Palette.midnight.id) {
-                save("hero", open("home"), size: CGSize(width: 1080, height: 400), status: true)
+            do {
+                save("hero", open("home"), size: CGSize(width: Layout.homeWidth(sideTiles: 2) + 320, height: 400), status: true)
                 for module in ["media", "calendar", "timers", "clipboard", "shelf", "capture", "todos", "stats", "claude"] {
                     save("module-\(module)", open(module), size: openSize, scale: 1.5)
                 }
@@ -96,15 +95,10 @@ enum MarketingShots {
                     save("module-dictation", open("dictation"), size: openSize, scale: 1.5)
                 }
             }
-            for id in [Palette.aero.id, Palette.midnight.id, Palette.smoke.id, Palette.aurora.id] {
-                theme.withPalette(id) {
-                    save("theme-\(id)", open("home"), size: homeSize, scale: 1.5)
-                }
-            }
 
             // The sample scratchpad shows itself beside the notch; set it aside.
             let samples = center.debugStash()
-            theme.withPalette(Palette.midnight.id) {
+            do {
                 // Beside the closed notch.
                 let end = Date().addingTimeInterval(18 * 60 + 24)
                 let ears: [(String, LiveActivity)] = [
@@ -117,7 +111,7 @@ enum MarketingShots {
                                             tint: ClaudeLiveService.tint, pulse: .calm)),
                     ("recording", CaptureService.recordingActivity(since: Date().addingTimeInterval(-(2 * 60 + 14)))),
                     ("download", LiveActivity(moduleID: "downloads", symbol: "arrow.down", content: .text("62%"),
-                                              tint: Palette.midnight.accent.color,
+                                              tint: Theme.accent,
                                               progress: .fraction(0.62))),
                     ("volume", LiveActivity(moduleID: "volume", symbol: "speaker.wave.2.fill", content: .level(0.56),
                                             tint: .white)),
@@ -174,8 +168,8 @@ enum MarketingShots {
             ZStack(alignment: .top) {
                 Wallpaper()
                 MenuBar(height: model.closedSize.height, clock: clock, showsStatus: showsStatus)
-                if model.phase == .open, Theme.palette.material == .glass {
-                    // What glass would show: the wallpaper, blurred.
+                if model.phase == .open {
+                    // What the material shows: the wallpaper, blurred.
                     Wallpaper()
                         .blur(radius: 26)
                         .saturation(1.4)

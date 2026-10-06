@@ -34,6 +34,7 @@ enum SettingsKey {
     static let earCompanion = "earCompanion"
     static let mascotCharacter = "mascotCharacter"
     static let homeMascot = "homeMascot"
+    static let homeMirror = "homeMirror"
     static let dictationEnabled = "dictationEnabled"
     /// "auto", or one of Whistle's languages: en, de, fr, es, it, nl, pl.
     static let dictationLanguage = "dictationLanguage"
@@ -128,6 +129,7 @@ enum AppSettings {
             SettingsKey.adiyogiEar: true,
             SettingsKey.mascotCharacter: "fox",
             SettingsKey.homeMascot: true,
+            SettingsKey.homeMirror: true,
             SettingsKey.dictationEnabled: false,
             SettingsKey.dictationLanguage: "auto",
             SettingsKey.dictationPaste: true,
@@ -240,6 +242,11 @@ enum AppSettings {
     /// The mascot on the open notch's Home page.
     static var homeMascot: Bool {
         UserDefaults.standard.bool(forKey: SettingsKey.homeMascot)
+    }
+
+    /// A mirror tile on Home: the camera, after a click.
+    static var homeMirror: Bool {
+        UserDefaults.standard.bool(forKey: SettingsKey.homeMirror)
     }
 
     /// The AI chat may use the notch's tools, asking before it changes anything.

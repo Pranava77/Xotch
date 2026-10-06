@@ -81,7 +81,7 @@ struct NotchSearchField: View {
         .font(.system(size: 13))
         .padding(.horizontal, 10)
         .frame(height: 30)
-        .xotchGlass(RoundedRectangle(cornerRadius: 9, style: .continuous), gloss: 0.5)
+        .xotchGlass(RoundedRectangle(cornerRadius: 9, style: .continuous))
     }
 }
 
@@ -108,22 +108,8 @@ struct NotchTextEditor: View {
     }
 }
 
-/// A small capsule switch that suits the black notch. In retro themes it's a
-/// glossy track with a beaded knob.
+/// A small capsule switch that suits the dark notch.
 struct NotchSwitchStyle: ToggleStyle {
-    private func track(isOn: Bool) -> AnyShapeStyle {
-        guard Theme.isRetro else { return AnyShapeStyle(isOn ? Theme.accent : Theme.raisedFill) }
-        let base = isOn ? Theme.palette.accent : RGBA(red: 0.35, green: 0.4, blue: 0.45)
-        return AnyShapeStyle(LinearGradient(colors: [base.mixed(with: .white, 0.3).color,
-                                                     base.mixed(with: .black, 0.15).color],
-                                            startPoint: .top, endPoint: .bottom))
-    }
-
-    private var knob: AnyShapeStyle {
-        Theme.isRetro
-            ? AnyShapeStyle(LinearGradient(colors: [.white, Color(white: 0.78)], startPoint: .top, endPoint: .bottom))
-            : AnyShapeStyle(Theme.ink)
-    }
 
     func makeBody(configuration: Configuration) -> some View {
         Button {
@@ -132,14 +118,12 @@ struct NotchSwitchStyle: ToggleStyle {
             HStack(spacing: 8) {
                 configuration.label
                 Capsule()
-                    .fill(track(isOn: configuration.isOn))
-                    .xotchGloss(Capsule(), strength: 0.7)
+                    .fill(configuration.isOn ? Theme.accent : Theme.raisedFill)
                     .frame(width: 30, height: 18)
                     .overlay(alignment: configuration.isOn ? .trailing : .leading) {
                         Circle()
-                            .fill(knob)
+                            .fill(Theme.ink)
                             .padding(2)
-                            .shadow(color: .black.opacity(Theme.isRetro ? 0.35 : 0), radius: 1.5, y: 1)
                     }
                     .animation(Motion.press, value: configuration.isOn)
             }

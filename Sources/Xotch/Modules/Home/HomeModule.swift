@@ -5,9 +5,10 @@ final class HomeModule: NotchModule {
     let id = "home"
     let title = "Home"
     let symbol = "house"
-    /// Wider when the mascot has its own tile, so nothing else shrinks.
+    /// Wider for the mascot's and the mirror's tiles, so nothing else shrinks.
     var openSize: CGSize {
-        AppSettings.homeMascot ? CGSize(width: 860, height: Layout.openSize.height) : Layout.openSize
+        let tiles = (AppSettings.homeMascot ? 1 : 0) + (AppSettings.homeMirror ? 1 : 0)
+        return CGSize(width: Layout.homeWidth(sideTiles: tiles), height: Layout.openSize.height)
     }
     func expandedView() -> AnyView { AnyView(HomeView()) }
 }
@@ -23,6 +24,7 @@ private struct HomeView: View {
     private var claude: ClaudeLiveService { .shared }
     @AppStorage(SettingsKey.hiddenModules) private var hiddenModules = ""
     @AppStorage(SettingsKey.homeMascot) private var homeMascot = true
+    @AppStorage(SettingsKey.homeMirror) private var homeMirror = true
     @AppStorage(SettingsKey.mascotCharacter) private var mascotCharacter = "fox"
     @Environment(\.snapshotDate) private var snapshotDate
 
@@ -39,6 +41,9 @@ private struct HomeView: View {
             .frame(width: 300)
             if homeMascot {
                 mascotTile
+            }
+            if homeMirror {
+                MirrorTile()
             }
             LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
                 if !hidden.contains("calendar") { nextEventTile }
@@ -278,6 +283,85 @@ private struct HomeView: View {
                         .lineLimit(1)
                 }
             }
+        }
+    }
+}
+
+/// A mirror: the camera, flipped, after a click. It's off until you click and
+/// goes off when you click again, leave Home or close the notch, so the
+/// camera light never comes on just from opening the notch.
+private struct MirrorTile: View {
+    @State private var looking = false
+    @Environment(\.snapshotMode) private var snapshotMode
+    private var camera: MirrorCamera { .shared }
+    private static let shape = RoundedRectangle(cornerRadius: 16, style: .continuous)
+
+    var body: some View {
+        Button {
+            if case .denied = camera.state, looking {
+                PrivacyPane.camera.open()
+            } else {
+                looking.toggle()
+            }
+        } label: {
+            ZStack {
+                if looking, camera.state == .running {
+                    // The layer rounds its own corners.
+                    MirrorPreview(layer: camera.previewLayer)
+                } else {
+                    VStack(spacing: 8) {
+                        if looking, camera.state != .denied, !isUnavailable {
+                            ProgressView().controlSize(.small)
+                        } else {
+                            Image(systemName: isBlocked ? "video.slash" : "person.crop.square")
+                                .font(.system(size: 28, weight: .light))
+                                .foregroundStyle(Theme.secondaryInk)
+                        }
+                        Text(caption)
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundStyle(Theme.tertiaryInk)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 12)
+                    }
+                    .transition(.opacity)
+                }
+                Text("MIRROR")
+                    .font(.system(size: 10, weight: .bold, design: .rounded))
+                    .tracking(1.2)
+                    .foregroundStyle(looking && camera.state == .running ? .white.opacity(0.85) : Theme.tertiaryInk)
+                    .shadow(color: .black.opacity(looking ? 0.4 : 0), radius: 3)
+                    .frame(maxHeight: .infinity, alignment: .top)
+                    .padding(.top, 12)
+            }
+            .frame(width: 150, height: 184)
+            .background(Theme.fill, in: Self.shape)
+            .contentShape(Self.shape)
+            .animation(Motion.activity, value: looking)
+            .animation(Motion.activity, value: camera.state)
+        }
+        .buttonStyle(.plain)
+        .help(looking ? "Turn the camera off" : "Look in the mirror")
+        .accessibilityLabel(looking ? "Mirror on. Turn the camera off" : "Mirror. Turn the camera on")
+        .debugFrame("home.mirror")
+        .task(id: looking) {
+            guard looking, !snapshotMode else { return }
+            await camera.whileVisible()
+        }
+    }
+
+    private var isUnavailable: Bool {
+        if case .unavailable = camera.state { return true }
+        return false
+    }
+
+    private var isBlocked: Bool { looking && (camera.state == .denied || isUnavailable) }
+
+    private var caption: String {
+        guard looking else { return "Click to look" }
+        switch camera.state {
+        case .denied: return "Click to allow the camera in Settings"
+        case .unavailable(let message): return message
+        default: return "Starting the camera…"
         }
     }
 }
