@@ -110,7 +110,7 @@ final class TodoService {
         guard moved > 0 else { return }
         ActivityCenter.shared.post(LiveActivity(moduleID: "todos", symbol: "arrow.turn.up.right",
                                                 content: .text(moved == 1 ? "1 carried over" : "\(moved) carried over"),
-                                                tint: Self.tint, earWidth: 120, duration: .seconds(3)))
+                                                tint: Self.tint, duration: .seconds(3)))
     }
 
     // MARK: - Reading
@@ -181,7 +181,7 @@ final class TodoService {
             return
         }
         center.setOngoing(LiveActivity(moduleID: "todos", symbol: "checklist", content: .text("\(openToday) left"),
-                                       tint: Self.tint, earWidth: 96), for: "todos")
+                                       tint: Self.tint), for: "todos")
     }
 
     func revealStore() {

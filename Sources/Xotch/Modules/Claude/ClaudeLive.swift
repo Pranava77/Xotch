@@ -130,14 +130,12 @@ final class ClaudeLiveService {
         case "Notification":
             session.state = .waiting(message: event["message"] as? String ?? "Claude needs your attention")
             ActivityCenter.shared.post(LiveActivity(moduleID: "claude", symbol: "hand.raised.fill",
-                                                    content: .text("Needs you"), tint: Theme.accent,
-                                                    earWidth: 110, duration: .seconds(5)))
+                                                    content: .text("Needs you"), tint: Theme.accent, duration: .seconds(5)))
         case "Stop":
             session.state = .idle
             if case .working = previous {
                 ActivityCenter.shared.post(LiveActivity(moduleID: "claude", symbol: "checkmark.circle.fill",
-                                                        content: .text("Done"), tint: Theme.positive,
-                                                        earWidth: 110, duration: .seconds(4)))
+                                                        content: .text("Done"), tint: Theme.positive, duration: .seconds(4)))
             }
         default:
             return
@@ -166,11 +164,11 @@ final class ClaudeLiveService {
         let center = ActivityCenter.shared
         if sessions.contains(where: { if case .waiting = $0.state { true } else { false } }) {
             center.setOngoing(LiveActivity(moduleID: "claude", symbol: "hand.raised.fill",
-                                           content: .text("Needs you"), tint: Theme.accent, earWidth: 110,
+                                           content: .text("Needs you"), tint: Theme.accent,
                                            pulse: .urgent), for: "claude")
         } else if let working = sessions.first(where: { if case .working = $0.state { true } else { false } }) {
             center.setOngoing(LiveActivity(moduleID: "claude", symbol: "sparkle",
-                                           content: .text(working.stateLabel), tint: Self.tint, earWidth: 110,
+                                           content: .text(working.stateLabel), tint: Self.tint,
                                            pulse: .calm), for: "claude")
         } else {
             center.setOngoing(nil, for: "claude")

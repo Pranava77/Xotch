@@ -336,7 +336,7 @@ private struct LiveActivityBar: View {
                         .transition(.opacity)
                 }
             }
-            .padding(.leading, 12)
+            .padding(.leading, Layout.earOuterPadding)
             .frame(width: earWidth, alignment: .leading)
 
             Color.clear
@@ -361,11 +361,14 @@ private struct LiveActivityBar: View {
                         .transition(.opacity)
                 }
             }
-                .font(.system(size: 12.5, weight: .semibold, design: .rounded))
+                .font(.system(size: EarMetrics.fontSize, weight: .semibold, design: .rounded))
                 .monospacedDigit()
                 .foregroundStyle(Theme.ink)
                 .lineLimit(1)
-                .padding(.trailing, 12)
+                // The ear is sized for this, so long text is cut at its cap
+                // and nothing reaches into the gap by the camera.
+                .frame(width: max(earWidth - Layout.earOuterPadding - Layout.earInnerGap, 0), alignment: .trailing)
+                .padding(.trailing, Layout.earOuterPadding)
                 .frame(width: earWidth, alignment: .trailing)
                 .overlay(alignment: .trailing) {
                     if let position {
@@ -431,7 +434,7 @@ private struct LiveActivityBar: View {
                 .frame(width: EqualizerView.width, height: EqualizerView.height)
         case .level(let value):
             LevelBar(value: value, tint: activity.tint)
-                .frame(width: max(activity.earWidth - 30, 30))
+                .frame(width: EarMetrics.levelWidth)
         case .ticker(let lines):
             TickerText(lines: lines)
         }

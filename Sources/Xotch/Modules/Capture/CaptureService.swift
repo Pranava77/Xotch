@@ -353,7 +353,7 @@ final class CaptureService {
 
     static func recordingActivity(since start: Date) -> LiveActivity {
         LiveActivity(moduleID: "capture", symbol: "record.circle.fill", content: .stopwatch(since: start),
-                     tint: Theme.negative, earWidth: 90, pulse: .urgent)
+                     tint: Theme.negative, pulse: .urgent)
     }
 
     // MARK: - After a capture
@@ -381,7 +381,7 @@ final class CaptureService {
 
     private func postBanner(symbol: String, text: String, image: NSImage?) {
         ActivityCenter.shared.post(LiveActivity(moduleID: "capture", symbol: symbol, content: .text(text),
-                                                tint: Self.tint, image: image, earWidth: 96, duration: .seconds(3)))
+                                                tint: Self.tint, image: image, duration: .seconds(3)))
     }
 
     /// A small preview straight from the file, for the banner.

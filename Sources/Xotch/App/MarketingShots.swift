@@ -114,15 +114,15 @@ enum MarketingShots {
                     ("music", LiveActivity(moduleID: "media", symbol: "music.note", content: .playing,
                                            tint: MediaService.shared.tint, image: MediaService.shared.artwork)),
                     ("claude", LiveActivity(moduleID: "claude", symbol: "sparkle", content: .text("Editing"),
-                                            tint: ClaudeLiveService.tint, earWidth: 110, pulse: .calm)),
+                                            tint: ClaudeLiveService.tint, pulse: .calm)),
                     ("recording", CaptureService.recordingActivity(since: Date().addingTimeInterval(-(2 * 60 + 14)))),
                     ("download", LiveActivity(moduleID: "downloads", symbol: "arrow.down", content: .text("62%"),
-                                              tint: Palette.midnight.accent.color, earWidth: 90,
+                                              tint: Palette.midnight.accent.color,
                                               progress: .fraction(0.62))),
                     ("volume", LiveActivity(moduleID: "volume", symbol: "speaker.wave.2.fill", content: .level(0.56),
-                                            tint: .white, earWidth: 96)),
+                                            tint: .white)),
                     ("dictation", LiveActivity(moduleID: "dictation", symbol: "mic.fill", content: .listening,
-                                               tint: DictationService.tint, earWidth: 96, pulse: .calm)),
+                                               tint: DictationService.tint, pulse: .calm)),
                 ]
                 for (name, activity) in ears {
                     center.setOngoing(activity, for: activity.moduleID)

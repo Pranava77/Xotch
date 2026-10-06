@@ -240,6 +240,73 @@ struct TickerText: View {
     }
 }
 
+// MARK: - Ear metrics
+
+/// How wide the ears' contents are, worked out from the font rather than laid
+/// out, so the closed notch fits them exactly, in snapshots too.
+@MainActor
+enum EarMetrics {
+    /// The right ear's font; `LiveActivityBar` uses the same.
+    static let fontSize: CGFloat = 12.5
+    /// The volume and brightness bar.
+    static let levelWidth: CGFloat = 60
+    /// An activity's icon in the left ear.
+    static let iconSide: CGFloat = 26
+    /// The icon beside the right ear's content while a companion has the left
+    /// ear: 26 pt scaled to 0.85, and the spacing before the content.
+    static let inlineIcon: CGFloat = 22 + 6
+
+    private static let font: NSFont = {
+        let base = NSFont.systemFont(ofSize: fontSize, weight: .semibold)
+        var descriptor = base.fontDescriptor.withDesign(.rounded) ?? base.fontDescriptor
+        descriptor = descriptor.addingAttributes([.featureSettings: [[
+            NSFontDescriptor.FeatureKey.typeIdentifier: kNumberSpacingType,
+            NSFontDescriptor.FeatureKey.selectorIdentifier: kMonospacedNumbersSelector,
+        ]]])
+        return NSFont(descriptor: descriptor, size: fontSize) ?? base
+    }()
+
+    /// The width SwiftUI gives this text in the ear: measured with the same
+    /// font and rounded up, which matches it to the point.
+    static func textWidth(_ text: String) -> CGFloat {
+        ceil((text as NSString).size(withAttributes: [.font: font]).width)
+    }
+
+    /// What a running clock shows for this many seconds: SwiftUI's timer text
+    /// reads 9:59, 59:59, 9:59:59, then 99:59:59. Digits are all one width.
+    static func clockTemplate(seconds: TimeInterval) -> String {
+        switch seconds {
+        case ..<600: "0:00"
+        case ..<3600: "00:00"
+        case ..<36000: "0:00:00"
+        default: "00:00:00"
+        }
+    }
+
+    /// The seconds at which a clock gains a digit.
+    static let clockSteps: [TimeInterval] = [600, 3600, 36000]
+
+    /// The right ear's content, without padding.
+    static func contentWidth(_ activity: LiveActivity, at now: Date = .now) -> CGFloat {
+        switch activity.content {
+        case .text(let text):
+            min(textWidth(text), activity.maxContentWidth)
+        case .ticker(let lines):
+            min(lines.map(textWidth).max() ?? 0, activity.maxContentWidth)
+        // Clocks look a second ahead: a stopwatch's ear widens just before
+        // the digit arrives, and a countdown's narrows just after it goes.
+        case .countdown(let until):
+            textWidth(clockTemplate(seconds: until.timeIntervalSince(now) + 1))
+        case .stopwatch(let since):
+            textWidth(clockTemplate(seconds: now.timeIntervalSince(since) + 1))
+        case .playing, .listening:
+            EqualizerView.width
+        case .level:
+            levelWidth
+        }
+    }
+}
+
 /// A short horizontal level, e.g. volume.
 struct LevelBar: View {
     let value: Double

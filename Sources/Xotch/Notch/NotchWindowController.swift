@@ -466,7 +466,7 @@ final class NotchWindowController: NotchActions {
         adjustedVolumeThisHover = true
         guard let current = SystemVolume.volume, SystemVolume.canSetVolume else {
             ActivityCenter.shared.showHUD(LiveActivity(moduleID: "volume", symbol: "speaker.slash",
-                                                       content: .text("Fixed"), tint: Theme.ink, earWidth: 90))
+                                                       content: .text("Fixed"), tint: Theme.ink))
             return
         }
         let change = event.hasPreciseScrollingDeltas ? Double(delta) * 0.005 : (delta > 0 ? 1 : -1) / 16
@@ -480,7 +480,7 @@ final class NotchWindowController: NotchActions {
         ActivityCenter.shared.showHUD(LiveActivity(
             moduleID: "volume",
             symbol: SystemVolume.symbol(for: next, muted: SystemVolume.isMuted),
-            content: .level(next), tint: Theme.ink, earWidth: 96
+            content: .level(next), tint: Theme.ink
         ))
     }
 
@@ -625,10 +625,11 @@ final class NotchWindowController: NotchActions {
     }
 
     var debugFrames: String {
-        String(format: "panel %.0fx%.0f@%.0f,%.0f screen %.0fx%.0f@%.0f,%.0f notch %.0fx%.0f",
+        String(format: "panel %.0fx%.0f@%.0f,%.0f screen %.0fx%.0f@%.0f,%.0f notch %.0fx%.0f body %.0fx%.0f ear %.0f",
                panel.frame.width, panel.frame.height, panel.frame.minX, panel.frame.minY,
                screenFrame.width, screenFrame.height, screenFrame.minX, screenFrame.minY,
-               model.closedSize.width, model.closedSize.height)
+               model.closedSize.width, model.closedSize.height,
+               model.bodySize.width, model.bodySize.height, model.showsActivity ? model.earWidth : 0)
     }
     #endif
 }
