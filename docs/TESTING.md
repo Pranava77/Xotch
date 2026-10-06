@@ -111,6 +111,19 @@ These need hardware or situations a script can't create. Tick them before a beta
 - [ ] Turn on real sound for the music bars: macOS asks to record system audio. Allow it and the bars follow the music; deny it and they bounce as before, and Settings explains how to allow it.
 - [ ] Turn on download progress, then download a large file in Safari and in Chrome: the ring and percentage show, then "Done".
 
+### AI using the notch
+
+With Gemini, Claude or GPT active (`debug.sh ai-ask`, `ai-decide`, `ai-undo`, `ai-stop` and `status` script these):
+
+- [ ] "Add buy milk to my to-dos for tomorrow": a card waits for Allow; after Allow the to-do is on tomorrow's list and the answer says so; Undo on the card removes it.
+- [ ] "What's on my agenda?": a quiet "Checked your calendar" line, then the answer. Without Calendar access, the card offers Allow Calendar.
+- [ ] "Start a 1 minute countdown" then Don't: the card is struck through and the answer accepts it.
+- [ ] "Add three to-dos for tomorrow: …": three cards; Allow all adds all three; Undo takes each back.
+- [ ] Stop while a card waits: it shows Stopped and nothing changes.
+- [ ] `/todo test`, `/timer 1m`, `/focus`, `/next`: run at once, show a done card, and never reach the model.
+- [ ] A question whose answer failed (server off), then a new question: the AI doesn't act on the failed one.
+- [ ] A local model without tool support: it answers without tools and the notice says so.
+
 ### Accessibility
 
 - [ ] Reduce Motion on: the notch fades instead of springing; the equalizer bars, glow and LED title are still; no confetti or ripple; a flicked shelf item disappears without flying.

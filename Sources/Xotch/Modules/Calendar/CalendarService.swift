@@ -216,6 +216,46 @@ final class CalendarService {
         }
     }
 
+    // MARK: - For the AI
+
+    /// Events between two dates, for any range, not just the week shown.
+    func events(from start: Date, to end: Date) -> [AgendaEvent] {
+        guard eventAccess == .granted else { return [] }
+        let predicate = store.predicateForEvents(withStart: start, end: end, calendars: nil)
+        return store.events(matching: predicate)
+            .sorted { $0.startDate < $1.startDate }
+            .prefix(60)
+            .map(AgendaEvent.init)
+    }
+
+    /// Adds an event to the default calendar and returns its identifier.
+    func addEvent(title: String, start: Date, end: Date, allDay: Bool, location: String?) throws -> String {
+        guard eventAccess == .granted else { throw CalendarError.noAccess }
+        let event = EKEvent(eventStore: store)
+        event.title = title
+        event.startDate = start
+        event.endDate = end
+        event.isAllDay = allDay
+        event.location = location
+        event.calendar = store.defaultCalendarForNewEvents
+        try store.save(event, span: .thisEvent, commit: true)
+        refresh()
+        return event.eventIdentifier
+    }
+
+    func removeEvent(identifier: String) {
+        guard let event = store.event(withIdentifier: identifier) else { return }
+        try? store.remove(event, span: .thisEvent, commit: true)
+        refresh()
+    }
+
+    enum CalendarError: LocalizedError {
+        case noAccess
+        var errorDescription: String? {
+            "Xotch doesn't have access to Calendar. Open the Calendar module in the notch to allow it."
+        }
+    }
+
     func openCalendarApp() {
         NSWorkspace.shared.open(URL(fileURLWithPath: "/System/Applications/Calendar.app"))
     }

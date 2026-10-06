@@ -98,6 +98,14 @@ Screen questions need a model that can see images, such as `llama3.2-vision` or 
 
 A context is background the AI keeps in mind: your resume, a job description, or notes on a topic you're preparing for. Paste it in or import a PDF, text or Markdown file in **Settings › AI › Context**, then pick one from the chip on the left of the input. It goes with every question until you choose **No context**.
 
+### Let it use the notch
+
+The AI can look at and change things in the notch for you: check today's to-dos, your calendar, the timer, what's playing or how your Mac is doing, and add to-dos, start a focus timer, write a note, add a calendar event, pause the music or take a screenshot. Ask for several things at once ("plan my afternoon") and it takes them one step at a time.
+
+Looking things up just happens, shown as a quiet line in the answer. Anything that changes something, or shares your clipboard or notes, appears as a card that waits for **Allow** (or **Allow all** when there are several), and most changes can be undone from the card. Turn it off in **Settings › AI › Notch tools**. It works with Gemini, Claude, GPT and local models that support tools; others answer without them.
+
+Type **/** in the chat for commands that run straight away without asking the AI: `/todo`, `/timer 25m`, `/focus`, `/break`, `/note`, `/play`, `/pause`, `/next` and `/clear`.
+
 ### Out of shared screens
 
 **Settings › Privacy & Feedback › Hide the notch from screen sharing and recordings** asks macOS to leave the notch out of shared screens and recordings. Some apps and macOS versions capture it anyway, so check with a test call first.
@@ -272,7 +280,7 @@ The timer ring, the Claude pulse, the music bars and the confetti are Core Anima
 
 ## Private by design
 
-Xotch has no account and no analytics, and it doesn't connect to any online service unless you add a cloud AI provider. Your clipboard history, notes, to-dos and files stay on your Mac. With a cloud provider, only what you send in the AI chat goes to it: your messages, the context you've chosen and any screenshot you attach. A local model through Ollama or LM Studio keeps even that on your Mac.
+Xotch has no account and no analytics, and it doesn't connect to any online service unless you add a cloud AI provider. Your clipboard history, notes, to-dos and files stay on your Mac. With a cloud provider, only what you send in the AI chat goes to it: your messages, the context you've chosen, any screenshot you attach, and what the AI looks up in the notch to answer you (your clipboard and notes only after you click **Allow**). A local model through Ollama or LM Studio keeps even that on your Mac.
 
 Screenshots and recordings are saved in Pictures › Xotch unless you choose another folder, and nothing is uploaded. When the music bars follow the real sound, Xotch only measures how loud it is and records nothing. Crash reports are never sent automatically: if you choose to keep them, you decide whether to email one.
 

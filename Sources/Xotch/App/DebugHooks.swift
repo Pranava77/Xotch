@@ -116,6 +116,8 @@ enum DebugHooks {
                     "audio levels: \(AudioLevels.shared.status)",
                     "media: hasNowPlaying=\(MediaService.shared.nowPlaying != nil) title=\(MediaService.shared.nowPlaying?.title ?? "-") hasArtwork=\(MediaService.shared.artwork != nil)",
                     "media log: \(MediaService.shared.debugLog.joined(separator: " | "))",
+                    "ai steps: \((AIChatService.shared.messages.last?.rounds ?? []).flatMap(\.steps).map { "\($0.call.name):\($0.status.rawValue)" }.joined(separator: ", "))",
+                    "ai log: \(AIChatService.shared.debugLog.joined(separator: " | "))",
                     "ai: messages=\(AIChatService.shared.messages.count) streaming=\(AIChatService.shared.isStreaming) provider=\(AIProviderStore.shared.active.map { "\($0.kind)/\($0.model)" } ?? "-") notice=\(AIChatService.shared.notice ?? "-") last=\(AIChatService.shared.messages.last.map { "\($0.role) \($0.text.count) chars error=\($0.isError)" } ?? "-")",
                     "clipboard access: \(ClipboardService.shared.access)",
                     "todos: open today=\(TodoService.shared.openToday) total=\(TodoService.shared.todos.count)",
@@ -169,6 +171,40 @@ enum DebugHooks {
             } else if command.hasPrefix("ai-ask:") {
                 // Asks the AI chat a question without the UI: `debug.sh ai-ask "…"`.
                 AIChatService.shared.ask(String(command.dropFirst("ai-ask:".count)))
+            } else if command.hasPrefix("ai-tools:") {
+                // The tools the AI can call, one per line: `debug.sh ai-tools <file>`.
+                let path = String(command.dropFirst("ai-tools:".count))
+                let lines = NotchTools.all.map { tool in
+                    "\(tool.name) [\(tool.asks ? "asks" : "looks")] \(tool.description) \(String(decoding: tool.spec.parameters, as: UTF8.self))"
+                }
+                try? (lines.joined(separator: "\n") + "\n").write(toFile: path, atomically: true, encoding: .utf8)
+            } else if command == "ai-stop" {
+                AIChatService.shared.stop()
+            } else if command.hasPrefix("ai-provider:") {
+                // Makes a provider active by name, for testing: `debug.sh ai-provider Gemini`.
+                let name = String(command.dropFirst("ai-provider:".count)).lowercased()
+                let store = AIProviderStore.shared
+                if let provider = store.providers.first(where: { $0.name.lowercased() == name }) {
+                    store.activate(provider.id)
+                }
+            } else if command.hasPrefix("ai-decide:") {
+                // Answers the first card waiting in the last reply: allow, dont or all.
+                let chat = AIChatService.shared
+                if let reply = chat.messages.last,
+                   let step = (reply.rounds ?? []).flatMap(\.steps).first(where: { $0.status == .waiting }) {
+                    switch command.dropFirst("ai-decide:".count) {
+                    case "all": chat.allowAll(in: reply)
+                    case "dont": chat.decide(step, allow: false)
+                    default: chat.decide(step, allow: true)
+                    }
+                }
+            } else if command == "ai-undo" {
+                // Undoes the last finished card in the last reply.
+                let chat = AIChatService.shared
+                if let reply = chat.messages.last,
+                   let step = (reply.rounds ?? []).flatMap(\.steps).last(where: { chat.canUndo($0) }) {
+                    chat.undo(step, in: reply)
+                }
             } else if command.hasPrefix("ai-rewrite:") {
                 // Shorter, longer or retry on the last reply: `debug.sh ai-rewrite shorter`.
                 let chat = AIChatService.shared
@@ -228,6 +264,7 @@ enum DebugHooks {
         lines += captureSelfTest()
         lines += todoSelfTest()
         lines += chatMarkdownSelfTest()
+        lines += await harnessSelfTest()
         lines += retroSoundSelfTest()
         lines += mediaKeysSelfTest()
 
@@ -445,6 +482,97 @@ enum DebugHooks {
 
     /// Adds a real to-do, ticks it, moves it and deletes it: the same calls the
     /// buttons make, so a broken save shows up here.
+    /// The AI harness without a network: tool schemas, a canned stream from
+    /// each provider, Gemini's thought signature making the round trip, and
+    /// a to-do added then undone.
+    @MainActor
+    private static func harnessSelfTest() async -> [String] {
+        var lines: [String] = []
+        func check(_ name: String, _ ok: Bool, _ detail: String = "") -> String {
+            "harness \(name): \(detail.isEmpty ? "" : detail + " ")→ \(ok ? "PASS" : "FAILED")"
+        }
+
+        // Every schema is an object whose required fields exist.
+        let bad = NotchTools.all.filter { tool in
+            let schema = tool.spec.parameterObject
+            let properties = schema["properties"] as? [String: Any] ?? [:]
+            let required = schema["required"] as? [String] ?? []
+            return schema["type"] as? String != "object" || !required.allSatisfy { properties[$0] != nil }
+        }
+        lines.append(check("schemas", bad.isEmpty, "\(NotchTools.all.count) tools\(bad.isEmpty ? "" : ", bad: " + bad.map(\.name).joined(separator: ","))"))
+
+        func calls(_ parser: any StreamParser, _ input: [String]) -> [ToolCall] {
+            var events = input.flatMap { (try? parser.parse($0)) ?? [] }
+            events += parser.finish()
+            return events.compactMap { if case .toolCall(let call) = $0 { call } else { nil } }
+        }
+        func title(_ call: ToolCall?) -> String { call?.argumentObject["title"] as? String ?? "-" }
+
+        let gemini = calls(GeminiParser(), [
+            #"data: {"candidates":[{"content":{"parts":[{"functionCall":{"name":"add_todo","args":{"title":"Milk"}},"thoughtSignature":"SIG123"}]}}]}"#,
+        ])
+        lines.append(check("gemini stream", gemini.count == 1 && gemini.first?.name == "add_todo" && title(gemini.first) == "Milk",
+                           "\(gemini.map(\.name)) title=\(title(gemini.first))"))
+        if let call = gemini.first {
+            let request = ChatRequest(baseURL: "", model: "", apiKey: nil, system: "", turns: [
+                ChatTurn(role: .user, text: "Add milk"),
+                ChatTurn(role: .assistant, text: "", toolCalls: [call]),
+                ChatTurn(role: .tool, text: "", toolResults: [ToolResult(callID: call.id, name: call.name, content: #"{"added":true}"#)]),
+            ], tools: NotchTools.specs)
+            let body = AIBackends.json(GeminiBackend.body(request))
+            lines.append(check("gemini signature round trip",
+                               body.contains("SIG123") && body.contains("functionResponse") && body.contains("functionDeclarations")))
+        }
+
+        let openAI = calls(OpenAIParser(), [
+            #"data: {"choices":[{"delta":{"tool_calls":[{"index":0,"id":"call_1","function":{"name":"add_todo","arguments":"{\"ti"}}]}}]}"#,
+            #"data: {"choices":[{"delta":{"tool_calls":[{"index":0,"function":{"arguments":"tle\":\"Milk\"}"}}]}}]}"#,
+            #"data: {"choices":[{"delta":{},"finish_reason":"tool_calls"}]}"#,
+        ])
+        lines.append(check("openai stream", openAI.count == 1 && openAI.first?.id == "call_1" && title(openAI.first) == "Milk",
+                           "\(openAI.map(\.name)) title=\(title(openAI.first))"))
+
+        let anthropic = calls(AnthropicParser(), [
+            #"data: {"type":"content_block_start","index":1,"content_block":{"type":"tool_use","id":"toolu_1","name":"add_todo","input":{}}}"#,
+            #"data: {"type":"content_block_delta","index":1,"delta":{"type":"input_json_delta","partial_json":"{\"title\":"}}"#,
+            #"data: {"type":"content_block_delta","index":1,"delta":{"type":"input_json_delta","partial_json":"\"Milk\"}"}}"#,
+            #"data: {"type":"content_block_stop","index":1}"#,
+        ])
+        lines.append(check("anthropic stream", anthropic.count == 1 && anthropic.first?.id == "toolu_1" && title(anthropic.first) == "Milk",
+                           "\(anthropic.map(\.name)) title=\(title(anthropic.first))"))
+
+        let ollama = calls(OllamaParser(), [
+            #"{"message":{"content":"","tool_calls":[{"function":{"name":"add_todo","arguments":{"title":"Milk"}}}]}}"#,
+        ])
+        lines.append(check("ollama stream", ollama.count == 1 && title(ollama.first) == "Milk",
+                           "\(ollama.map(\.name)) title=\(title(ollama.first))"))
+
+        // A question whose answer failed doesn't ride along with the next.
+        var failed = ChatMessage(role: .assistant, text: "Can't reach the server.")
+        failed.isError = true
+        let turns = AIChatService.shared.debugTurns(for: [
+            ChatMessage(role: .user, text: "take screenshot"), failed,
+            ChatMessage(role: .user, text: "What's on my agenda?"),
+        ])
+        let sent = turns.map(\.text).joined(separator: " / ")
+        lines.append(check("failed question left out", sent == "What's on my agenda?", "sent=\(sent)"))
+
+        // A to-do added for someday, then taken back with Undo.
+        if let tool = NotchTools.tool(named: "add_todo") {
+            let name = "Xotch harness self-test"
+            do {
+                let outcome = try await tool.run(ToolArgs(values: ["title": name, "day": "someday"]))
+                let added = TodoService.shared.someday.contains { $0.title == name }
+                outcome.undo?()
+                let removed = !TodoService.shared.todos.contains { $0.title == name }
+                lines.append(check("add_todo and undo", added && removed, "added=\(added) undone=\(removed)"))
+            } catch {
+                lines.append(check("add_todo and undo", false, error.localizedDescription))
+            }
+        }
+        return lines
+    }
+
     /// Parses replies the way they arrive, finished and half-streamed, and
     /// checks the blocks the chat would draw.
     private static func chatMarkdownSelfTest() -> [String] {
@@ -791,6 +919,14 @@ enum DebugHooks {
                 // Tall enough for the action bar and follow-up chips.
                 AIChatService.shared.withExpanded {
                     render("4-open-ai-code-expanded") {
+                        $0.phase = .open
+                        $0.selectedModuleID = AIModule.moduleID
+                    }
+                }
+            }
+            AIChatService.shared.withToolSample {
+                AIChatService.shared.withExpanded {
+                    render("4-open-ai-tools") {
                         $0.phase = .open
                         $0.selectedModuleID = AIModule.moduleID
                     }

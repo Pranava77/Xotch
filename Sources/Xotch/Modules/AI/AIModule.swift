@@ -34,6 +34,17 @@ private struct AIChatView: View {
                     NoticeRow(text: notice, showSettings: showSettings)
                 }
                 InputBar(showSettings: showSettings)
+                    .overlay(alignment: .topLeading) {
+                        let commands = chat.slashSuggestions
+                        if !commands.isEmpty {
+                            SlashMenu(commands: commands) { command in
+                                chat.draft = "/" + command.name + " "
+                            }
+                            .alignmentGuide(.top) { $0[.bottom] + 6 }
+                            .padding(.leading, 120)
+                            .transition(.opacity)
+                        }
+                    }
             }
         }
     }
@@ -198,21 +209,29 @@ private struct ReplyCard: View {
 
     var body: some View {
         let parts = ChatMarkdown.splitFollowUps(message.text)
+        let rounds = message.rounds ?? []
         VStack(alignment: .leading, spacing: 8) {
             VStack(alignment: .leading, spacing: 9) {
                 header
-                if parts.body.isEmpty {
+                // Each round of a reply that used tools: what it said, then its cards.
+                ForEach(Array(rounds.enumerated()), id: \.offset) { _, round in
+                    if !round.text.isEmpty {
+                        RichText(text: round.text)
+                    }
+                    ToolSteps(steps: round.steps, reply: message)
+                }
+                if !parts.body.isEmpty {
+                    RichText(text: parts.body, isStreaming: isStreaming)
+                        .foregroundStyle(message.isError ? Theme.secondaryInk : Theme.ink)
+                } else if isStreaming, !rounds.flatMap(\.steps).contains(where: { $0.status == .waiting }) {
                     ProgressView()
                         .controlSize(.small)
                         .frame(height: 16)
-                } else {
-                    RichText(text: parts.body, isStreaming: isStreaming)
-                        .foregroundStyle(message.isError ? Theme.secondaryInk : Theme.ink)
                 }
                 if message.isError {
                     Button("Try again") { chat.retry() }
                         .buttonStyle(PillButtonStyle(prominent: false))
-                } else if !isStreaming, !parts.body.isEmpty {
+                } else if !isStreaming, !parts.body.isEmpty, !message.isLocal {
                     actions
                         .opacity(isLast || hovering ? 1 : 0)
                         .allowsHitTesting(isLast || hovering)
@@ -235,7 +254,7 @@ private struct ReplyCard: View {
 
     private var header: some View {
         HStack(spacing: 5) {
-            Image(systemName: message.isError ? "exclamationmark.triangle.fill" : "sparkles")
+            Image(systemName: message.isError ? "exclamationmark.triangle.fill" : message.isLocal ? "command" : "sparkles")
                 .font(.system(size: 10.5, weight: .semibold))
                 .foregroundStyle(message.isError ? Theme.negative : Theme.accent)
             Text(message.model ?? "AI")
@@ -283,6 +302,179 @@ private struct ReplyCard: View {
         }
         .buttonStyle(HoverButtonStyle(cornerRadius: 7))
         .debugFrame("ai.reply.\(title.lowercased())")
+    }
+}
+
+/// The cards for one round of tool calls. Anything that changes or shares
+/// something waits on Allow; looking things up shows as a quiet line.
+private struct ToolSteps: View {
+    let steps: [ToolStep]
+    let reply: ChatMessage
+    private var chat: AIChatService { .shared }
+
+    var body: some View {
+        let waiting = steps.filter { $0.status == .waiting }
+        VStack(alignment: .leading, spacing: 6) {
+            ForEach(steps) { step in
+                if NotchTools.tool(named: step.call.name)?.asks == false, step.status != .failed {
+                    // Lookups are a quiet line; a failed one becomes a card so it can offer a fix.
+                    lookedUp(step)
+                } else {
+                    card(step, offersAllowAll: waiting.count > 1 && step.id == waiting.first?.id)
+                }
+            }
+        }
+    }
+
+    private static let calendarTools: Set<String> = ["get_agenda", "add_calendar_event", "complete_reminder"]
+
+    /// "Checked your calendar", with a spinner while it looks.
+    private func lookedUp(_ step: ToolStep) -> some View {
+        HStack(spacing: 6) {
+            if step.status == .running {
+                ProgressView().controlSize(.mini)
+            } else {
+                Image(systemName: "eye")
+                    .font(.system(size: 9.5, weight: .semibold))
+            }
+            Text(ChatMarkdown.inline(step.title))
+                .font(.system(size: 11.5))
+        }
+        .foregroundStyle(Theme.tertiaryInk)
+        .padding(.vertical, 1)
+    }
+
+    private func card(_ step: ToolStep, offersAllowAll: Bool) -> some View {
+        let tool = NotchTools.tool(named: step.call.name)
+        let tint = tool?.tint ?? Theme.accent
+        let faded = [.declined, .cancelled, .undone, .queued].contains(step.status)
+        return HStack(alignment: .center, spacing: 10) {
+            ZStack {
+                Circle().fill(tint.opacity(faded ? 0.08 : 0.18))
+                Image(systemName: tool?.symbol ?? "wrench.and.screwdriver")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(faded ? Theme.tertiaryInk : tint)
+            }
+            .frame(width: 26, height: 26)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(ChatMarkdown.inline(step.title))
+                    .font(.system(size: 12.5))
+                    .strikethrough(step.status == .declined || step.status == .undone)
+                    .foregroundStyle(faded ? Theme.tertiaryInk : Theme.ink)
+                    .fixedSize(horizontal: false, vertical: true)
+                if let note = note(for: step) {
+                    Text(note)
+                        .font(.system(size: 10.5, weight: .medium))
+                        .foregroundStyle(step.status == .failed ? Theme.negative : Theme.tertiaryInk)
+                }
+            }
+            Spacer(minLength: 8)
+            buttons(step, offersAllowAll: offersAllowAll)
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
+        .background(Theme.raisedFill.opacity(faded ? 0.5 : 1), in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 11, style: .continuous)
+            .strokeBorder(step.status == .waiting ? tint.opacity(0.45) : Theme.hairline))
+    }
+
+    private func note(for step: ToolStep) -> String? {
+        switch step.status {
+        case .waiting: "Needs your OK"
+        case .queued: "Next"
+        case .running: "Working…"
+        case .done: nil
+        case .declined: "You said no"
+        case .failed: "Didn't work"
+        case .cancelled: "Stopped"
+        case .undone: "Undone"
+        }
+    }
+
+    @ViewBuilder private func buttons(_ step: ToolStep, offersAllowAll: Bool) -> some View {
+        switch step.status {
+        case .waiting:
+            HStack(spacing: 6) {
+                Button("Don't") { chat.decide(step, allow: false) }
+                    .buttonStyle(PillButtonStyle(prominent: false))
+                    .debugFrame("ai.tool.dont")
+                if offersAllowAll {
+                    Button("Allow all") { chat.allowAll(in: reply) }
+                        .buttonStyle(PillButtonStyle(prominent: false))
+                        .debugFrame("ai.tool.allowall")
+                }
+                Button("Allow") { chat.decide(step, allow: true) }
+                    .buttonStyle(PillButtonStyle(prominent: true))
+                    .debugFrame("ai.tool.allow")
+            }
+        case .running:
+            ProgressView().controlSize(.small)
+        case .done:
+            HStack(spacing: 4) {
+                Image(systemName: "checkmark.circle.fill")
+                    .foregroundStyle(Theme.positive)
+                if chat.canUndo(step) {
+                    Button("Undo") { chat.undo(step, in: reply) }
+                        .buttonStyle(PillButtonStyle(prominent: false))
+                        .debugFrame("ai.tool.undo")
+                }
+                if let module = step.openModule, let info = ModuleRegistry.module(id: module)?.info {
+                    Button { ScreenManager.shared.show(moduleID: module) } label: {
+                        Image(systemName: "arrow.up.forward")
+                    }
+                    .buttonStyle(IconButtonStyle(size: 24))
+                    .help("Open \(info.title)")
+                }
+            }
+        case .failed:
+            if Self.calendarTools.contains(step.call.name), CalendarService.shared.eventAccess != .granted {
+                Button("Allow Calendar") { CalendarService.shared.requestAccess() }
+                    .buttonStyle(PillButtonStyle(prominent: true))
+                    .help("Lets Xotch read and add events, then ask again")
+            } else {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .foregroundStyle(Theme.negative)
+            }
+        case .queued, .declined, .cancelled, .undone:
+            EmptyView()
+        }
+    }
+}
+
+/// Commands for a typed slash, above the input.
+private struct SlashMenu: View {
+    let commands: [AIChatService.SlashCommand]
+    let choose: (AIChatService.SlashCommand) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 1) {
+            ForEach(commands) { command in
+                Button { choose(command) } label: {
+                    HStack(spacing: 9) {
+                        Image(systemName: command.symbol)
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(Theme.accent)
+                            .frame(width: 16)
+                        Text("/" + command.name)
+                            .font(.system(size: 12.5, weight: .semibold, design: .monospaced))
+                        Text(command.hint)
+                            .font(.system(size: 11.5))
+                            .foregroundStyle(Theme.secondaryInk)
+                        Spacer(minLength: 0)
+                    }
+                    .padding(.horizontal, 9)
+                    .frame(height: 26)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(HoverButtonStyle(cornerRadius: 7))
+            }
+        }
+        .padding(5)
+        .frame(width: 330)
+        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Theme.raisedFill))
+        .shadow(color: .black.opacity(0.35), radius: 12, y: 4)
     }
 }
 
@@ -428,7 +620,7 @@ private struct InputBar: View {
     }
 
     private var placeholder: String {
-        chat.attachment == nil ? "Ask anything…" : "Ask about your screen…"
+        chat.attachment == nil ? "Ask anything, or type / for commands…" : "Ask about your screen…"
     }
 
     private var modelLabel: String {
