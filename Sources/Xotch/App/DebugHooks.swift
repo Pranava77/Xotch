@@ -1,5 +1,6 @@
 #if DEBUG
 import AppKit
+import AVFoundation
 import Metal
 import QuickLookUI
 import SwiftUI
@@ -117,6 +118,7 @@ enum DebugHooks {
                     "media: hasNowPlaying=\(MediaService.shared.nowPlaying != nil) title=\(MediaService.shared.nowPlaying?.title ?? "-") hasArtwork=\(MediaService.shared.artwork != nil)",
                     "media log: \(MediaService.shared.debugLog.joined(separator: " | "))",
                     "ai steps: \((AIChatService.shared.messages.last?.rounds ?? []).flatMap(\.steps).map { "\($0.call.name):\($0.status.rawValue)" }.joined(separator: ", "))",
+                    "dictation: phase=\(DictationService.shared.phase) model=\(WhistleModel.shared.state) engine=\(WhistleEngine.isSupported ? (WhistleEngine.shared.isRunning ? "running" : "stopped") : "unsupported") fn=\(FnKey.shared.isActive ? "on" : "off") mic=\(MicRecorder.permission.rawValue) live=“\(DictationService.shared.liveText.suffix(60))” delivered=“\(DictationService.shared.debugDelivered.prefix(160))” problem=\(DictationService.shared.problem ?? "-")",
                     "mascot: companion=\(ActivityCenter.shared.companion.rawValue) character=\(AppSettings.mascotCharacter) looking=\(MascotTracker.shared.directions.sorted { $0.key < $1.key }.map { "\($0.key):\($0.value)" }.joined(separator: ","))",
                     "ai log: \(AIChatService.shared.debugLog.joined(separator: " | "))",
                     "ai: messages=\(AIChatService.shared.messages.count) streaming=\(AIChatService.shared.isStreaming) provider=\(AIProviderStore.shared.active.map { "\($0.kind)/\($0.model)" } ?? "-") notice=\(AIChatService.shared.notice ?? "-") last=\(AIChatService.shared.messages.last.map { "\($0.role) \($0.text.count) chars error=\($0.isError)" } ?? "-")",
@@ -179,9 +181,22 @@ enum DebugHooks {
                     "\(tool.name) [\(tool.asks ? "asks" : "looks")] \(tool.description) \(String(decoding: tool.spec.parameters, as: UTF8.self))"
                 }
                 try? (lines.joined(separator: "\n") + "\n").write(toFile: path, atomically: true, encoding: .utf8)
+            } else if command == "dictation-download" {
+                WhistleModel.shared.download()
+            } else if command.hasPrefix("dictation-feed:") {
+                // A 16 kHz float WAV through the whole pipeline, into the debug sink.
+                let url = URL(fileURLWithPath: String(command.dropFirst("dictation-feed:".count)))
+                Task { await DictationService.shared.debugFeed(file: url) }
+            } else if command.hasPrefix("dictate-file:") {
+                // One pass over a 16 kHz float WAV; the result goes to <file>.txt.
+                let path = String(command.dropFirst("dictate-file:".count))
+                Task {
+                    let result = await DictationService.shared.debugTranscribe(file: URL(fileURLWithPath: path))
+                    try? (result + "\n").write(toFile: path + ".txt", atomically: true, encoding: .utf8)
+                }
             } else if command.hasPrefix("default:") {
                 // Sets a string setting, as Settings would: `debug.sh default earCompanion=mascot`.
-                let pair = command.dropFirst("default:".count).split(separator: "=", maxSplits: 1).map(String.init)
+                let pair = command.dropFirst("default:".count).split(separator: "=", maxSplits: 1, omittingEmptySubsequences: false).map(String.init)
                 if pair.count == 2 {
                     UserDefaults.standard.set(pair[1], forKey: pair[0])
                 }
@@ -272,6 +287,7 @@ enum DebugHooks {
         lines += todoSelfTest()
         lines += chatMarkdownSelfTest()
         lines += mascotSelfTest()
+        lines += await dictationSelfTest()
         lines += await harnessSelfTest()
         lines += retroSoundSelfTest()
         lines += mediaKeysSelfTest()
@@ -490,6 +506,87 @@ enum DebugHooks {
 
     /// Adds a real to-do, ticks it, moves it and deletes it: the same calls the
     /// buttons make, so a broken save shows up here.
+    /// Dictation without a microphone: the tidy, the resampler, reading a
+    /// WAV, and, when the model is downloaded, a sentence spoken by `say`
+    /// heard back through the real engine.
+    @MainActor
+    private static func dictationSelfTest() async -> [String] {
+        var lines: [String] = []
+        let tidyCases: [(String, String)] = [
+            ("um so I think we should uh ship it", "So I think we should ship it."),
+            ("hello new line world", "Hello\nWorld."),
+            ("the the plan is ready. next we test", "The plan is ready. Next we test."),
+            ("visit example.com and pay 3.5 dollars", "Visit example.com and pay 3.5 dollars."),
+            ("you know, it works", "It works."),
+            ("Is it ready?", "Is it ready?"),
+        ]
+        for (input, expected) in tidyCases {
+            let got = TextTidy.tidy(input)
+            lines.append("dictation tidy “\(input)”: “\(got.replacingOccurrences(of: "\n", with: "⏎"))” → \(got == expected ? "PASS" : "FAILED: expected \(expected.replacingOccurrences(of: "\n", with: "⏎"))")")
+        }
+
+        // Half a second of a 440 Hz tone at 48 kHz becomes 8000 samples at 16 kHz.
+        if let source = AVAudioFormat(commonFormat: .pcmFormatFloat32, sampleRate: 48_000, channels: 1, interleaved: false),
+           let converter = AVAudioConverter(from: source, to: MicRecorder.format),
+           let buffer = AVAudioPCMBuffer(pcmFormat: source, frameCapacity: 24_000) {
+            buffer.frameLength = 24_000
+            for index in 0..<24_000 {
+                buffer.floatChannelData![0][index] = 0.5 * sin(2 * .pi * 440 * Float(index) / 48_000)
+            }
+            let samples = MicRecorder.convert(buffer, with: converter)
+            let ok = abs(samples.count - 8_000) <= 64 && MicRecorder.level(samples) > 0.5
+            lines.append("dictation resample: \(samples.count) samples, level \(String(format: "%.2f", MicRecorder.level(samples))) → \(ok ? "PASS" : "FAILED")")
+        }
+
+        // A 70 s dictation is heard in three pieces of at most 30 s, cut where
+        // it's quiet: here, a silent gap planted at 25 s and 52 s.
+        var long = (0..<(70 * 16_000)).map { Float(sin(Double($0) * 0.05)) * 0.3 }
+        for gap in [25 * 16_000, 52 * 16_000] { for index in gap..<(gap + 3_200) { long[index] = 0 } }
+        let pieces = DictationService.pieces(long)
+        let lengths = pieces.map { Double($0.count) / 16_000 }
+        let cutsOK = pieces.count == 3 && lengths.allSatisfy { $0 <= 30 } && abs(lengths[0] - 25.1) < 0.2
+        lines.append("dictation pieces for 70 s: \(lengths.map { String(format: "%.1f s", $0) }.joined(separator: ", ")) → \(cutsOK ? "PASS" : "FAILED")")
+
+        guard WhistleEngine.isSupported else {
+            lines.append("dictation engine: not supported on this Mac (needs Apple silicon and macOS 26)")
+            return lines
+        }
+        guard WhistleModel.shared.isReady else {
+            lines.append("dictation engine: model not downloaded, skipped (debug.sh dictation-download)")
+            return lines
+        }
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("xotch-selftest-\(UUID().uuidString)")
+        try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let aiff = folder.appendingPathComponent("phrase.aiff"), wav = folder.appendingPathComponent("phrase.wav")
+        func run(_ tool: String, _ arguments: [String]) async {
+            await withCheckedContinuation { continuation in
+                let process = Process()
+                process.executableURL = URL(fileURLWithPath: tool)
+                process.arguments = arguments
+                process.terminationHandler = { _ in continuation.resume() }
+                if (try? process.run()) == nil { continuation.resume() }
+            }
+        }
+        await run("/usr/bin/say", ["-o", aiff.path, "Remind me to call the bank tomorrow, and add milk to my shopping list."])
+        await run("/usr/bin/afconvert", ["-f", "WAVE", "-d", "LEF32@16000", "-c", "1", aiff.path, wav.path])
+        guard let data = try? Data(contentsOf: wav), let samples = DictationService.samples(wav: data) else {
+            lines.append("dictation engine: couldn't make the test clip → FAILED")
+            return lines
+        }
+        let started = Date()
+        do {
+            let text = try await WhistleEngine.shared.transcribe(samples)
+            let ms = Date().timeIntervalSince(started) * 1000
+            let heard = ["bank", "tomorrow", "shopping"].allSatisfy { text.lowercased().contains($0) }
+            lines.append(String(format: "dictation engine: %.1f s of speech in %.0f ms: “%@” → %@",
+                                Double(samples.count) / 16_000, ms, text, heard ? "PASS" : "FAILED"))
+        } catch {
+            lines.append("dictation engine: \(error.localizedDescription) → FAILED")
+        }
+        return lines
+    }
+
     /// The page mascots: every sheet loads and cuts into equal cells, the
     /// head turns the right way, and boops go blink, payoff, dizzy.
     @MainActor
@@ -984,6 +1081,11 @@ enum DebugHooks {
                     }
                 }
             }
+            // Dictation: its page, as things stand on this Mac.
+            render("4-open-dictation") {
+                $0.phase = .open
+                $0.selectedModuleID = "dictation"
+            }
             AIChatService.shared.withToolSample {
                 AIChatService.shared.withExpanded {
                     render("4-open-ai-tools") {
@@ -1070,6 +1172,11 @@ enum DebugHooks {
                                        tint: .yellow, earWidth: 170), for: "notes")
         render("3-activity-note") { _ in }
         center.setOngoing(nil, for: "notes")
+        // Dictating: the microphone and its waveform, held in the ear.
+        center.setOngoing(LiveActivity(moduleID: "dictation", symbol: "mic.fill", content: .listening,
+                                       tint: DictationService.tint, earWidth: 96, pulse: .calm), for: "dictation")
+        render("3-activity-dictation") { _ in }
+        center.setOngoing(nil, for: "dictation")
         // The mascot in the left ear, watching (down and left in snapshots).
         center.debugShowCompanion(.mascot)
         render("3-activity-mascot") { _ in }

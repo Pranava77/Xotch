@@ -3,14 +3,14 @@ import SwiftUI
 
 /// A page of Settings, listed in the sidebar.
 enum SettingsPane: String, CaseIterable, Identifiable {
-    case general, appearance, modules, media, todos, shelf, capture, ai, privacy
+    case general, appearance, modules, media, todos, shelf, capture, ai, dictation, privacy
 
     var id: String { rawValue }
 
     /// The sidebar's groups, separated by a gap.
     static let groups: [[SettingsPane]] = [
         [.general, .appearance, .modules],
-        [.media, .todos, .shelf, .capture, .ai],
+        [.media, .todos, .shelf, .capture, .ai, .dictation],
         [.privacy],
     ]
 
@@ -24,6 +24,7 @@ enum SettingsPane: String, CaseIterable, Identifiable {
         case .shelf: "Shelf & Clipboard"
         case .capture: "Capture"
         case .ai: "AI"
+        case .dictation: "Dictation"
         case .privacy: "Privacy & Feedback"
         }
     }
@@ -38,6 +39,7 @@ enum SettingsPane: String, CaseIterable, Identifiable {
         case .shelf: "tray.full.fill"
         case .capture: "camera.viewfinder"
         case .ai: "sparkles"
+        case .dictation: "waveform"
         case .privacy: "hand.raised.fill"
         }
     }
@@ -52,6 +54,7 @@ enum SettingsPane: String, CaseIterable, Identifiable {
         case .shelf: .teal
         case .capture: .red
         case .ai: .purple
+        case .dictation: .red
         case .privacy: .blue
         }
     }
@@ -96,6 +99,7 @@ struct SettingsDetail: View {
         case .shelf: ShelfPane()
         case .capture: CapturePane()
         case .ai: AISettingsPane()
+        case .dictation: DictationSettingsPane()
         case .privacy: PrivacyFeedbackPane()
         }
     }

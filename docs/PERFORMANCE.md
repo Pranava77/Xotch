@@ -49,6 +49,8 @@ When several live activities take turns in the ear, each turn is a 0.25 s fade b
 
 The page mascot costs nothing measurable: with music playing it read 1.72% with the mascot off and 1.79% with it on, 86 wakeups a second either way. It only does work when the pointer moves, a few comparisons per move, and redraws only when its head turns to another of its nine directions. One character's sprites take about 2.6 MB once decoded.
 
+Dictation costs nothing until you hold Fn. Whistle runs in `needle-helper`, a separate process Xotch starts on the first dictation and quits after two quiet minutes, because the engine can't unload its model: it takes about 90 MB while transcribing and 0% CPU while waiting. Loading the 17 MB model takes 7 ms, 5 s of speech transcribes in about 30 ms on an M5 Pro, and the live preview processes each second of audio in 43 ms on average (75 ms at worst). The microphone runs only while you're dictating.
+
 Measurements are noisy while the Mac is in use: one run with Settings open and the pointer moving read 12–20% for the same state, and 0.17% again once things were quiet.
 
 The first time each module opens after launch costs a short burst of CPU (loading its data, a Claude log scan of about 0.9 s, compiling the Metal shaders in about 0.1–0.25 s on a background thread). The numbers above are after that settles. Moving the pointer wakes Xotch for every move, because it watches for the pointer reaching the notch; each event is a rectangle check. Wakeup counts in the table go up whenever the Mac is being used during the run.

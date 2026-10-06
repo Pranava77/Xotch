@@ -110,6 +110,14 @@ Type **/** in the chat for commands that run straight away without asking the AI
 
 **Settings › Privacy & Feedback › Hide the notch from screen sharing and recordings** asks macOS to leave the notch out of shared screens and recordings. Some apps and macOS versions capture it anyway, so check with a test call first.
 
+## Talk instead of typing
+
+Hold **Fn** (🌐) anywhere and talk; let go and your words appear where you're typing, in Mail, Slack, Notes or a browser. Double-tap Fn to keep listening hands-free and press it again to finish; Esc cancels. While you talk, the notch shows a microphone and your voice as a moving waveform.
+
+Speech is turned into text on your Mac by [Whistle](https://huggingface.co/Cactus-Compute/whistle) from Cactus Compute (Apache 2.0), a 17 MB model that hears English, German, French, Spanish, Italian, Dutch and Polish. Five seconds of speech take about 30 milliseconds. Your voice is never saved or sent anywhere. Xotch tidies the text a little (no "um"s, no repeated words, capitals and a full stop) and can ask your AI to polish it if you turn that on.
+
+Set it up in **Settings › Dictation**: download the model once, allow the microphone and Accessibility, and add any names or jargon to **Words to listen for**. In macOS's Keyboard settings, set **Press 🌐 key to** "Do Nothing" so only Xotch answers. The **Dictation** page in the notch shows what's being heard and your recent dictations, and the microphone button in the AI chat dictates a question. Dictation needs a Mac with Apple silicon and macOS 26 or later.
+
 ## Beside the camera
 
 When something is going on, the notch grows two small ears to show it without opening.
@@ -302,12 +310,12 @@ Xotch asks only when you use something that needs it.
 | Paste from other apps (macOS 26) | You choose **Allow** in Clipboard | Keeping your clipboard history |
 | System audio recording | You turn on real sound for the music bars | Measuring how loud the music is |
 | Screen Recording | Your first screenshot or recording in Capture, or your first screen question to the AI | Taking the picture. Choosing a window to record uses macOS's own picker instead, which needs no permission |
-| Microphone | Only if you turn on Capture › Microphone | Recording your voice with the screen |
+| Microphone | Your first dictation, or Capture › Microphone | Hearing what you dictate (turned into text on your Mac, never saved), or recording your voice with the screen |
 | Desktop folder (may be asked) | Opening Capture, if it's listing your ⌘⇧3 and ⌘⇧4 screenshots | Finding those screenshots, which macOS saves to Desktop unless you've changed it |
 | Downloads folder | macOS may ask when you turn on download progress | Showing how far downloads have got |
-| Accessibility | Only if you turn on **Settings › Media › Show volume and brightness in the notch** | Reading the volume, mute and brightness keys so the notch can show the level in place of macOS's popup. Xotch reads only those keys and nothing else you type |
+| Accessibility | Only if you turn on **Settings › Media › Show volume and brightness in the notch**, or dictation | Reading the volume, mute and brightness keys so the notch can show the level in place of macOS's popup; for dictation, noticing the Fn key and pasting what you said. Xotch reads only those keys and nothing else you type |
 
-Without that one setting, Xotch never asks for Accessibility or Input Monitoring. The AI shortcuts don't need it either.
+Without those settings, Xotch never asks for Accessibility or Input Monitoring. The AI shortcuts don't need it either.
 
 </details>
 
