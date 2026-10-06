@@ -48,6 +48,8 @@ enum SettingsKey {
     static let aiScreenHotKey = "aiScreenHotKey"
     /// The AI chat was made bigger with its expand button.
     static let aiExpanded = "aiExpanded"
+    /// The AI may use the notch's tools (asking before it changes anything).
+    static let aiNotchTools = "aiNotchTools"
     /// The page Settings last showed.
     static let settingsPane = "settingsPane"
 }
@@ -100,6 +102,7 @@ enum AppSettings {
             SettingsKey.aiQuickAskHotKey: true,
             SettingsKey.aiScreenHotKey: true,
             SettingsKey.aiExpanded: false,
+            SettingsKey.aiNotchTools: true,
             Diagnostics.shareKey: false,
         ])
     }
@@ -162,6 +165,11 @@ enum AppSettings {
     /// Adiyogi in the left ear of the closed notch.
     static var adiyogiEar: Bool {
         UserDefaults.standard.bool(forKey: SettingsKey.adiyogiEar)
+    }
+
+    /// The AI chat may use the notch's tools, asking before it changes anything.
+    static var aiNotchTools: Bool {
+        UserDefaults.standard.bool(forKey: SettingsKey.aiNotchTools)
     }
 
     /// 0 means keep shelf items until removed.

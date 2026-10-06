@@ -2,6 +2,37 @@ import AppKit
 import Observation
 import SwiftUI
 
+/// One tool call in a reply, and how it went.
+struct ToolStep: Codable, Equatable, Identifiable {
+    enum Status: String, Codable {
+        /// Waiting for the user to allow it.
+        case waiting
+        /// A lookup waiting its turn behind earlier cards.
+        case queued
+        case running, done, declined, failed
+        /// Stopped before it ran.
+        case cancelled
+        /// Run, then taken back.
+        case undone
+    }
+
+    var id = UUID()
+    var call: ToolCall
+    var status: Status
+    /// What the card says: the preview before it runs, what happened after.
+    var title: String
+    /// What the model was told.
+    var result: String?
+    /// A module worth opening to see the change.
+    var openModule: String?
+}
+
+/// A round of a reply that called tools: what it said, then the calls.
+struct ToolRound: Codable, Equatable {
+    var text: String
+    var steps: [ToolStep]
+}
+
 struct ChatMessage: Codable, Identifiable, Equatable {
     enum Role: String, Codable { case user, assistant }
 
@@ -16,9 +47,15 @@ struct ChatMessage: Codable, Identifiable, Equatable {
     var model: String?
     /// Kept in memory only, so it can go with follow-up questions.
     var imageJPEG: Data?
+    /// The rounds of a reply that used tools before `text`, its last round.
+    var rounds: [ToolRound]?
+    /// A slash command and what it did: shown, never sent to the model.
+    var local: Bool?
+
+    var isLocal: Bool { local == true }
 
     private enum CodingKeys: String, CodingKey {
-        case id, role, text, date, isError, hadScreenshot, model
+        case id, role, text, date, isError, hadScreenshot, model, rounds, local
     }
 }
 
@@ -48,6 +85,16 @@ final class AIChatService {
     }
 
     @ObservationIgnored private var task: Task<Void, Never>?
+    /// Cards waiting for Allow or Don't.
+    @ObservationIgnored private var decisions: [UUID: CheckedContinuation<Bool, Never>] = [:]
+    @ObservationIgnored private var undoActions: [UUID: @MainActor () -> Void] = [:]
+    /// Replies where the user chose Allow all.
+    @ObservationIgnored private var allowedReplies: Set<UUID> = []
+    /// Models that turned tools down this session.
+    @ObservationIgnored private var noToolModels: Set<String> = []
+
+    /// Rounds of tool calls before the model has to answer in words.
+    private static let maxToolRounds = 5
     @ObservationIgnored private lazy var saver = SaveScheduler { [weak self] in
         guard let self else { return }
         Storage.save(ChatFile(messages: Array(self.messages.suffix(Self.keptMessages))), to: "ai-chat.json")
@@ -96,6 +143,12 @@ final class AIChatService {
 
     func send() {
         guard canSend else { return }
+        let typed = draft.trimmingCharacters(in: .whitespacesAndNewlines)
+        if typed.hasPrefix("/"), attachment == nil {
+            draft = ""
+            runSlashCommand(typed)
+            return
+        }
         guard let provider = AIProviderStore.shared.active else {
             notice = "Add an AI provider in Settings › AI first."
             return
@@ -150,24 +203,256 @@ final class AIChatService {
         messages.append(reply)
         saver.schedule()
 
-        let system = systemPrompt
         let backend = AIBackends.backend(for: provider.kind)
+        let modelKey = provider.id.uuidString + "/" + provider.model
+        let useTools = AppSettings.aiNotchTools && !noToolModels.contains(modelKey)
         isStreaming = true
         task = Task { [weak self] in
             // The Keychain can stop to ask whether this build may read the key
             // (every rebuild of a debug build does). Asked on the main thread,
             // that froze the whole notch until someone answered.
             let apiKey = await Task.detached { provider.apiKey }.value
+            await self?.converse(backend: backend, provider: provider, apiKey: apiKey, turns: turns,
+                                 replyID: reply.id, useTools: useTools, modelKey: modelKey)
+            self?.finish(reply.id)
+        }
+    }
+
+    /// Asks the model, runs the tools it calls (asking the user first for
+    /// anything that changes or shares something), sends back what they
+    /// returned, and repeats until the model answers in words.
+    private func converse(backend: any ChatBackend, provider: ProviderConfig, apiKey: String?, turns: [ChatTurn],
+                          replyID: UUID, useTools: Bool, modelKey: String) async {
+        var turns = turns
+        var tools = useTools ? NotchTools.specs : []
+        var round = 0
+        while !Task.isCancelled {
+            // The last round offers no tools, so the model has to answer.
+            let offered = round < Self.maxToolRounds ? tools : []
             let request = ChatRequest(baseURL: provider.baseURL, model: provider.model, apiKey: apiKey,
-                                      system: system, turns: turns)
+                                      system: systemPrompt(withTools: !offered.isEmpty), turns: turns, tools: offered)
+            var calls: [ToolCall] = []
+            var heardText = false
+            #if DEBUG
+            debugNote("round \(round): \(provider.model), \(offered.count) tools offered")
+            #endif
             do {
-                for try await piece in backend.stream(request) {
-                    self?.append(piece, to: reply.id)
+                for try await event in backend.stream(request) {
+                    switch event {
+                    case .text(let piece):
+                        heardText = true
+                        append(piece, to: replyID)
+                    case .toolCall(let call):
+                        calls.append(call)
+                    }
                 }
             } catch {
-                self?.fail(reply.id, with: error)
+                #if DEBUG
+                debugNote("round \(round) error: \(error.localizedDescription)")
+                #endif
+                // A model without tool support: ask again without them.
+                if !offered.isEmpty, round == 0, !heardText, calls.isEmpty, AIError.isAboutTools(error) {
+                    noToolModels.insert(modelKey)
+                    tools = []
+                    notice = "\(provider.model) can't use notch tools, so it answered without them. Gemini, Claude and GPT can."
+                    continue
+                }
+                fail(replyID, with: error)
+                return
             }
-            self?.finish(reply.id)
+            #if DEBUG
+            debugNote("round \(round) done: text=\(heardText) calls=\(calls.map(\.name))")
+            #endif
+            guard !calls.isEmpty, !Task.isCancelled else { return }
+            let (said, stepIDs) = startToolRound(calls, in: replyID)
+            var results: [ToolResult] = []
+            for stepID in stepIDs {
+                results.append(await run(stepID, in: replyID, asking: true))
+            }
+            turns.append(ChatTurn(role: .assistant, text: said, toolCalls: calls))
+            turns.append(ChatTurn(role: .tool, text: "", toolResults: results))
+            round += 1
+        }
+    }
+
+    // MARK: - Tools
+
+    /// What the reply has said so far becomes a finished round, with a card
+    /// per call. Returns that text and the cards' ids.
+    private func startToolRound(_ calls: [ToolCall], in replyID: UUID) -> (String, [UUID]) {
+        guard let index = messages.firstIndex(where: { $0.id == replyID }) else { return ("", []) }
+        let steps = calls.map { call -> ToolStep in
+            let tool = NotchTools.tool(named: call.name)
+            let title = tool?.preview(ToolArgs(values: call.argumentObject)) ?? "Use \(call.name)"
+            return ToolStep(call: call, status: tool?.asks == true ? .waiting : .queued, title: title)
+        }
+        let text = messages[index].text
+        messages[index].rounds = (messages[index].rounds ?? []) + [ToolRound(text: text, steps: steps)]
+        messages[index].text = ""
+        saver.schedule()
+        return (text, steps.map(\.id))
+    }
+
+    /// Runs one card's tool, first waiting for Allow if it changes or shares
+    /// something, and returns what to tell the model.
+    private func run(_ stepID: UUID, in replyID: UUID, asking: Bool) async -> ToolResult {
+        guard let step = step(stepID, in: replyID) else { return ToolResult(callID: "", name: "", content: "{}") }
+        func told(_ content: String) -> ToolResult {
+            ToolResult(callID: step.call.id, name: step.call.name, content: content)
+        }
+        guard let tool = NotchTools.tool(named: step.call.name) else {
+            let content = NotchTools.json(["error": "There's no tool called \(step.call.name)."])
+            updateStep(stepID, in: replyID) { $0.status = .failed; $0.result = content }
+            return told(content)
+        }
+        if asking, tool.asks, !allowedReplies.contains(replyID) {
+            updateStep(stepID, in: replyID) { $0.status = .waiting }
+            let allowed = await withCheckedContinuation { decisions[stepID] = $0 }
+            if Task.isCancelled {
+                let content = NotchTools.json(["error": "The user stopped the request."])
+                updateStep(stepID, in: replyID) { $0.status = .cancelled; $0.result = content }
+                return told(content)
+            }
+            guard allowed else {
+                let content = NotchTools.json(["declined": true, "note": "The user said no. Don't try again unless they ask."])
+                updateStep(stepID, in: replyID) { $0.status = .declined; $0.result = content }
+                return told(content)
+            }
+        }
+        updateStep(stepID, in: replyID) { $0.status = .running }
+        do {
+            let outcome = try await tool.run(ToolArgs(values: step.call.argumentObject))
+            undoActions[stepID] = outcome.undo
+            updateStep(stepID, in: replyID) {
+                $0.status = .done
+                $0.title = outcome.summary
+                $0.result = outcome.result
+                $0.openModule = outcome.openModule
+            }
+            return told(outcome.result)
+        } catch {
+            let content = NotchTools.json(["error": error.localizedDescription])
+            updateStep(stepID, in: replyID) {
+                $0.status = .failed
+                $0.title = error.localizedDescription
+                $0.result = content
+            }
+            return told(content)
+        }
+    }
+
+    /// Allow or Don't on a card.
+    func decide(_ step: ToolStep, allow: Bool) {
+        decisions.removeValue(forKey: step.id)?.resume(returning: allow)
+    }
+
+    /// Allow all: this card and every later one in the reply.
+    func allowAll(in reply: ChatMessage) {
+        allowedReplies.insert(reply.id)
+        for step in (reply.rounds ?? []).flatMap(\.steps) {
+            decisions.removeValue(forKey: step.id)?.resume(returning: true)
+        }
+    }
+
+    func canUndo(_ step: ToolStep) -> Bool {
+        step.status == .done && undoActions[step.id] != nil
+    }
+
+    func undo(_ step: ToolStep, in reply: ChatMessage) {
+        guard let action = undoActions.removeValue(forKey: step.id) else { return }
+        action()
+        updateStep(step.id, in: reply.id) { $0.status = .undone }
+        Haptics.tick()
+    }
+
+    private func step(_ id: UUID, in replyID: UUID) -> ToolStep? {
+        messages.first { $0.id == replyID }?.rounds?.lazy.flatMap(\.steps).first { $0.id == id }
+    }
+
+    private func updateStep(_ id: UUID, in replyID: UUID, _ change: (inout ToolStep) -> Void) {
+        guard let index = messages.firstIndex(where: { $0.id == replyID }), var rounds = messages[index].rounds else { return }
+        for round in rounds.indices {
+            if let step = rounds[round].steps.firstIndex(where: { $0.id == id }) {
+                change(&rounds[round].steps[step])
+                messages[index].rounds = rounds
+                saver.schedule()
+                return
+            }
+        }
+    }
+
+    // MARK: - Slash commands
+
+    struct SlashCommand: Identifiable {
+        let name: String
+        let hint: String
+        let symbol: String
+        var id: String { name }
+    }
+
+    static let slashCommands = [
+        SlashCommand(name: "todo", hint: "Add a to-do for today", symbol: "plus.circle"),
+        SlashCommand(name: "timer", hint: "Start a countdown: /timer 25m", symbol: "timer"),
+        SlashCommand(name: "focus", hint: "Start a focus session", symbol: "brain.head.profile"),
+        SlashCommand(name: "break", hint: "Take a short break", symbol: "cup.and.saucer.fill"),
+        SlashCommand(name: "note", hint: "Write a note", symbol: "square.and.pencil"),
+        SlashCommand(name: "play", hint: "Play music", symbol: "play.fill"),
+        SlashCommand(name: "pause", hint: "Pause music", symbol: "pause.fill"),
+        SlashCommand(name: "next", hint: "Next track", symbol: "forward.fill"),
+        SlashCommand(name: "clear", hint: "Start a new chat", symbol: "square.and.pencil"),
+    ]
+
+    /// Runs a typed command straight away, through the same tools the AI
+    /// uses, with no model and no Allow: you typed it.
+    private func runSlashCommand(_ typed: String) {
+        let parts = typed.dropFirst().split(separator: " ", maxSplits: 1)
+        let name = parts.first.map { String($0).lowercased() } ?? ""
+        let rest = parts.count > 1 ? String(parts[1]).trimmingCharacters(in: .whitespaces) : ""
+        let call: (tool: String, args: [String: Any])?
+        switch name {
+        case "clear":
+            newChat()
+            return
+        case "todo":
+            call = rest.isEmpty ? nil : ("add_todo", ["title": rest])
+        case "timer":
+            guard let seconds = CommandCatalog.duration(in: rest.isEmpty ? "10" : rest) else {
+                notice = "Try /timer 25m, /timer 90s or /timer 1h."
+                return
+            }
+            call = ("start_timer", ["kind": "countdown", "minutes": seconds / 60])
+        case "focus":
+            call = ("start_timer", ["kind": "focus"])
+        case "break":
+            call = ("start_timer", ["kind": "short_break"])
+        case "note":
+            call = rest.isEmpty ? nil : ("create_note", ["text": rest])
+        case "play", "pause", "next":
+            call = ("media", ["action": name])
+        default:
+            notice = "There's no /\(name). Type / to see the commands."
+            return
+        }
+        guard let call else {
+            notice = "Write what to add after /\(name)."
+            return
+        }
+        notice = nil
+        let arguments = (try? JSONSerialization.data(withJSONObject: call.args)) ?? Data("{}".utf8)
+        let toolCall = ToolCall(id: ToolCall.localID(), name: call.tool, arguments: arguments)
+        let title = NotchTools.tool(named: call.tool)?.preview(ToolArgs(values: call.args)) ?? typed
+        let step = ToolStep(call: toolCall, status: .running, title: title)
+        var command = ChatMessage(role: .user, text: typed)
+        command.local = true
+        var reply = ChatMessage(role: .assistant, text: "")
+        reply.local = true
+        reply.model = "Xotch"
+        reply.rounds = [ToolRound(text: "", steps: [step])]
+        messages.append(command)
+        messages.append(reply)
+        saver.schedule()
+        Task { [weak self] in
+            _ = await self?.run(step.id, in: reply.id, asking: false)
         }
     }
 
@@ -181,6 +466,12 @@ final class AIChatService {
     func stop() {
         task?.cancel()
         task = nil
+        // Cards waiting for an answer give up.
+        let waiting = decisions
+        decisions = [:]
+        for continuation in waiting.values {
+            continuation.resume(returning: false)
+        }
     }
 
     func newChat() {
@@ -204,6 +495,13 @@ final class AIChatService {
     /// The notch follows `AIModule.openSize`, so it grows or shrinks with this.
     func toggleExpanded() {
         withAnimation(Motion.switchModule) { isExpanded.toggle() }
+    }
+
+    /// The commands matching what's typed after a slash, for the menu above the input.
+    var slashSuggestions: [SlashCommand] {
+        guard draft.hasPrefix("/"), !draft.contains(" ") else { return [] }
+        let typed = draft.dropFirst().lowercased()
+        return Self.slashCommands.filter { typed.isEmpty || $0.name.hasPrefix(typed) }
     }
 
     func copy(_ message: ChatMessage) {
@@ -236,16 +534,29 @@ final class AIChatService {
     private func finish(_ id: UUID) {
         isStreaming = false
         task = nil
-        // Stopped before a word arrived: drop the empty bubble.
-        if let index = messages.firstIndex(where: { $0.id == id }), messages[index].text.isEmpty {
-            messages.remove(at: index)
+        allowedReplies.remove(id)
+        if let index = messages.firstIndex(where: { $0.id == id }) {
+            // Cards still waiting when the request ended never ran.
+            if var rounds = messages[index].rounds {
+                for round in rounds.indices {
+                    for step in rounds[round].steps.indices
+                    where [.waiting, .queued, .running].contains(rounds[round].steps[step].status) {
+                        rounds[round].steps[step].status = .cancelled
+                    }
+                }
+                messages[index].rounds = rounds
+            }
+            // Stopped before anything arrived: drop the empty card.
+            if messages[index].text.isEmpty, (messages[index].rounds ?? []).isEmpty {
+                messages.remove(at: index)
+            }
         }
         saver.schedule()
     }
 
     // MARK: - Request
 
-    private var systemPrompt: String {
+    private func systemPrompt(withTools: Bool) -> String {
         let room = isExpanded
             ? "The panel is large right now, so a fuller answer is fine when the question needs one."
             : "Replies appear in a small panel, so keep them short: a few sentences or a tight list."
@@ -272,6 +583,19 @@ final class AIChatService {
             </context>
             """
         }
+        prompt += "\n\nIt is now \(NotchTools.stamp(Date())), time zone \(TimeZone.current.identifier)."
+        if withTools {
+            prompt += """
+
+
+            You can see and change things in the user's notch with tools: to-dos, timers, music, notes, the \
+            calendar, the clipboard and screenshots. Use them whenever a request is about those, and look things \
+            up with them instead of guessing. The user approves every change on a card before it happens, so call \
+            the tool rather than asking for permission in words. Never say something was done unless its tool \
+            result says so, and if the user says no, accept it. When a task takes several steps, take them one \
+            after another, then sum up in a sentence or two.
+            """
+        }
         return prompt
     }
 
@@ -281,20 +605,41 @@ final class AIChatService {
     private func turns() -> [ChatTurn] {
         var result: [ChatTurn] = []
         let latestImage = messages.lastIndex { $0.imageJPEG != nil }
-        for (index, message) in messages.enumerated() where !message.isError && !message.text.isEmpty {
-            let role: ChatTurn.Role = message.role == .user ? .user : .assistant
-            let image = index == latestImage ? message.imageJPEG : nil
-            // Follow-up suggestions are for the user, not the conversation.
-            let text = role == .assistant ? ChatMarkdown.splitFollowUps(message.text).body : message.text
-            if let last = result.last, last.role == role {
-                result[result.count - 1] = ChatTurn(role: role, text: last.text + "\n\n" + text,
-                                                    imageJPEG: image ?? last.imageJPEG)
+        func add(_ turn: ChatTurn) {
+            // Two plain turns in a row from one side (after an error, say) become one.
+            if let last = result.last, last.role == turn.role, turn.role != .tool,
+               last.toolCalls.isEmpty, turn.toolCalls.isEmpty {
+                result[result.count - 1] = ChatTurn(role: turn.role, text: last.text + "\n\n" + turn.text,
+                                                    imageJPEG: turn.imageJPEG ?? last.imageJPEG)
             } else {
-                result.append(ChatTurn(role: role, text: text, imageJPEG: image))
+                result.append(turn)
             }
         }
-        result = Array(result.suffix(30))
-        while result.first?.role == .assistant {
+        for (index, message) in messages.enumerated() where !message.isError && !message.isLocal {
+            if message.role == .user {
+                guard !message.text.isEmpty else { continue }
+                // A question whose answer failed is left out: asked again it
+                // would ride along with the next one, tools and all.
+                if index + 1 < messages.count, messages[index + 1].isError { continue }
+                add(ChatTurn(role: .user, text: message.text, imageJPEG: index == latestImage ? message.imageJPEG : nil))
+                continue
+            }
+            for round in message.rounds ?? [] {
+                add(ChatTurn(role: .assistant, text: round.text, toolCalls: round.steps.map(\.call)))
+                add(ChatTurn(role: .tool, text: "", toolResults: round.steps.map {
+                    ToolResult(callID: $0.call.id, name: $0.call.name,
+                               content: $0.result ?? NotchTools.json(["error": "It didn't run."]))
+                }))
+            }
+            // Follow-up suggestions are for the user, not the conversation.
+            let text = ChatMarkdown.splitFollowUps(message.text).body
+            if !text.isEmpty {
+                add(ChatTurn(role: .assistant, text: text))
+            }
+        }
+        result = Array(result.suffix(40))
+        // Start with the user, and never with half of a tool exchange.
+        while let first = result.first, first.role != .user {
             result.removeFirst()
         }
         return result
@@ -321,6 +666,22 @@ final class AIChatService {
         notice = nil
         body()
         (messages, draft, attachment, notice) = saved
+    }
+
+    /// The turns a conversation would send, for the self-test.
+    func debugTurns(for sample: [ChatMessage]) -> [ChatTurn] {
+        let saved = messages
+        messages = sample
+        defer { messages = saved }
+        return turns()
+    }
+
+    /// What each round of the last requests did, for `scripts/debug.sh status`.
+    @ObservationIgnored private(set) var debugLog: [String] = []
+
+    private func debugNote(_ line: String) {
+        debugLog.append(line)
+        if debugLog.count > 12 { debugLog.removeFirst(debugLog.count - 12) }
     }
 
     /// A reply that uses every kind of block, for snapshots.
@@ -379,6 +740,37 @@ final class AIChatService {
         messages = [ChatMessage(role: .user, text: "How do I avoid the crash on an empty list?"), reply]
         body()
         messages = saved
+    }
+
+    /// A reply that used tools, for snapshots: a lookup, a change done, one
+    /// waiting for Allow, and one declined.
+    func withToolSample(_ body: () -> Void) {
+        let saved = messages
+        func call(_ name: String, _ args: [String: Any]) -> ToolCall {
+            ToolCall(id: ToolCall.localID(), name: name,
+                     arguments: (try? JSONSerialization.data(withJSONObject: args)) ?? Data("{}".utf8))
+        }
+        var reply = ChatMessage(role: .assistant, text: "")
+        reply.model = "gemini-3.1-flash-lite"
+        reply.rounds = [
+            ToolRound(text: "", steps: [
+                ToolStep(call: call("get_agenda", [:]), status: .done, title: "Checked your calendar"),
+            ]),
+            ToolRound(text: "You're free after 3. I'll plan around the design review:", steps: [
+                ToolStep(call: call("add_todo", ["title": "Prep review notes"]), status: .done,
+                         title: "Added **Prep review notes** to today", openModule: "todos"),
+                ToolStep(call: call("start_timer", ["kind": "focus"]), status: .waiting,
+                         title: "Start a **25-minute** focus"),
+                ToolStep(call: call("add_calendar_event", ["title": "Walk"]), status: .waiting,
+                         title: "Add **Walk** to your calendar, Sat 4 Oct 17:30"),
+                ToolStep(call: call("media", ["action": "pause"]), status: .declined, title: "Pause the music"),
+            ]),
+        ]
+        messages = [ChatMessage(role: .user, text: "Plan my afternoon around the design review"), reply]
+        isStreaming = true
+        body()
+        messages = saved
+        isStreaming = false
     }
 
     /// A reply arriving, for snapshots: the cursor shows, the chips don't.

@@ -4,6 +4,7 @@ import SwiftUI
 struct AISettingsPane: View {
     @AppStorage(SettingsKey.aiQuickAskHotKey) private var quickAskHotKey = true
     @AppStorage(SettingsKey.aiScreenHotKey) private var screenHotKey = true
+    @AppStorage(SettingsKey.aiNotchTools) private var notchTools = true
     @State private var editingProvider: ProviderDraft?
     @State private var editingContext: ContextProfile?
     @State private var removingProvider: ProviderConfig?
@@ -13,6 +14,7 @@ struct AISettingsPane: View {
     var body: some View {
         Form {
             providersSection
+            toolsSection
             shortcutsSection
             contextSection
         }
@@ -65,6 +67,16 @@ struct AISettingsPane: View {
             Button("Remove", role: .destructive) { providers.delete(provider.id) }
         } message: { _ in
             Text("Its API key is deleted from the Keychain too.")
+        }
+    }
+
+    private var toolsSection: some View {
+        Section {
+            Toggle("Let the AI use the notch", isOn: $notchTools)
+        } header: {
+            Text("Notch tools")
+        } footer: {
+            SettingsFootnote("The AI can check your to-dos, calendar, timer and music, and add to-dos, start timers, write notes, add events and more. Anything that changes something, or shares your clipboard or notes, waits for you to click Allow. Type / in the chat for commands that run straight away.")
         }
     }
 
@@ -296,8 +308,10 @@ private struct ProviderEditor: View {
             defer { working = false }
             do {
                 var reply = ""
-                for try await piece in backend.stream(request) {
-                    reply += piece
+                for try await event in backend.stream(request) {
+                    if case .text(let piece) = event {
+                        reply += piece
+                    }
                     if reply.count > 200 { break }
                 }
                 let trimmed = reply.trimmingCharacters(in: .whitespacesAndNewlines)
