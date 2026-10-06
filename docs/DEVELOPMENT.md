@@ -182,13 +182,21 @@ Xotch was called Brim until the name was chosen. `Services/Migration.swift` runs
 
 ### Permissions during development
 
-The app is signed ad hoc, so macOS may ask for Calendar access again after a rebuild. Screen Recording is worse: macOS ties the approval to the exact signature, so a rebuilt app is silently denied and never asks again. Clear it and ask afresh with:
+Signed ad hoc, a build is known to macOS only by the hash of its binary, and every rebuild changes it. So each build is a new app: macOS asks again for system audio, the Downloads and Desktop folders, Calendar, and Keychain access to AI keys, and "Always Allow" lasts only until the next build. Screen Recording is worse: a rebuilt app is silently denied and never asks again. Because the login item opens `build/Xotch.app`, this shows up as prompts every time you log in after a rebuild.
+
+A certificate fixes it, because macOS then identifies Xotch by its certificate rather than its hash. `scripts/build-app.sh` picks one up by itself:
+
+1. In Xcode, open **Settings › Accounts**, add your Apple ID, choose **Manage Certificates…**, then **+ › Apple Development**. A free Apple ID is enough.
+2. Rebuild with `scripts/build-app.sh debug --run`. It prints which certificate it signed with.
+3. Allow each permission once more. They stick from then on.
+
+Release builds use only a Developer ID certificate (or `SIGN_IDENTITY`), never an Apple Development one, since that's the one that matters on testers' Macs. To clear a stuck Screen Recording approval and ask afresh:
 
 ```bash
 tccutil reset ScreenCapture com.pranava.xotch
 ```
 
-Then relaunch and take a capture. Grant it on the build you mean to test, and don't rebuild until you're done. A Developer ID signature (Phase 6) fixes that. Debug builds also carry `get-task-allow` so `leaks`, `sample` and `vmmap` work; release builds don't.
+Debug builds also carry `get-task-allow` so `leaks`, `sample` and `vmmap` work; release builds don't.
 
 On macOS 26, reading the clipboard in the background needs permission: the Clipboard module asks once, and history only records while macOS is set to always allow Xotch.
 

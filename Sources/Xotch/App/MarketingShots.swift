@@ -56,6 +56,8 @@ enum MarketingShots {
         }
 
         let openSize = CGSize(width: 840, height: 300)
+        // Home is wider while the mascot has its tile.
+        let homeSize = CGSize(width: 1000, height: 300)
         let earSize = CGSize(width: 520, height: 50)
 
         withSampleData {
@@ -76,11 +78,27 @@ enum MarketingShots {
                 palette.isPinned = true
                 palette.palette.isOpen = true
                 palette.palette.query = "10"
-                save("palette", palette, size: openSize, scale: 1.5)
+                save("palette", palette, size: homeSize, scale: 1.5)
+                // The AI asking before it changes anything, in the bigger chat.
+                AIChatService.shared.withToolSample {
+                    AIChatService.shared.withExpanded {
+                        save("ai-tools", open(AIModule.moduleID), size: CGSize(width: 1100, height: 620), scale: 1.5)
+                    }
+                }
+                // A reply with headings, steps, a table and code.
+                AIChatService.shared.withCodeSample {
+                    AIChatService.shared.withExpanded {
+                        save("ai-reply", open(AIModule.moduleID), size: CGSize(width: 1100, height: 620), scale: 1.5)
+                    }
+                }
+                // Dictation, mid-sentence.
+                DictationService.shared.withSample {
+                    save("module-dictation", open("dictation"), size: openSize, scale: 1.5)
+                }
             }
             for id in [Palette.aero.id, Palette.midnight.id, Palette.smoke.id, Palette.aurora.id] {
                 theme.withPalette(id) {
-                    save("theme-\(id)", open("home"), size: openSize, scale: 1.5)
+                    save("theme-\(id)", open("home"), size: homeSize, scale: 1.5)
                 }
             }
 
@@ -103,6 +121,8 @@ enum MarketingShots {
                                               progress: .fraction(0.62))),
                     ("volume", LiveActivity(moduleID: "volume", symbol: "speaker.wave.2.fill", content: .level(0.56),
                                             tint: .white, earWidth: 96)),
+                    ("dictation", LiveActivity(moduleID: "dictation", symbol: "mic.fill", content: .listening,
+                                               tint: DictationService.tint, earWidth: 96, pulse: .calm)),
                 ]
                 for (name, activity) in ears {
                     center.setOngoing(activity, for: activity.moduleID)
@@ -112,6 +132,10 @@ enum MarketingShots {
                 // Adiyogi resting in the left ear of an otherwise quiet notch.
                 center.debugShowCompanion(.adiyogi)
                 save("ears-adiyogi", model { _ in }, size: earSize, scale: 2)
+                // The mascot in the same place, watching the pointer.
+                center.debugShowCompanion(.mascot)
+                save("ears-mascot", model { _ in }, size: earSize, scale: 2)
+                center.debugShowCompanion(.none)
             }
             center.debugRestore(samples)
         }

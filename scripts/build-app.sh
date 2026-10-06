@@ -7,8 +7,25 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 CONFIG="${1:-debug}"
 RUN="${2:-}"
 APP="$ROOT/build/Xotch.app"
-# "-" signs ad hoc. Set SIGN_IDENTITY to your Developer ID once you have one.
-IDENTITY="${SIGN_IDENTITY:--}"
+# Signed ad hoc ("-"), every build is a new app to macOS, so it asks for each
+# permission and for Keychain access again. A certificate keeps them.
+# SIGN_IDENTITY wins; otherwise a Developer ID certificate is used, and debug
+# builds also take an Apple Development one (free with an Apple ID in Xcode).
+pick_identity() {
+  local kinds=("Developer ID Application")
+  [[ "$CONFIG" == "debug" ]] && kinds+=("Apple Development")
+  local list hash
+  list="$(security find-identity -v -p codesigning 2>/dev/null || true)"
+  for kind in "${kinds[@]}"; do
+    hash="$(grep "\"$kind" <<<"$list" | head -1 | awk '{print $2}')"
+    if [[ -n "$hash" ]]; then
+      echo "$hash"
+      return
+    fi
+  done
+  echo "-"
+}
+IDENTITY="${SIGN_IDENTITY:-$(pick_identity)}"
 
 # The macOS 27 SDK in Command Line Tools declares SwiftUI's @State as a macro
 # whose plugin only ships with Xcode. Without Xcode, build against macOS 26.
@@ -59,6 +76,11 @@ fi
 codesign --force --options runtime --sign "$IDENTITY" --entitlements "$ENTITLEMENTS" "$APP"
 
 echo "Built $APP"
+if [[ "$IDENTITY" == "-" ]]; then
+  echo "Signed ad hoc: macOS will ask for permissions again. See docs/DEVELOPMENT.md › Permissions during development."
+else
+  echo "Signed with $(codesign -dv "$APP" 2>&1 | sed -n 's/^Authority=//p' | head -1)"
+fi
 
 if [[ "$RUN" == "--run" ]]; then
   pkill -x Xotch 2>/dev/null || true

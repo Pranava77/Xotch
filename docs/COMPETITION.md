@@ -1,65 +1,99 @@
 # What else lives in the notch
 
-Checked 22 September 2026. **Read the sources with suspicion:** almost every
-"best Mac notch apps, compared honestly" page is published by one of the apps in
-its own table. Prices and feature claims below come from those pages and from
-each app's own site, so they are claims, not measurements. Only Notchy's page
-and the App Store listing were read first-hand.
+Checked 6 October 2026, after a first pass on 22 September. **Read the sources
+with suspicion:** almost every "best Mac notch apps, compared honestly" page is
+published by one of the apps in its own table. So this pass went to each app's
+own site or repository wherever possible. Even so, what's below is what the
+vendors claim, not what we measured. The site's comparison
+([index.html](index.html#compare)) is built from this page.
 
 ## The field
 
-| App | Price | Works without a notch | Known for |
-|---|---|---|---|
-| **Notchy** (notchy.dev) | Free, donations | **Yes** — floating pill | 74 features, Face Unlock, lyrics, AI usage tracker |
-| NotchNook | $25 one-time | Yes | The polished one: music, file tray, widgets |
-| Alcove | $14.99–$17 | Not stated | Animation polish, Dynamic Island feel |
-| The Boring Notch | Free, open source | Yes | The free default; ~60 MB |
-| Crest | $19.99 one-time | Not stated | To-dos and system stats |
-| Droppy | $9.99 one-time | Not stated | Drag and drop shelf |
-| OneNotch | Free, Pro $9.99 | Not stated | — |
-| NotchBox | Free, Pro $4.99 | Not stated | Water, counters, days-left |
-| Brow | Free, Pro $49/year | Not stated | The only subscription at that price |
-| MacNotch | Setapp | Yes | Day progress: calendar, Reminders, tasks on one rail |
-| DynamicLake / MediaMate | Paid | Yes | Window snapping / media HUDs |
-| Atoll | Free, open source | **No** — needs a real notch | — |
-| NotchNest | Free + $2.99/mo, $14.99/yr or lifetime | Not stated | macOS 14+, on-device AI clipboard |
+| App | Price | Without a notch | Oldest macOS | Known for |
+|---|---|---|---|---|
+| **Notchy** | Free, donations | **Yes**, a floating pill | 13 | 70-plus features: lyrics, Face Unlock, OCR, launcher, Claude Code activity and approvals |
+| NotchNook | $25 one-time, or a subscription | Yes | 14.6 | The established, polished widget dock. September reviews report slow support |
+| Alcove | $14.99 | Not stated | 15 | Animation polish, Live Activities, Lock Screen widgets |
+| The Boring Notch | Free, GPL-3.0, ~11k stars | Yes | 14 | The free default: music, shelf with AirDrop, HUDs. Unsigned |
+| Atoll | Free, GPL-3.0 | **No**, needs a notched MacBook | 14 | Media, timers, clipboard, system stats |
+| Crest | $24.99 Pro bundle, or $2.99/mo / $14.99/yr | Yes, a pill | 14 | **Coding-agent approvals** (Claude Code, Codex, Copilot CLI), GitHub PRs and CI, lyrics, to-dos; sister apps for screenshots and on-device meeting notes |
+| Droppy | $9.99 one-time | Yes, a floating shelf | 14 | Shelf, clipboard, window snapping; 35 add-ons including lyrics, agent status and on-device transcription |
+| OneNotch | Free, Pro $9.99 | Not stated | – | – |
+| NotchBox | Free, Pro $4.99 | Not stated | – | Water, counters, days-left |
+| Brow | Free, Pro $49/year | Not stated | – | The only subscription at that price |
+| MacNotch | Setapp | Yes | – | Calendar, Reminders and tasks on one rail |
+| NotchNest | Free, then $2.99/mo, $14.99/yr or lifetime | Not stated | 14 | On-device AI clipboard |
 
-## Notchy in particular
+Prices and features for the last five are from the September pass and weren't
+re-checked.
 
-Free forever with optional donations, macOS 13 Ventura and up, and it advertises
-74 features in one app — media with time-synced lyrics, clipboard history, a file
-shelf, Pomodoro, HUDs, OCR, an image converter, an app launcher, Face Unlock, and
-an AI usage tracker for Claude, Codex and Cursor.
+## What changed since September
 
-Two of its answers are worth knowing because Xotch faces the same questions:
+**Coding agents became table stakes.** In September, "live Claude Code status"
+looked like Xotch's own ground. By October:
+- Notchy shows agent activity (turns, prompts, cost per turn) and approves
+  Claude Code's permission requests from the notch.
+- Crest approves requests from Claude Code, Codex and Copilot CLI, and adds
+  GitHub PRs and CI.
+- Droppy follows Claude, Codex, Cursor and Antigravity through an add-on.
 
-- **No notch?** A floating pill, and the user can set its width, height and
-  offset. Its own words: "No notch? Notchy floats the same island as a pill —
-  MacBook Air, iMac, Mac mini, Mac Studio, and external displays all work." On
-  several monitors you can keep it on the laptop, move it to the external, or run
-  one on each screen. It claims to scale to 21:9 and 32:9.
-- **Too small?** The expanded panel is resizable, width and height, with a live
-  preview.
+Xotch shows the status and usage but **can't approve a request** from the notch.
+That is the most obvious gap to close.
+
+**Voice arrived, but not as dictation.**
+- Droppy's Voice Transcribe records or imports audio, transcribes it on the Mac
+  with Whisper or Parakeet, and copies the text.
+- Crest's sister app Minutes writes meeting notes on the Mac (macOS 26, Apple
+  silicon).
+
+Neither is hold-a-key dictation that types into the app you're in.
 
 ## Where Xotch stands
 
-Same ground, already: media, clipboard, a shelf, timers, capture, a command
-palette, themes, and — as of this change — a notch on every display, drawn in
-the menu bar where there isn't one.
+**Only Xotch, of the eight compared on the site:**
+- **An AI chat in the notch**, with Claude, GPT, Gemini, Groq, OpenRouter or a
+  local model.
+- **An AI that acts on your day:** to-dos, timers, notes, calendar and music,
+  each change on an Allow card, most of them undoable.
+- **Push-to-talk dictation into any app**, transcribed on the Mac by Whistle.
+- **A companion character** (page mascot).
 
-Genuinely different:
+**Same ground as the rest:** music, calendar, to-dos, focus timers, clipboard,
+shelf, capture, HUDs, themes, a command palette, and a notch on every display.
 
-- **Life.** Arcs that hold habits and milestones, check-ins weighted against
-  to-dos (1 / 2 / 5), a year of days as a commit graph, and a week you can plan
-  a day at a time. Crest and NotchBox have to-dos and counters; FlowNotch has
-  tasks and habits; MacNotch mirrors Reminders. Nobody has arcs or the graph.
-- **Claude Code live status.** Notchy counts AI usage against rate limits; Xotch
-  shows what Claude Code is doing right now, fed by hooks over a local socket.
-  Different thing, same audience.
+**Missing, against the leaders:**
+- Approving coding-agent requests (Notchy, Crest).
+- Synced lyrics (Notchy, Crest, Droppy).
+- Face Unlock, OCR and an app launcher (Notchy).
+- Window snapping (Droppy).
+- GitHub integration (Crest).
+- macOS 13 (Notchy).
+- Signing and notarisation (Crest and Droppy have it; Xotch's beta doesn't).
 
-Missing against Notchy, if it ever matters: lyrics, Face Unlock, OCR, an app
-launcher, system HUDs, a resizable panel, and macOS 13 support (Xotch needs 14).
+## The strategic read
 
-**The strategic read:** feature count is not winnable against a free app with 74
-of them, and notch-less support is table stakes rather than an advantage. Life is
-the thing worth pushing, because it is the only part of Xotch nobody else has.
+Feature count isn't winnable against a free app with 70-plus features, and
+coding-agent status alone no longer sets anyone apart. The defensible ground is
+**the assistant**: an AI you can talk to at the top of the screen, by voice or by
+typing, that does things in your day with your permission. Nobody else in the
+category has chat, actions with approval, and dictation together.
+
+Three things would make that position hard to argue with:
+1. Agent approvals, so developers don't need a second notch app.
+2. Signing and notarisation, which competitors at every price already have.
+3. Using dictation to talk to the AI as well as to type.
+
+## Sources (6 October 2026)
+
+- [notchy.dev](https://notchy.dev/)
+- [NotchNook on MacUpdate](https://notchnook.macupdate.com)
+- [tryalcove.com](https://tryalcove.com)
+- [TheBoredTeam/boring.notch](https://github.com/TheBoredTeam/boring.notch)
+- [Ebullioscopic/Atoll](https://github.com/Ebullioscopic/Atoll)
+- [crestnotch.app](https://crestnotch.app)
+- [getdroppy.app](https://getdroppy.app/), and [Droppy's voice transcription post](https://getdroppy.app/blog/voice-transcription-mac-private)
+- Round-ups, each from a competitor:
+  - [notchy.dev/best-mac-notch-apps](https://notchy.dev/best-mac-notch-apps/)
+  - [getdroppy.app/blog/best-mac-notch-apps-2026](https://getdroppy.app/blog/best-mac-notch-apps-2026)
+  - [favtray.com](https://favtray.com/blog/dynamic-island-for-mac-notch-apps)
+  - [macnotch.io](https://macnotch.io/compare/best-mac-notch-apps)
