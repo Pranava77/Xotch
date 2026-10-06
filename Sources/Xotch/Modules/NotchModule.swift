@@ -40,6 +40,7 @@ enum ModuleRegistry {
     static let all: [any NotchModule] = [
         HomeModule(),
         AIModule(),
+        DictationModule(),
         MediaModule(),
         CalendarModule(),
         TimersModule(),

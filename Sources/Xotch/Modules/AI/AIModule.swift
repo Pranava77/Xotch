@@ -586,6 +586,27 @@ private struct InputBar: View {
             .help(chat.attachment == nil ? "Attach your screen  ⌘⇧↩" : "Take the screen again")
             .debugFrame("ai.screen")
 
+            if WhistleEngine.isSupported {
+                let dictation = DictationService.shared
+                Button {
+                    if dictation.isListening {
+                        dictation.finish()
+                    } else {
+                        dictation.start(handsFree: true, into: .aiDraft)
+                    }
+                } label: {
+                    if dictation.phase == .finishing {
+                        ProgressView().controlSize(.mini)
+                    } else {
+                        Image(systemName: dictation.isListening ? "stop.fill" : "mic")
+                            .foregroundStyle(dictation.isListening ? DictationService.tint : Theme.ink)
+                    }
+                }
+                .buttonStyle(IconButtonStyle(size: 28))
+                .help(dictation.isListening ? "Finish dictating" : "Dictate your question")
+                .debugFrame("ai.mic")
+            }
+
             Chip(symbol: providers.active?.isLocal == true ? "desktopcomputer" : "cloud",
                  text: modelLabel, dimmed: false) { modelMenu().popUp(positioning: nil, at: NSEvent.mouseLocation, in: nil) }
                 .help("Provider and model")

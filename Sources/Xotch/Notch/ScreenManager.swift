@@ -21,6 +21,7 @@ final class ScreenManager {
         rebuild()
         installMonitors()
         MediaKeys.shared.settingsChanged()
+        FnKey.shared.settingsChanged()
         ActivityCenter.shared.settingsChanged()
 
         observe(NotificationCenter.default, NSApplication.didChangeScreenParametersNotification) { manager in
@@ -122,6 +123,7 @@ final class ScreenManager {
         CaptureService.shared.settingsChanged()
         TodoService.shared.updateActivity()
         MediaKeys.shared.settingsChanged()
+        FnKey.shared.settingsChanged()
         ActivityCenter.shared.settingsChanged()
         GlobalHotKeys.update()
         controllers.values.forEach { $0.updateSharing() }

@@ -426,6 +426,9 @@ private struct LiveActivityBar: View {
         case .playing:
             EqualizerBars(tint: activity.tint)
                 .frame(width: EqualizerView.width, height: EqualizerView.height)
+        case .listening:
+            EqualizerBars(tint: activity.tint, source: .microphone)
+                .frame(width: EqualizerView.width, height: EqualizerView.height)
         case .level(let value):
             LevelBar(value: value, tint: activity.tint)
                 .frame(width: max(activity.earWidth - 30, 30))
@@ -439,6 +442,7 @@ private struct LiveActivityBar: View {
 /// in the window server, so they cost Xotch almost nothing even over hours of music.
 private struct EqualizerBars: View {
     let tint: Color
+    var source: EqualizerView.Source = .music
     @Environment(\.snapshotMode) private var snapshotMode
 
     private static let stillHeights: [CGFloat] = [0.3, 0.55, 0.8, 0.5, 0.95, 0.7, 1, 0.6, 0.85, 0.45, 0.65, 0.35]
@@ -453,19 +457,20 @@ private struct EqualizerBars: View {
                     }
                 }
             } else {
-                EqualizerLayers(tint: NSColor(tint))
+                EqualizerLayers(tint: NSColor(tint), source: source)
             }
         }
         .accessibilityElement()
-        .accessibilityLabel("Playing")
+        .accessibilityLabel(source == .music ? "Playing" : "Listening")
     }
 }
 
 private struct EqualizerLayers: NSViewRepresentable {
     let tint: NSColor
+    let source: EqualizerView.Source
 
     func makeNSView(context: Context) -> EqualizerView {
-        EqualizerView()
+        EqualizerView(source: source)
     }
 
     func updateNSView(_ view: EqualizerView, context: Context) {
@@ -474,8 +479,15 @@ private struct EqualizerLayers: NSViewRepresentable {
 }
 
 /// Bars that follow the music when real audio levels are on (see AudioLevels),
-/// bass on the left, and ripple by themselves otherwise.
+/// bass on the left, and ripple by themselves otherwise. While dictating they
+/// show the microphone instead: the last dozen loudness readings, newest on
+/// the right, so your voice scrolls across as a waveform.
 final class EqualizerView: NSView {
+    enum Source {
+        case music, microphone
+    }
+
+    private let source: Source
     /// One bar per band of `SpectrumAnalyzer`, spread across most of the ear.
     static let barCount = SpectrumAnalyzer.bandCount
     static let barWidth: CGFloat = 2.5
@@ -498,8 +510,11 @@ final class EqualizerView: NSView {
         }
     }
 
-    override init(frame: NSRect) {
-        super.init(frame: frame)
+    init(source: Source = .music) {
+        self.source = source
+        super.init(frame: .zero)
+        // The microphone's bars only ever follow the voice.
+        isFollowingLevels = source == .microphone
         wantsLayer = true
         for _ in 0..<Self.barCount {
             let bar = CALayer()
@@ -537,9 +552,12 @@ final class EqualizerView: NSView {
             AudioLevels.shared.release()
             isAcquired = false
         }
-        guard window != nil, AudioLevels.shared.isEnabled else { return }
-        AudioLevels.shared.acquire()
-        isAcquired = true
+        guard window != nil else { return }
+        if source == .music {
+            guard AudioLevels.shared.isEnabled else { return }
+            AudioLevels.shared.acquire()
+            isAcquired = true
+        }
         // 20 updates a second, only while the bars are on screen.
         let timer = Timer(timeInterval: 0.05, repeats: true) { @Sendable [weak self] _ in
             MainActor.assumeIsolated { self?.followLevels() }
@@ -550,7 +568,8 @@ final class EqualizerView: NSView {
     }
 
     private func followLevels() {
-        guard let levels = AudioLevels.shared.current() else {
+        let reading = source == .microphone ? DictationService.shared.levels.current() : AudioLevels.shared.current()
+        guard let levels = reading else {
             if isFollowingLevels {
                 isFollowingLevels = false
                 startBouncing()

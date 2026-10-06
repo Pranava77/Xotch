@@ -39,7 +39,7 @@
 	<key>NSCalendarsUsageDescription</key>
 	<string>Xotch shows your upcoming events in the notch.</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>With "Record from the microphone" on, Xotch includes your voice in screen recordings.</string>
+	<string>Xotch listens while you dictate (hold Fn) and turns your speech into text on this Mac; it never saves or sends your voice. With "Record from the microphone" on, it also includes your voice in screen recordings.</string>
 	<key>NSHighResolutionCapable</key>
 	<true/>
 	<key>NSPrincipalClass</key>

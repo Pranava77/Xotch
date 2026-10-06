@@ -40,6 +40,17 @@ rm -rf "$APP/Contents/Resources/Mascots"
 cp -R "$ROOT/Resources/Mascots" "$APP/Contents/Resources/Mascots"
 
 codesign --force --options runtime --sign "$IDENTITY" "$APP/Contents/Frameworks/MediaRemoteBridge.dylib"
+
+# Dictation's engine, Whistle on Cactus's needle, runs in its own process (see
+# NeedleHelper/needle-helper.c). The engine is built for macOS 26 on Apple
+# silicon; Xotch only starts the helper there.
+rm -rf "$APP/Contents/Helpers"
+if [[ "$(uname -m)" == "arm64" ]]; then
+  mkdir -p "$APP/Contents/Helpers"
+  clang -O2 -arch arm64 -mmacosx-version-min=26.0 "$ROOT/NeedleHelper/needle-helper.c" \
+    "$ROOT/Vendor/Needle/libneedle.a" -lc++ -o "$APP/Contents/Helpers/needle-helper"
+  codesign --force --options runtime --sign "$IDENTITY" "$APP/Contents/Helpers/needle-helper"
+fi
 ENTITLEMENTS="$ROOT/Resources/Xotch.entitlements"
 if [[ "$CONFIG" == "debug" ]]; then
   # Lets leaks, sample and vmmap inspect debug builds. Never in release builds.

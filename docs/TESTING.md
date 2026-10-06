@@ -111,6 +111,22 @@ These need hardware or situations a script can't create. Tick them before a beta
 - [ ] Turn on real sound for the music bars: macOS asks to record system audio. Allow it and the bars follow the music; deny it and they bounce as before, and Settings explains how to allow it.
 - [ ] Turn on download progress, then download a large file in Safari and in Chrome: the ring and percentage show, then "Done".
 
+### Dictation
+
+Needs Apple silicon and macOS 26. `debug.sh dictation-download`, `dictation-feed <wav>`, `dictate-file <wav>` and `status` help.
+
+- [ ] Settings › Dictation: Download Whistle shows progress, then "Whistle, ready"; Remove deletes it.
+- [ ] Hold Fn in TextEdit, say a sentence, let go: the text appears at the cursor, tidied, and a short "inserted" banner shows. The clipboard still holds what it held before.
+- [ ] While holding Fn: a red microphone and a moving waveform beside the notch; the Dictation page shows the words as they're heard.
+- [ ] Double-tap Fn: it keeps listening after you let go; press Fn again to insert.
+- [ ] Fn+→ while talking, or Esc: nothing is inserted.
+- [ ] A quick tap of Fn alone: nothing happens.
+- [ ] Click into a password field and hold Fn: "Not into a password field", nothing typed.
+- [ ] With Accessibility off: the text is copied and the banner says to press ⌘V.
+- [ ] Polish with your AI on: the text comes back polished, or as tidied after 6 s without an answer.
+- [ ] The AI chat's microphone: dictate a question into the input, then send it.
+- [ ] After two quiet minutes, `needle-helper` is gone from Activity Monitor.
+
 ### AI using the notch
 
 With Gemini, Claude or GPT active (`debug.sh ai-ask`, `ai-decide`, `ai-undo`, `ai-stop` and `status` script these):
@@ -143,9 +159,10 @@ Every prompt, and what triggers it. Launching Xotch triggers none.
 | `~/.claude/settings.json` (not a macOS permission) | Only when you press "Add hook"; a backup is saved first | `ClaudeHookInstaller.install` |
 | System audio recording | Only with Settings › "Move the music bars with the real sound" on, the first time the bars show | `AudioTap.start` |
 | Screen Recording | The first screenshot or recording. Choosing a window to record uses macOS's picker instead, which asks for nothing | `CaptureService.ensureScreenPermission` |
-| Microphone | Only when a recording starts with Capture › Microphone on | `CaptureService.microphoneAllowed` |
+| Microphone | Only when a recording starts with Capture › Microphone on, or the first dictation | `CaptureService.microphoneAllowed`, `MicRecorder.requestPermission` |
 | The folder macOS saves screenshots in (usually Desktop) | Only when the Capture module is open with "List screenshots taken with ⌘⇧3…" on | `CaptureService.startQuery` |
 | Downloads folder (may be asked) | Only with Settings › "Show download progress" on | `DownloadsService.settingsChanged` |
-| Accessibility, Input Monitoring | Never | — |
+| Accessibility | Turning on the volume HUD, or dictation's Fn key; Xotch only opens the settings pane | `MediaKeys.requestPermission`, `PrivacyPane.accessibility` |
+| Input Monitoring | Never | — |
 
 Hidden modules (Settings › Modules) stop their background work: the Now Playing helper exits and the clipboard watcher stops.

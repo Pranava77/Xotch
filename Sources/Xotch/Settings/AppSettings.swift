@@ -34,6 +34,18 @@ enum SettingsKey {
     static let earCompanion = "earCompanion"
     static let mascotCharacter = "mascotCharacter"
     static let homeMascot = "homeMascot"
+    static let dictationEnabled = "dictationEnabled"
+    /// "auto", or one of Whistle's languages: en, de, fr, es, it, nl, pl.
+    static let dictationLanguage = "dictationLanguage"
+    /// Paste into the app you're typing in; off, the text is only copied.
+    static let dictationPaste = "dictationPaste"
+    static let dictationTidy = "dictationTidy"
+    /// Send dictations to the active AI to be polished.
+    static let dictationPolish = "dictationPolish"
+    /// Keep recent dictations between launches.
+    static let dictationHistory = "dictationHistory"
+    /// Names and jargon to listen for, one per line.
+    static let dictationWords = "dictationWords"
     static let celebrateFocus = "celebrateFocus"
     static let realAudioLevels = "realAudioLevels"
     static let downloadProgress = "downloadProgress"
@@ -116,6 +128,13 @@ enum AppSettings {
             SettingsKey.adiyogiEar: true,
             SettingsKey.mascotCharacter: "fox",
             SettingsKey.homeMascot: true,
+            SettingsKey.dictationEnabled: false,
+            SettingsKey.dictationLanguage: "auto",
+            SettingsKey.dictationPaste: true,
+            SettingsKey.dictationTidy: true,
+            SettingsKey.dictationPolish: false,
+            SettingsKey.dictationHistory: false,
+            SettingsKey.dictationWords: "",
             SettingsKey.celebrateFocus: true,
             SettingsKey.realAudioLevels: false,
             SettingsKey.downloadProgress: false,
@@ -209,6 +228,14 @@ enum AppSettings {
     static var mascotCharacter: String {
         UserDefaults.standard.string(forKey: SettingsKey.mascotCharacter) ?? "fox"
     }
+
+    static var dictationEnabled: Bool { UserDefaults.standard.bool(forKey: SettingsKey.dictationEnabled) }
+    static var dictationLanguage: String { UserDefaults.standard.string(forKey: SettingsKey.dictationLanguage) ?? "auto" }
+    static var dictationPaste: Bool { UserDefaults.standard.bool(forKey: SettingsKey.dictationPaste) }
+    static var dictationTidy: Bool { UserDefaults.standard.bool(forKey: SettingsKey.dictationTidy) }
+    static var dictationPolish: Bool { UserDefaults.standard.bool(forKey: SettingsKey.dictationPolish) }
+    static var dictationHistory: Bool { UserDefaults.standard.bool(forKey: SettingsKey.dictationHistory) }
+    static var dictationWords: String { UserDefaults.standard.string(forKey: SettingsKey.dictationWords) ?? "" }
 
     /// The mascot on the open notch's Home page.
     static var homeMascot: Bool {

@@ -11,6 +11,8 @@ enum ActivityContent: Equatable {
     case stopwatch(since: Date)
     /// Animated equalizer bars.
     case playing
+    /// The microphone's level while dictating, as a moving waveform.
+    case listening
     /// A short bar, 0...1 (volume).
     case level(Double)
     /// Lines that take turns, rolling like a ticker.
@@ -64,7 +66,7 @@ final class ActivityCenter {
     static let shared = ActivityCenter()
 
     /// Which ongoing activity wins when several are live.
-    private static let priority = ["capture", "claude", "timers", "downloads", "media", "notes"]
+    private static let priority = ["dictation", "capture", "claude", "timers", "downloads", "media", "notes"]
 
     private(set) var hud: LiveActivity?
     private(set) var banner: LiveActivity?
@@ -113,7 +115,7 @@ final class ActivityCenter {
     /// Never rotated away: a recording, so a click on the ear still stops it,
     /// and anything urgent, like Claude waiting for an answer.
     private var sticky: LiveActivity? {
-        orderedOngoing.first { $0.moduleID == "capture" || $0.pulse == .urgent }
+        orderedOngoing.first { ["capture", "dictation"].contains($0.moduleID) || $0.pulse == .urgent }
     }
 
     private var shownOngoing: LiveActivity? {
