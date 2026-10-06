@@ -29,6 +29,11 @@ enum SettingsKey {
     static let hideInFullScreen = "hideInFullScreen"
     static let scrollForVolume = "scrollForVolume"
     static let adiyogiEar = "adiyogiEar"
+    /// What sits in the left ear: Adiyogi, the page mascot, or nothing. Unset,
+    /// it follows the older `adiyogiEar` switch.
+    static let earCompanion = "earCompanion"
+    static let mascotCharacter = "mascotCharacter"
+    static let homeMascot = "homeMascot"
     static let celebrateFocus = "celebrateFocus"
     static let realAudioLevels = "realAudioLevels"
     static let downloadProgress = "downloadProgress"
@@ -52,6 +57,30 @@ enum SettingsKey {
     static let aiNotchTools = "aiNotchTools"
     /// The page Settings last showed.
     static let settingsPane = "settingsPane"
+}
+
+/// What sits at the outer edge of the left ear.
+enum EarCompanion: String, CaseIterable, Identifiable {
+    case adiyogi, mascot, none
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .adiyogi: "Adiyogi"
+        case .mascot: "Mascot"
+        case .none: "Nothing"
+        }
+    }
+
+    /// Wide enough for the figure and the ear's edge padding.
+    var earWidth: CGFloat {
+        switch self {
+        case .adiyogi: AdiyogiMark.earWidth
+        case .mascot: 46
+        case .none: 0
+        }
+    }
 }
 
 enum DisplayChoice {
@@ -85,6 +114,8 @@ enum AppSettings {
             SettingsKey.hideInFullScreen: true,
             SettingsKey.scrollForVolume: true,
             SettingsKey.adiyogiEar: true,
+            SettingsKey.mascotCharacter: "fox",
+            SettingsKey.homeMascot: true,
             SettingsKey.celebrateFocus: true,
             SettingsKey.realAudioLevels: false,
             SettingsKey.downloadProgress: false,
@@ -165,6 +196,23 @@ enum AppSettings {
     /// Adiyogi in the left ear of the closed notch.
     static var adiyogiEar: Bool {
         UserDefaults.standard.bool(forKey: SettingsKey.adiyogiEar)
+    }
+
+    static var earCompanion: EarCompanion {
+        if let value = UserDefaults.standard.string(forKey: SettingsKey.earCompanion),
+           let companion = EarCompanion(rawValue: value) {
+            return companion
+        }
+        return adiyogiEar ? .adiyogi : .none
+    }
+
+    static var mascotCharacter: String {
+        UserDefaults.standard.string(forKey: SettingsKey.mascotCharacter) ?? "fox"
+    }
+
+    /// The mascot on the open notch's Home page.
+    static var homeMascot: Bool {
+        UserDefaults.standard.bool(forKey: SettingsKey.homeMascot)
     }
 
     /// The AI chat may use the notch's tools, asking before it changes anything.

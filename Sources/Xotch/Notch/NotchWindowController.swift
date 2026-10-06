@@ -284,6 +284,13 @@ final class NotchWindowController: NotchActions {
                 CaptureService.shared.stopRecording()
                 return
             }
+            if model.activities.companion == .mascot, isOnLeftEar(NSEvent.mouseLocation) {
+                // Boop the mascot; don't open on the way.
+                openTask?.cancel()
+                suppressHover = true
+                MascotTracker.shared.boop(model.earMascotAnchor)
+                return
+            }
             if isOnRightEar(NSEvent.mouseLocation), model.activities.isRotating {
                 // Next live activity; don't open on the way.
                 openTask?.cancel()
@@ -307,7 +314,12 @@ final class NotchWindowController: NotchActions {
               let current = activities.current, current.id == activities.ongoing["capture"]?.id else { return false }
         // With Adiyogi in the left ear, only the right ear is the recording's.
         let offset = location.x - model.screenRect.midX
-        return activities.showsAdiyogi ? offset > model.closedSize.width / 2 : abs(offset) > model.closedSize.width / 2
+        return activities.showsCompanion ? offset > model.closedSize.width / 2 : abs(offset) > model.closedSize.width / 2
+    }
+
+    /// Left of the camera housing, where the ear companion sits.
+    private func isOnLeftEar(_ location: NSPoint) -> Bool {
+        model.showsActivity && model.screenRect.midX - location.x > model.closedSize.width / 2
     }
 
     /// Right of the camera housing, on the ear that shows an activity.

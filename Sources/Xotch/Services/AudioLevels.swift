@@ -9,7 +9,7 @@ import Observation
 /// for permission to record system audio. Nothing is recorded or kept; each
 /// buffer is reduced to a dozen numbers and dropped.
 ///
-/// The tap only runs while the music bars are on screen (and for half a minute
+/// The tap only runs while the music bars are on screen (and for a moment
 /// after) and the setting is on.
 /// If macOS denies access the tap hears silence, and the bars fall back to
 /// their built-in animation.
@@ -32,9 +32,11 @@ final class AudioLevels {
     /// Keeps the tap running for a while after the bars leave the screen.
     @ObservationIgnored private var lingerTask: Task<Void, Never>?
 
-    /// The ear takes turns between live activities, so the bars come and go
-    /// every few seconds; restarting the tap each time would be wasteful.
-    private static let linger: Duration = .seconds(30)
+    /// Covers the bars leaving and coming straight back. It was 30 s, but with
+    /// the ear taking turns every 6 s that kept the tap running all the time
+    /// music was live (measured: ~1.7% CPU and 86 wakeups a second with music
+    /// playing), against a third of the time when it stops between turns.
+    private static let linger: Duration = .seconds(2)
 
     var isEnabled: Bool {
         UserDefaults.standard.bool(forKey: SettingsKey.realAudioLevels)

@@ -250,7 +250,9 @@ private struct GeneralPane: View {
 // MARK: - Appearance
 
 private struct AppearancePane: View {
-    @AppStorage(SettingsKey.adiyogiEar) private var adiyogiEar = true
+    @AppStorage(SettingsKey.earCompanion) private var earCompanion = AppSettings.earCompanion.rawValue
+    @AppStorage(SettingsKey.homeMascot) private var homeMascot = true
+    @AppStorage(SettingsKey.mascotCharacter) private var mascotCharacter = "fox"
 
     var body: some View {
         Form {
@@ -268,8 +270,58 @@ private struct AppearancePane: View {
                 }
             }
 
-            Section("Closed notch") {
-                Toggle("Show Adiyogi beside the closed notch", isOn: $adiyogiEar)
+            Section {
+                Picker("Beside the closed notch", selection: $earCompanion) {
+                    ForEach(EarCompanion.allCases) { companion in
+                        Text(companion.label).tag(companion.rawValue)
+                    }
+                }
+                Toggle("Show the mascot on Home", isOn: $homeMascot)
+                MascotPicker(selection: $mascotCharacter)
+            } header: {
+                Text("Companion")
+            } footer: {
+                SettingsFootnote("The mascot turns to watch your pointer and reacts when you click it, beside the notch or on Home. Characters from page-mascot by Kamran Ahmed, MIT licence.")
+            }
+        }
+    }
+}
+
+/// The mascots as a grid of faces; click one to choose it.
+private struct MascotPicker: View {
+    @Binding var selection: String
+    @State private var faces: [String: CGImage] = [:]
+
+    var body: some View {
+        LazyVGrid(columns: Array(repeating: GridItem(.fixed(58), spacing: 8), count: 6), alignment: .leading, spacing: 8) {
+            ForEach(MascotCharacter.all) { character in
+                let chosen = character.id == selection
+                Button { selection = character.id } label: {
+                    Group {
+                        if let face = faces[character.id] {
+                            Image(decorative: face, scale: 2)
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                        } else {
+                            Color.clear
+                        }
+                    }
+                    .frame(width: 50, height: 50)
+                    .padding(4)
+                    .background(RoundedRectangle(cornerRadius: 10).fill(chosen ? Color.accentColor.opacity(0.18) : Color.primary.opacity(0.05)))
+                    .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(chosen ? Color.accentColor : .clear, lineWidth: 2))
+                }
+                .buttonStyle(.plain)
+                .help(character.name)
+                .accessibilityLabel(character.name)
+                .accessibilityAddTraits(chosen ? .isSelected : [])
+            }
+        }
+        .padding(.vertical, 4)
+        .task {
+            // Small faces only; the full sheets stay on disk.
+            for character in MascotCharacter.all where faces[character.id] == nil {
+                faces[character.id] = MascotSprites.thumbnail(character, pixels: 100)
             }
         }
     }

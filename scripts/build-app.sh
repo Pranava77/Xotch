@@ -36,6 +36,8 @@ clang -dynamiclib -fobjc-arc -Os -arch arm64 -arch x86_64 -mmacosx-version-min=1
   -o "$APP/Contents/Frameworks/MediaRemoteBridge.dylib" \
   "$ROOT/MediaRemoteBridge/MediaRemoteBridge.m"
 cp "$ROOT/MediaRemoteBridge/mediaremote-bridge.pl" "$APP/Contents/Resources/"
+rm -rf "$APP/Contents/Resources/Mascots"
+cp -R "$ROOT/Resources/Mascots" "$APP/Contents/Resources/Mascots"
 
 codesign --force --options runtime --sign "$IDENTITY" "$APP/Contents/Frameworks/MediaRemoteBridge.dylib"
 ENTITLEMENTS="$ROOT/Resources/Xotch.entitlements"

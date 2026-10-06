@@ -44,8 +44,13 @@ final class NotchViewModel {
                       height: min(asked.height, max(Layout.openSize.height, screen.height * 0.62)))
     }
 
+    /// The mascot tracker's name for this screen's ear mascot.
+    var earMascotAnchor: String {
+        "ear-\(Int(geometry.screenFrame.minX)),\(Int(geometry.screenFrame.minY))"
+    }
+
     var showsActivity: Bool {
-        phase != .open && (activities.current != nil || activities.showsAdiyogi)
+        phase != .open && (activities.current != nil || activities.showsCompanion)
     }
 
     /// Width of each ear. They stay equal so the notch stays centred on the
@@ -54,10 +59,10 @@ final class NotchViewModel {
     /// turns, the ears fit the widest of them, so the notch doesn't change
     /// width with every turn.
     var earWidth: CGFloat {
-        let adiyogi = activities.showsAdiyogi
+        let adiyogi = activities.showsCompanion
         let shown = activities.isRotating ? activities.liveOngoing : [activities.current].compactMap { $0 }
         let right = shown.map { $0.earWidth + (adiyogi ? Layout.inlineIconWidth : 0) }.max() ?? 0
-        let left: CGFloat = adiyogi ? AdiyogiMark.earWidth
+        let left: CGFloat = adiyogi ? activities.companion.earWidth
             : (activities.current == nil ? 0 : Layout.leftIconEarWidth)
         return max(left, right, activities.current == nil ? 0 : Layout.earWidth)
     }

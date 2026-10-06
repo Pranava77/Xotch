@@ -133,7 +133,11 @@ When something is going on, the notch grows two small ears to show it without op
   </tr>
 </table>
 
-Adiyogi keeps the outer edge of the left ear. When something else is live, its icon moves to the right, next to its status. If several things are live at once, they take turns in the ear, six seconds each, and small dots show which one of the round you're seeing; click the right ear to skip to the next. A screen recording, or Claude waiting for your answer, stays put until it's done. You can hide Adiyogi in Settings › Appearance.
+Adiyogi keeps the outer edge of the left ear. When something else is live, its icon moves to the right, next to its status. If several things are live at once, they take turns in the ear, six seconds each, and small dots show which one of the round you're seeing; click the right ear to skip to the next. A screen recording, or Claude waiting for your answer, stays put until it's done. In **Settings › Appearance › Companion** you can swap Adiyogi for a page mascot, or have nothing there.
+
+### A mascot that watches you
+
+Pick one of twelve characters (a fox, a cat, an astronaut, a CRT, …) and it sits in the left ear, turning its head to follow your pointer around the screen. A bigger one keeps you company on Home. Click it and it blinks, then sends a heart, a sparkle or a happy face; boop it four times quickly and it gets dizzy. The characters and how they move come from [page-mascot](https://github.com/nilbuild/page-mascot) by Kamran Ahmed (MIT licence).
 
 The volume and brightness keys are off by default, because they need Accessibility permission. When the notch is open, the level shows in its header.
 
