@@ -256,24 +256,11 @@ private struct GeneralPane: View {
 private struct AppearancePane: View {
     @AppStorage(SettingsKey.earCompanion) private var earCompanion = AppSettings.earCompanion.rawValue
     @AppStorage(SettingsKey.homeMascot) private var homeMascot = true
+    @AppStorage(SettingsKey.homeMirror) private var homeMirror = true
     @AppStorage(SettingsKey.mascotCharacter) private var mascotCharacter = "fox"
 
     var body: some View {
         Form {
-            Section {
-                ThemePicker()
-            } header: {
-                Text("Theme")
-            } footer: {
-                SettingsFootnote("The closed notch always stays black, so it blends into the camera housing.")
-            }
-
-            if ThemeStore.shared.selectedID == Palette.customID {
-                Section("Custom theme") {
-                    CustomThemeEditor()
-                }
-            }
-
             Section {
                 Picker("Beside the closed notch", selection: $earCompanion) {
                     ForEach(EarCompanion.allCases) { companion in
@@ -286,6 +273,14 @@ private struct AppearancePane: View {
                 Text("Companion")
             } footer: {
                 SettingsFootnote("The mascot turns to watch your pointer and reacts when you click it, beside the notch or on Home. Characters from page-mascot by Kamran Ahmed, MIT licence.")
+            }
+
+            Section {
+                Toggle("Show a mirror on Home", isOn: $homeMirror)
+            } header: {
+                Text("Mirror")
+            } footer: {
+                SettingsFootnote("Click the mirror to see yourself through the camera. It's on only after you click, and goes off when the notch closes. Nothing is recorded.")
             }
         }
     }
@@ -641,132 +636,6 @@ private struct PrivacyFeedbackPane: View {
                 }
             }
         }
-    }
-}
-
-// MARK: - Themes
-
-private struct ThemePicker: View {
-    private var store: ThemeStore { .shared }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            // The cards share the row's width. At a fixed 92 points each, five of
-            // them made the row wider than the window and clipped the whole form.
-            HStack(spacing: 8) {
-                ForEach(store.choices) { palette in
-                    ThemeCard(palette: palette, isSelected: palette.id == store.selectedID) {
-                        store.select(palette.id)
-                    }
-                    .frame(maxWidth: .infinity)
-                }
-            }
-            if store.selectedID != Palette.customID {
-                Button("Customise This Theme…") { store.customizeCurrent() }
-                    .buttonStyle(.link)
-            }
-        }
-        .padding(.vertical, 4)
-    }
-}
-
-private struct ThemeCard: View {
-    let palette: Palette
-    let isSelected: Bool
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            VStack(spacing: 6) {
-                ZStack(alignment: .top) {
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .fill(Color(white: 0.55))
-                    // A tiny open notch.
-                    UnevenRoundedRectangle(bottomLeadingRadius: 10, bottomTrailingRadius: 10, style: .continuous)
-                        .fill(palette.material == .glass
-                              ? AnyShapeStyle(LinearGradient(colors: [.black, palette.surface.color.opacity(0.75)],
-                                                             startPoint: .top, endPoint: .bottom))
-                              : AnyShapeStyle(palette.surface.color))
-                        .overlay(alignment: .topLeading) {
-                            if let glow = palette.glow ?? Optional(palette.accent), palette.glowStrength > 0 {
-                                RadialGradient(colors: [glow.color.opacity(palette.glowStrength * 1.4), .clear],
-                                               center: .topLeading, startRadius: 2, endRadius: 60)
-                            }
-                        }
-                        .overlay(alignment: .bottomLeading) {
-                            VStack(alignment: .leading, spacing: 3) {
-                                Capsule().fill(palette.ink.color.opacity(0.9)).frame(width: 30, height: 4)
-                                Capsule().fill(palette.ink.color.opacity(0.4)).frame(width: 20, height: 3)
-                                Capsule().fill(palette.accent.color).frame(width: 24, height: 7)
-                            }
-                            .padding(7)
-                        }
-                        .clipShape(UnevenRoundedRectangle(bottomLeadingRadius: 10, bottomTrailingRadius: 10, style: .continuous))
-                        .padding(.horizontal, 8)
-                }
-                .frame(maxWidth: .infinity)
-                .frame(height: 56)
-                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .strokeBorder(isSelected ? Color.accentColor : Color.primary.opacity(0.1),
-                                      lineWidth: isSelected ? 2.5 : 1)
-                )
-                Text(palette.name)
-                    .font(.caption)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.8)
-                    .foregroundStyle(isSelected ? .primary : .secondary)
-            }
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel("\(palette.name) theme")
-        .accessibilityAddTraits(isSelected ? .isSelected : [])
-    }
-}
-
-private struct CustomThemeEditor: View {
-    private var store: ThemeStore { .shared }
-
-    var body: some View {
-        ColorPicker("Background", selection: color(\.surface), supportsOpacity: false)
-        ColorPicker("Text", selection: color(\.ink), supportsOpacity: false)
-        ColorPicker("Accent", selection: color(\.accent), supportsOpacity: false)
-        Picker("Material", selection: Binding(
-            get: { store.custom.material },
-            set: { material in store.updateCustom { $0.material = material } }
-        )) {
-            Text("Solid").tag(SurfaceMaterial.solid)
-            Text("Glass").tag(SurfaceMaterial.glass)
-        }
-        .pickerStyle(.segmented)
-        Toggle("Glossy retro controls", isOn: Binding(
-            get: { store.custom.isRetro },
-            set: { on in store.updateCustom { $0.style = on ? .retro : .modern } }
-        ))
-        Toggle("Glow in each module's colour", isOn: Binding(
-            get: { store.custom.glow == nil },
-            set: { follows in store.updateCustom { $0.glow = follows ? nil : $0.accent } }
-        ))
-        if store.custom.glow != nil {
-            ColorPicker("Glow", selection: Binding(
-                get: { store.custom.glow?.color ?? .white },
-                set: { color in store.updateCustom { $0.glow = RGBA(color) } }
-            ), supportsOpacity: false)
-        }
-        LabeledContent("Glow strength") {
-            Slider(value: Binding(
-                get: { store.custom.glowStrength },
-                set: { value in store.updateCustom { $0.glowStrength = value } }
-            ), in: 0...0.7)
-        }
-    }
-
-    private func color(_ keyPath: WritableKeyPath<Palette, RGBA>) -> Binding<Color> {
-        Binding(
-            get: { store.custom[keyPath: keyPath].color },
-            set: { color in store.updateCustom { $0[keyPath: keyPath] = RGBA(color) } }
-        )
     }
 }
 

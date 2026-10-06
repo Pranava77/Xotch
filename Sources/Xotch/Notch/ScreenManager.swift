@@ -69,6 +69,11 @@ final class ScreenManager {
         observers.append((center, token))
     }
 
+    /// Whether any notch is open on this module.
+    func isOpen(module moduleID: String) -> Bool {
+        controllers.values.contains { $0.model.phase == .open && $0.model.selectedModuleID == moduleID }
+    }
+
     func openPrimary() {
         primary?.open(pinned: true)
     }

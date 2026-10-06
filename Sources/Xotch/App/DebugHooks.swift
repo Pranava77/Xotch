@@ -12,7 +12,7 @@ import SwiftUI
 ///                      activity-recording | clear-activities [module] |
 ///                      capture <area|window|screen> | record <area|window|screen> |
 ///                      record-stop | celebrate | palette | ripple |
-///                      theme <id> | rebuild <count> |
+///                      rebuild <count> |
 ///                      status <file> | snapshot <folder> | effects <folder> |
 ///                      marketing <folder> | selftest <file>
 ///
@@ -113,7 +113,7 @@ enum DebugHooks {
                     "screens: \(ScreenManager.shared.debugSummary)",
                     "ongoing: [\(ActivityCenter.shared.debugOngoingIDs)]",
                     "activity: \(ActivityCenter.shared.current?.moduleID ?? "-") waiting=\(ActivityCenter.shared.waitingCount) \(ActivityCenter.shared.debugRotation)",
-                    "theme: \(ThemeStore.shared.palette.id) shaders ready=\(ShaderKit.shared.isReady) compile=\(ShaderKit.shared.compileTime.map { "\($0)" } ?? "-") failure=\(ShaderKit.shared.failure ?? "-")",
+                    "shaders: ready=\(ShaderKit.shared.isReady) compile=\(ShaderKit.shared.compileTime.map { "\($0)" } ?? "-") failure=\(ShaderKit.shared.failure ?? "-")",
                     "audio levels: \(AudioLevels.shared.status)",
                     "media: hasNowPlaying=\(MediaService.shared.nowPlaying != nil) title=\(MediaService.shared.nowPlaying?.title ?? "-") hasArtwork=\(MediaService.shared.artwork != nil)",
                     "media log: \(MediaService.shared.debugLog.joined(separator: " | "))",
@@ -126,6 +126,7 @@ enum DebugHooks {
                     "todos: open today=\(TodoService.shared.openToday) total=\(TodoService.shared.todos.count)",
                     Storage.damaged.isEmpty ? "store: all files read cleanly"
                         : "store: DAMAGED, kept as \(Storage.damaged.joined(separator: ", "))",
+                    "mirror: camera=\(AVCaptureDevice.authorizationStatus(for: .video).rawValue) state=\(MirrorCamera.shared.state) running=\(MirrorCamera.shared.isRunning) \(MirrorPreviewView.latest?.debugState ?? "preview=none")",
                     "capture: permission=\(CaptureService.hasScreenPermission) items=\(CaptureService.shared.items.count) recording=\(CaptureService.shared.isRecording) starting=\(CaptureService.shared.isStartingRecording) stopping=\(CaptureService.shared.isStoppingRecording) notice=\(CaptureService.shared.notice.map { "\($0)" } ?? "-") quickLook=\(QLPreviewPanel.sharedPreviewPanelExists() && QLPreviewPanel.shared().isVisible)",
                     String(format: "pointer events: %.1f/s", ScreenManager.shared.debugPointerRate()),
                 ]
@@ -237,8 +238,6 @@ enum DebugHooks {
                     default: chat.regenerate(last, as: .retry)
                     }
                 }
-            } else if command.hasPrefix("theme:") {
-                ThemeStore.shared.select(String(command.dropFirst("theme:".count)))
             } else if command.hasPrefix("marketing:") {
                 let folder = String(command.dropFirst("marketing:".count))
                 Task { await MarketingShots.render(to: folder) }
@@ -288,6 +287,7 @@ enum DebugHooks {
         lines += chatMarkdownSelfTest()
         lines += mascotSelfTest()
         lines += earMetricsSelfTest()
+        lines.append(mirrorSelfTest())
         lines += await dictationSelfTest()
         lines += await harnessSelfTest()
         lines += retroSoundSelfTest()
@@ -436,11 +436,7 @@ enum DebugHooks {
         DownloadsService.shared.settingsChanged()
         try? FileManager.default.removeItem(at: downloads)
 
-        let store = ThemeStore.shared
-        for palette in store.choices {
-            lines.append("theme \(palette.id): material=\(palette.material.rawValue) accent luminance=\(String(format: "%.2f", palette.accent.luminance)) text on accent=\(palette.accent.luminance > 0.45 ? "black" : "white") glow=\(palette.glow != nil ? "own" : "module") strength=\(palette.glowStrength)")
-        }
-        lines.append("theme selected=\(store.selectedID) glass api=\(glassAvailable) forcedFallback=\(GlassFallback.forced)")
+        lines.append("controls: glass api=\(glassAvailable) forcedFallback=\(GlassFallback.forced)")
 
         let ringNow = RingView.fraction(of: .timed(start: Date().addingTimeInterval(-30), end: Date().addingTimeInterval(90)), at: .now)
         lines.append(String(format: "ring: timed 30 s of 120 s = %.2f (expect 0.25)", ringNow))
@@ -640,6 +636,16 @@ enum DebugHooks {
         let wanted = Motion.reduceMotion ? "layers=true breathing=false" : "layers=true breathing=true"
         lines.append("mascot layers: \(state) → \(state == wanted ? "PASS" : "FAILED: expected \(wanted)")")
         return lines
+    }
+
+    /// Mirror can ask for the camera, and leaves it off while Home isn't showing.
+    @MainActor
+    private static func mirrorSelfTest() -> String {
+        let asks = Bundle.main.object(forInfoDictionaryKey: "NSCameraUsageDescription") != nil
+        let camera = MirrorCamera.shared
+        let showing = ScreenManager.shared.isOpen(module: "home")
+        let off = showing || (!camera.isRunning && camera.state == .idle)
+        return "mirror: usage string=\(asks) off while hidden=\(off) → \(asks && off ? "PASS" : "FAILED")"
     }
 
     /// The ears fit their content: what `EarMetrics` works out from the font
@@ -972,7 +978,7 @@ enum DebugHooks {
             try? await Task.sleep(for: .milliseconds(50))
         }
         guard kit.isReady, let device = kit.device else { return }
-        let accent = ThemeStore.shared.palette.accent
+        let accent = Theme.accentRGBA
 
         func save(_ name: String, effect: ShaderEffect, size: CGSize, texture: MTLTexture? = nil,
                   uniforms: ShaderUniforms) {
@@ -1180,18 +1186,6 @@ enum DebugHooks {
         }
         // Signature UI
         withSampleData {
-        for palette in ThemeStore.shared.choices {
-            ThemeStore.shared.withPalette(palette.id) {
-                render("6-theme-\(palette.id)-media") {
-                    $0.phase = .open
-                    $0.selectedModuleID = "media"
-                }
-                render("6-theme-\(palette.id)-home") {
-                    $0.phase = .open
-                    $0.selectedModuleID = "home"
-                }
-            }
-        }
         for query in ["", "10 min", "cal"] {
             render("6-palette-\(query.isEmpty ? "empty" : query.replacingOccurrences(of: " ", with: ""))") {
                 $0.phase = .open

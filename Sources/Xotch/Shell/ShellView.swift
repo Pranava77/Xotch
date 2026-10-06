@@ -19,22 +19,12 @@ struct ShellView: View {
         let width = size.width + model.shoulder * 2
         let modules = ModuleRegistry.visible(order: moduleOrder, hidden: hiddenModules)
         let selected = modules.first { $0.id == model.selectedModuleID } ?? modules[0]
-        let palette = Theme.palette
-        let glow = model.phase == .open && palette.glowStrength > 0 ? (selected.tint ?? palette.glow?.color) : nil
 
         ZStack(alignment: .top) {
             NotchSurface(shape: shape, isOpen: model.phase == .open)
                 .shadow(color: .black.opacity(model.phase == .open ? 0.45 : 0), radius: 22, y: 10)
 
             ZStack(alignment: .top) {
-                if let glow {
-                    // Reaches the far corner whatever the module asked for; a
-                    // fixed radius left a dark corner once the notch grew.
-                    RadialGradient(colors: [glow.opacity(palette.glowStrength), glow.opacity(0)],
-                                   center: .topLeading, startRadius: 10,
-                                   endRadius: max(520, width * 0.62))
-                        .transition(.opacity)
-                }
                 if model.showsActivity {
                     LiveActivityBar(activity: model.activities.current,
                                     companion: model.activities.companion,
@@ -52,7 +42,7 @@ struct ShellView: View {
                         .transition(.blurScale)
                 }
                 if model.phase == .open {
-                    RippleOverlay(trigger: model.dropCount, origin: model.dropPoint, tint: palette.accent)
+                    RippleOverlay(trigger: model.dropCount, origin: model.dropPoint, tint: Theme.accentRGBA)
                         .frame(width: model.openSize.width, height: model.openSize.height)
                 }
                 if isDropTarget {
@@ -64,7 +54,6 @@ struct ShellView: View {
             .padding(.horizontal, model.shoulder)
             .frame(width: width, height: size.height, alignment: .top)
             .clipShape(shape)
-            .animation(Motion.switchModule, value: glow)
         }
         .frame(width: width, height: size.height)
         .contentShape(shape)
@@ -670,7 +659,7 @@ private struct HeaderTabs: View {
                             .font(.system(size: 11.5, weight: .semibold))
                         if isSelected && showsTitle {
                             Text(tab.title)
-                                .font(.system(size: 12, weight: .semibold, design: Theme.fontDesign))
+                                .font(.system(size: 12, weight: .semibold))
                                 .lineLimit(1)
                                 .fixedSize()
                         }
@@ -681,8 +670,7 @@ private struct HeaderTabs: View {
                     .background {
                         if isSelected {
                             Capsule()
-                                .fill(Theme.isRetro ? Theme.accent.opacity(0.55) : Theme.selection)
-                                .xotchGloss(Capsule())
+                                .fill(Theme.selection)
                                 .matchedGeometryEffect(id: "tab-highlight", in: namespace)
                         }
                     }
@@ -714,7 +702,6 @@ private struct HeaderTabs: View {
         }
         .padding(2)
         .background(Theme.fill, in: Capsule())
-        .xotchGloss(Capsule(), strength: 0.5)
         .fixedSize()
     }
 }
@@ -748,7 +735,7 @@ private struct MoreModules: View {
         .padding(8)
         .fixedSize()
         .background(Theme.surface, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .xotchGlass(RoundedRectangle(cornerRadius: 16, style: .continuous), gloss: 0.4)
+        .xotchGlass(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(Theme.raisedFill))
         .shadow(color: .black.opacity(0.4), radius: 14, y: 6)
     }

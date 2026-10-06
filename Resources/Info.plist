@@ -38,6 +38,8 @@
 	<string>Xotch shows your upcoming events in the notch.</string>
 	<key>NSCalendarsUsageDescription</key>
 	<string>Xotch shows your upcoming events in the notch.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Mirror shows your camera in the notch, flipped like a mirror, while it's open. Nothing is recorded or kept.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Xotch listens while you dictate (hold Fn) and turns your speech into text on this Mac; it never saves or sends your voice. With "Record from the microphone" on, it also includes your voice in screen recordings.</string>
 	<key>NSHighResolutionCapable</key>
