@@ -42,7 +42,7 @@ final class ClaudeLiveService {
     private(set) var isListening = false
 
     @ObservationIgnored private var server: UnixSocketServer?
-    @ObservationIgnored private var pruneTimer: Timer?
+    @ObservationIgnored private var pruneTask: Task<Void, Never>?
 
     func start() {
         guard server == nil else { return }
@@ -58,20 +58,22 @@ final class ClaudeLiveService {
         } catch {
             isListening = false
         }
-        let timer = Timer(timeInterval: 60, repeats: true) { @Sendable _ in
-            MainActor.assumeIsolated { ClaudeLiveService.shared.prune() }
+        // A main-actor task rather than a Timer (see ClipboardService.start).
+        pruneTask = Task { @MainActor in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(60), tolerance: .seconds(15))
+                guard !Task.isCancelled else { return }
+                ClaudeLiveService.shared.prune()
+            }
         }
-        timer.tolerance = 15
-        RunLoop.main.add(timer, forMode: .common)
-        pruneTimer = timer
     }
 
     func stop() {
         server?.stop()
         server = nil
         isListening = false
-        pruneTimer?.invalidate()
-        pruneTimer = nil
+        pruneTask?.cancel()
+        pruneTask = nil
         sessions = []
         updateActivity()
     }

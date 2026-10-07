@@ -20,7 +20,7 @@ final class ShelfService {
 
     private(set) var items: [ShelfItem]
     private(set) var thumbnails: [UUID: NSImage] = [:]
-    @ObservationIgnored private var expiryTimer: Timer?
+    @ObservationIgnored private var expiryTask: Task<Void, Never>?
     @ObservationIgnored private lazy var saver = SaveScheduler { [weak self] in
         guard let self else { return }
         Storage.save(self.items, to: "shelf.json")
@@ -32,18 +32,20 @@ final class ShelfService {
 
     func start() {
         removeExpired()
-        guard expiryTimer == nil else { return }
-        let timer = Timer(timeInterval: 600, repeats: true) { @Sendable [weak self] _ in
-            MainActor.assumeIsolated { self?.removeExpired() }
+        guard expiryTask == nil else { return }
+        // A main-actor task rather than a Timer (see ClipboardService.start).
+        expiryTask = Task { @MainActor [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(600), tolerance: .seconds(60))
+                guard let self, !Task.isCancelled else { return }
+                self.removeExpired()
+            }
         }
-        timer.tolerance = 60
-        RunLoop.main.add(timer, forMode: .common)
-        expiryTimer = timer
     }
 
     func stop() {
-        expiryTimer?.invalidate()
-        expiryTimer = nil
+        expiryTask?.cancel()
+        expiryTask = nil
     }
 
     func url(for item: ShelfItem) -> URL? {

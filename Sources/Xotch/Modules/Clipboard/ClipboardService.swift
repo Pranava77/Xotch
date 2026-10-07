@@ -62,7 +62,12 @@ final class ClipboardService {
 
     private(set) var items: [ClipItem]
     private(set) var access: Access = ClipboardService.currentAccess()
-    @ObservationIgnored private var timer: Timer?
+    @ObservationIgnored private var pollTask: Task<Void, Never>?
+    #if DEBUG
+    /// How many times it has looked, for `debug.sh status`.
+    @ObservationIgnored private(set) var debugPolls = 0
+    var debugPolling: Bool { pollTask != nil }
+    #endif
     @ObservationIgnored private var lastChangeCount = NSPasteboard.general.changeCount
     @ObservationIgnored private lazy var saver = SaveScheduler { [weak self] in
         guard let self else { return }
@@ -76,19 +81,23 @@ final class ClipboardService {
 
     func start() {
         lastChangeCount = NSPasteboard.general.changeCount
-        guard timer == nil else { return }
-        // Once a second, with room for macOS to batch it with other work.
-        let timer = Timer(timeInterval: 1.0, repeats: true) { @Sendable [weak self] _ in
-            MainActor.assumeIsolated { self?.poll() }
+        guard pollTask == nil else { return }
+        // Once a second, with room for macOS to batch it with other work. A
+        // main-actor task, not a Timer calling MainActor.assumeIsolated: that
+        // check crashed inside macOS 27.0.1's concurrency runtime, and a task
+        // is main-actor by construction, so it never asks.
+        pollTask = Task { @MainActor [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(1), tolerance: .seconds(0.5))
+                guard let self, !Task.isCancelled else { return }
+                self.poll()
+            }
         }
-        timer.tolerance = 0.5
-        RunLoop.main.add(timer, forMode: .common)
-        self.timer = timer
     }
 
     func stop() {
-        timer?.invalidate()
-        timer = nil
+        pollTask?.cancel()
+        pollTask = nil
     }
 
     // MARK: - Access
@@ -135,6 +144,9 @@ final class ClipboardService {
     }
 
     private func poll() {
+        #if DEBUG
+        debugPolls += 1
+        #endif
         let pasteboard = NSPasteboard.general
         guard pasteboard.changeCount != lastChangeCount else { return }
         lastChangeCount = pasteboard.changeCount
