@@ -550,7 +550,9 @@ final class EqualizerView: NSView {
             AudioLevels.shared.acquire()
             isAcquired = true
         }
-        // 20 updates a second, only while the bars are on screen.
+        // 20 updates a second, only while the bars are on screen. Still a Timer:
+        // the main-actor task loop the slower timers became (see
+        // ClipboardService.start) measured 0.28% CPU here against 0.10%.
         let timer = Timer(timeInterval: 0.05, repeats: true) { @Sendable [weak self] _ in
             MainActor.assumeIsolated { self?.followLevels() }
         }

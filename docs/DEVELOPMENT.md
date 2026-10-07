@@ -175,6 +175,12 @@ The one thing that removes it is System Settings › Accessibility › Display �
 
 Worth revisiting if a future macOS adds a real opt-out, or if the closed notch is ever drawn by something that isn't a window.
 
+### Known: `MainActor.assumeIsolated` crashed in the system runtime
+
+On macOS 27.0.1 Xotch crashed once (EXC_BAD_ACCESS at address 0) inside `MainActor.assumeIsolated`, called from the clipboard's once-a-second `Timer` on the main run loop. The call was valid: the fault is a null function pointer in the system's `libswift_Concurrency` while it checks for the main executor (`SerialExecutor.isMainExecutor` → `_isSameExecutor`). A standalone reproduction (a timer calling it 6,000 times, from the plain run loop and from one nested inside a task) didn't crash, so what triggers it is unknown.
+
+So repeating work on the main actor is a main-actor `Task` loop (`Task { @MainActor in while !Task.isCancelled { try? await Task.sleep(for:tolerance:) … } }`), which is isolated by construction and never makes that check: the clipboard poll, the shelf's expiry and Claude's prune. The music bars' 20 Hz `Timer` is the exception: as a task loop it measured 0.28% CPU against the timer's 0.10%, and it has never crashed. Callbacks that must answer synchronously (event monitors and taps, notifications, KVO) still use `assumeIsolated`; there's no way around the check there.
+
 ### Updating from a build called Brim
 
 Xotch was called Brim until the name was chosen. `Services/Migration.swift` runs once, before anything reads `Storage` or the settings, and moves everything across: the Application Support folder (notes, to-dos, arcs, clipboard, shelf), the settings from the old `com.pranava.brim` domain, and an installed Claude Code hook, which pointed at the old socket path.

@@ -122,7 +122,7 @@ enum DebugHooks {
                     "mascot: companion=\(ActivityCenter.shared.companion.rawValue) character=\(AppSettings.mascotCharacter) looking=\(MascotTracker.shared.directions.sorted { $0.key < $1.key }.map { "\($0.key):\($0.value)" }.joined(separator: ","))",
                     "ai log: \(AIChatService.shared.debugLog.joined(separator: " | "))",
                     "ai: messages=\(AIChatService.shared.messages.count) streaming=\(AIChatService.shared.isStreaming) provider=\(AIProviderStore.shared.active.map { "\($0.kind)/\($0.model)" } ?? "-") notice=\(AIChatService.shared.notice ?? "-") last=\(AIChatService.shared.messages.last.map { "\($0.role) \($0.text.count) chars error=\($0.isError)" } ?? "-")",
-                    "clipboard access: \(ClipboardService.shared.access)",
+                    "clipboard access: \(ClipboardService.shared.access) polling=\(ClipboardService.shared.debugPolling) polls=\(ClipboardService.shared.debugPolls)",
                     "todos: open today=\(TodoService.shared.openToday) total=\(TodoService.shared.todos.count)",
                     Storage.damaged.isEmpty ? "store: all files read cleanly"
                         : "store: DAMAGED, kept as \(Storage.damaged.joined(separator: ", "))",
