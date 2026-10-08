@@ -744,6 +744,42 @@ final class AIChatService {
 
     /// A reply that used tools, for snapshots: a lookup, a change done, one
     /// waiting for Allow, and one declined.
+    /// For the promo film, the same exchange as it happens: `steps` is how many
+    /// tool steps have shown (0 is just the question), `words` how much of the
+    /// reply has arrived, and `allowed` turns the focus timer's Allow into Done.
+    func withToolSample(steps: Int? = nil, words: Int? = nil, allowed: Bool = false, _ body: () -> Void) {
+        withToolSample {
+            guard steps != nil || words != nil || allowed, var reply = messages.last, reply.role == .assistant else {
+                body()
+                return
+            }
+            let shown = steps ?? 5
+            if shown == 0 {
+                messages = [messages[0]]
+                body()
+                return
+            }
+            var rounds = reply.rounds ?? []
+            if var second = rounds.last {
+                if let words {
+                    second.text = second.text.split(separator: " ").prefix(words).joined(separator: " ")
+                }
+                second.steps = Array(second.steps.prefix(max(shown - 1, 0)))
+                if allowed, second.steps.count > 1 {
+                    second.steps[1].status = .done
+                    second.steps[1].title = "Started a **25-minute** focus"
+                }
+                rounds[rounds.count - 1] = second
+            }
+            if shown == 1, words == 0 {
+                rounds = Array(rounds.prefix(1))
+            }
+            reply.rounds = rounds
+            messages[messages.count - 1] = reply
+            body()
+        }
+    }
+
     func withToolSample(_ body: () -> Void) {
         let saved = messages
         func call(_ name: String, _ args: [String: Any]) -> ToolCall {

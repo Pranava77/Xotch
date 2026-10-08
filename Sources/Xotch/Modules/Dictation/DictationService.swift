@@ -369,10 +369,13 @@ final class DictationService {
 
     #if DEBUG
     /// Mid-sentence, for product images: listening, with words arriving.
-    func withSample(_ body: () -> Void) {
+    func withSample(words: Int? = nil, _ body: () -> Void) {
         let saved = (phase, liveText, history, problem)
         phase = .listening(handsFree: false)
         liveText = "Can you move the design review to Thursday afternoon and send the notes to the team before then"
+        if let words {
+            liveText = liveText.split(separator: " ").prefix(words).joined(separator: " ")
+        }
         history = [Entry(text: "Thanks, that works for me. See you at the review."),
                    Entry(text: "Remind me to call the bank tomorrow at ten.")]
         problem = nil

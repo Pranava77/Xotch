@@ -436,14 +436,27 @@ private struct EqualizerBars: View {
     let tint: Color
     var source: EqualizerView.Source = .music
     @Environment(\.snapshotMode) private var snapshotMode
+    @Environment(\.snapshotTime) private var snapshotTime
 
     private static let stillHeights: [CGFloat] = [0.3, 0.55, 0.8, 0.5, 0.95, 0.7, 1, 0.6, 0.85, 0.45, 0.65, 0.35]
+
+    /// In a film frame, two waves per bar at their own speeds, so the bars
+    /// look like they're following sound.
+    private var heights: [CGFloat] {
+        guard let t = snapshotTime else { return Self.stillHeights }
+        let speed = source == .music ? 1.0 : 1.6
+        return (0..<Self.stillHeights.count).map { i in
+            let a = sin(t * speed * (5.1 + Double(i) * 0.73) + Double(i) * 1.7)
+            let b = sin(t * speed * (2.3 + Double(i % 4) * 0.9) + Double(i) * 0.4)
+            return CGFloat(0.22 + 0.78 * (0.5 + 0.3 * a + 0.2 * b))
+        }
+    }
 
     var body: some View {
         Group {
             if snapshotMode || Motion.reduceMotion {
                 HStack(spacing: EqualizerView.gap) {
-                    ForEach(Array(Self.stillHeights.enumerated()), id: \.offset) { _, height in
+                    ForEach(Array(heights.enumerated()), id: \.offset) { _, height in
                         Capsule().fill(tint)
                             .frame(width: EqualizerView.barWidth, height: EqualizerView.height * height)
                     }

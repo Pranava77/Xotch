@@ -42,23 +42,29 @@ enum MarketingShots {
         }
 
         // JPEG: the wallpaper's gradients make PNGs several megabytes.
-        func save(_ name: String, _ model: NotchViewModel, size: CGSize, scale: CGFloat = 2, status: Bool = false) {
+        /// `time` is seconds into a film sequence; `name` may hold a folder.
+        func save(_ name: String, _ model: NotchViewModel, size: CGSize, scale: CGFloat = 2, status: Bool = false,
+                  time: Double? = nil, hidesTiles: Bool = false) {
             let scene = Scene(model: model, clock: clock, showsStatus: status)
                 .frame(width: size.width, height: size.height)
                 .environment(\.snapshotMode, true)
                 .environment(\.snapshotClearGlass, true)
                 .environment(\.snapshotDate, clock)
+                .environment(\.snapshotTime, time)
+                .environment(\.snapshotHidesTiles, hidesTiles)
             let renderer = ImageRenderer(content: scene)
             renderer.scale = scale
             guard let image = renderer.cgImage,
                   let jpeg = NSBitmapImageRep(cgImage: image).representation(using: .jpeg,
                                                                            properties: [.compressionFactor: 0.86]) else { return }
-            try? jpeg.write(to: folder.appendingPathComponent("\(name).jpg"))
+            let file = folder.appendingPathComponent("\(name).jpg")
+            try? FileManager.default.createDirectory(at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
+            try? jpeg.write(to: file)
         }
 
         if promo {
             renderPromo(folder: folder, center: center, model: model, open: open,
-                        save: { save($0, $1, size: $2, scale: $3, status: true) })
+                        save: { save($0, $1, size: $2, scale: $3, status: true, time: $4, hidesTiles: $0 == "home-empty") })
             return
         }
 
@@ -151,17 +157,36 @@ enum MarketingShots {
     private static func renderPromo(folder: URL, center: ActivityCenter,
                                     model: ((NotchViewModel) -> Void) -> NotchViewModel,
                                     open: (String) -> NotchViewModel,
-                                    save: (String, NotchViewModel, CGSize, CGFloat) -> Void) {
+                                    save: @escaping (String, NotchViewModel, CGSize, CGFloat, Double?) -> Void) {
         let screen = CGSize(width: 1440, height: 810)
         let scale: CGFloat = 8.0 / 3.0
         var shapes: [String: [Double]] = [:]
+        var sequences: [String: Int] = [:]
         func shot(_ name: String, _ model: NotchViewModel) {
-            save(name, model, screen, scale)
+            save(name, model, screen, scale, nil)
             shapes[name] = [model.bodySize.width, model.bodySize.height, model.shoulder, model.cornerRadius].map(Double.init)
+        }
+        /// Frames at 30 a second, at 2x, so things move: `frame` sets up each one
+        /// for its time and calls `capture` with the notch while that state holds.
+        func sequence(_ name: String, seconds: Double,
+                      _ frame: (_ t: Double, _ capture: (NotchViewModel) -> Void) -> Void) {
+            let count = Int(seconds * 30)
+            for index in 0..<count {
+                let t = Double(index) / 30
+                frame(t) { model in
+                    save(String(format: "\(name)/%04d", index), model, screen, 2, t)
+                    if index == count - 1 {
+                        shapes[name] = [model.bodySize.width, model.bodySize.height, model.shoulder, model.cornerRadius].map(Double.init)
+                    }
+                }
+            }
+            sequences[name] = count
         }
 
         withSampleData {
             shot("home", open("home"))
+            // Home's own background, which the film's tiles land on.
+            shot("home-empty", open("home"))
             for module in ["todos", "calendar", "timers", "media", "capture", "claude", "clipboard", "shelf"] {
                 shot(module, open(module))
             }
@@ -177,6 +202,22 @@ enum MarketingShots {
             palette.palette.isOpen = true
             palette.palette.query = "10"
             shot("palette", palette)
+
+            // The AI planning an afternoon, as it happens: the question, a
+            // lookup, the reply arriving, the steps one by one, then Allow.
+            sequence("ai-live", seconds: 7) { t, capture in
+                let steps = t < 0.4 ? 0 : t < 2.6 ? 1 : min(5, 2 + Int((t - 2.6) / 0.35))
+                let words = t < 1.0 ? 0 : min(11, Int((t - 1.0) / 1.5 * 11) + 1)
+                AIChatService.shared.withToolSample(steps: steps, words: words, allowed: t >= 5.15) {
+                    AIChatService.shared.withExpanded { capture(open(AIModule.moduleID)) }
+                }
+            }
+            // Dictation hearing a sentence, a word at a time.
+            sequence("dictation-live", seconds: 5) { t, capture in
+                DictationService.shared.withSample(words: min(18, Int(max(t - 0.3, 0) / 3.7 * 18))) {
+                    capture(open("dictation"))
+                }
+            }
 
             // The closed notch: quiet, then with each kind of ear.
             let samples = center.debugStash()
@@ -201,11 +242,31 @@ enum MarketingShots {
             center.debugShowCompanion(.mascot)
             shot("screen-mascot", model { _ in })
             center.debugShowCompanion(.none)
+
+            // The ears, moving: music, a timer counting down, the microphone.
+            let music = ears[0].1
+            center.setOngoing(music, for: music.moduleID)
+            sequence("ears-music", seconds: 4) { _, capture in capture(model { _ in }) }
+            center.setOngoing(nil, for: music.moduleID)
+            let remaining = 18.0 * 60 + 24
+            sequence("ears-timer", seconds: 3) { t, capture in
+                let until = Date().addingTimeInterval(remaining - t)
+                center.setOngoing(LiveActivity(moduleID: "timers", symbol: TimerKind.focus.symbol,
+                                               content: .countdown(until: until), tint: TimerKind.focus.tint,
+                                               progress: .timed(start: until.addingTimeInterval(-25 * 60), end: until)),
+                                  for: "timers")
+                capture(model { _ in })
+            }
+            center.setOngoing(nil, for: "timers")
+            let mic = ears[3].1
+            center.setOngoing(mic, for: mic.moduleID)
+            sequence("ears-dictation", seconds: 2) { _, capture in capture(model { _ in }) }
+            center.setOngoing(nil, for: mic.moduleID)
             center.debugRestore(samples)
         }
 
         let geometry: [String: Any] = ["screen": [screen.width, screen.height].map(Double.init),
-                                       "scale": Double(scale), "shapes": shapes]
+                                       "scale": Double(scale), "shapes": shapes, "sequences": sequences]
         if let json = try? JSONSerialization.data(withJSONObject: geometry, options: [.prettyPrinted, .sortedKeys]) {
             try? json.write(to: folder.appendingPathComponent("geometry.json"))
         }

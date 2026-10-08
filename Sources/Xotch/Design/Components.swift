@@ -16,6 +16,14 @@ private struct SnapshotClearGlassKey: EnvironmentKey {
     static let defaultValue = false
 }
 
+private struct SnapshotTimeKey: EnvironmentKey {
+    static let defaultValue: Double? = nil
+}
+
+private struct SnapshotHidesTilesKey: EnvironmentKey {
+    static let defaultValue = false
+}
+
 extension EnvironmentValues {
     var snapshotMode: Bool {
         get { self[SnapshotModeKey.self] }
@@ -26,6 +34,19 @@ extension EnvironmentValues {
     var snapshotDate: Date? {
         get { self[SnapshotDateKey.self] }
         set { self[SnapshotDateKey.self] = newValue }
+    }
+
+    /// Seconds into an animated snapshot sequence (the promo film), so things
+    /// that move, like the music bars, differ from frame to frame.
+    var snapshotTime: Double? {
+        get { self[SnapshotTimeKey.self] }
+        set { self[SnapshotTimeKey.self] = newValue }
+    }
+
+    /// Home without its tiles, for the promo film, which brings them in itself.
+    var snapshotHidesTiles: Bool {
+        get { self[SnapshotHidesTilesKey.self] }
+        set { self[SnapshotHidesTilesKey.self] = newValue }
     }
 
     /// Snapshots that draw their own blurred backdrop: glass leaves it showing.

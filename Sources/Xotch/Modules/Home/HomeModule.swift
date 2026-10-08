@@ -27,6 +27,7 @@ private struct HomeView: View {
     @AppStorage(SettingsKey.homeMirror) private var homeMirror = true
     @AppStorage(SettingsKey.mascotCharacter) private var mascotCharacter = "fox"
     @Environment(\.snapshotDate) private var snapshotDate
+    @Environment(\.snapshotHidesTiles) private var hidesTiles
 
     var body: some View {
         let hidden = Set(hiddenModules.split(separator: ",").map(String.init))
@@ -53,6 +54,7 @@ private struct HomeView: View {
             }
         }
         .frame(maxHeight: .infinity, alignment: .top)
+        .opacity(hidesTiles ? 0 : 1)
         .task {
             calendar.refresh()
         }
