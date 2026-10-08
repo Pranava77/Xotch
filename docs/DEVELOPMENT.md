@@ -107,7 +107,6 @@ The Revenue, Analytics and Weather modules were removed. On first launch after t
 | Drop ripple, artwork glow, LED display | Metal shaders compiled at runtime (`Design/Shaders.swift`). The glow and LED display are drawn once and moved by Core Animation; only the one-second ripple draws frame by frame. | ~0.1% while Now Playing is open |
 | Live updates beside the notch | Timer ring and Claude pulse are Core Animation layers; a rolling ticker (`ActivityContent.ticker`); download progress; dots for activities waiting their turn; a volume HUD | 0% (ring 0.4%, the countdown text) |
 | Real audio levels | A Core Audio process tap (macOS 14.2+), four bands from an FFT, only while the music bars are showing. Off by default. | 0.17% while the bars show |
-| Adiyogi | A `Canvas` drawing in the left ear (`AdiyogiMark`), drawn once and never animated; also the README icon | 0% |
 | Celebration | `CAEmitterLayer` confetti and a double haptic when a focus session finishes (Settings › Features) | 0% |
 | Screen recording | `SCStream` with an `SCRecordingOutput` writes the movie itself (macOS 15+). Xotch's own windows are filtered out, so the notch never appears in a recording. | measured below |
 | Command palette | `CommandCatalog` builds commands from the modules, timers, music and clipboard; fuzzy matching | — |
@@ -212,7 +211,7 @@ Sources/Xotch/
 ├─ App/        XotchApp (menu bar + Settings scenes), AppDelegate, DebugHooks, MarketingShots
 ├─ Notch/      NotchPanel, NotchGeometry, NotchWindowController, ScreenManager
 ├─ Shell/      NotchShape, NotchViewModel, ShellView (open content, switcher, live activity bar),
-│              EarViews (ring, pulse, ticker, Adiyogi), CommandPalette, Celebration
+│              EarViews (ring, pulse, ticker), CommandPalette, Celebration
 ├─ Modules/    NotchModule protocol, ModuleRegistry, one folder per module (Service + Module/View)
 ├─ Services/   ActivityCenter (HUD, banners, ongoing activities), Storage, Haptics, Permissions,
 │              AudioLevels, SystemVolume, DownloadsService, CelebrationSound

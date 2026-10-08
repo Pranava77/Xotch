@@ -302,7 +302,7 @@ private struct LiveActivityBar: View {
     /// Holds the left ear; an activity's icon then moves to the right ear.
     let companion: EarCompanion
     let mascotAnchor: String
-    private var adiyogi: Bool { companion != .none }
+    private var hasCompanion: Bool { companion != .none }
     let earWidth: CGFloat
     let notchSize: CGSize
     /// Which of several live activities is showing, for the dots.
@@ -314,9 +314,6 @@ private struct LiveActivityBar: View {
             Group {
                 if companion == .mascot {
                     MascotView(anchor: mascotAnchor, size: 30)
-                        .transition(.opacity)
-                } else if companion == .adiyogi {
-                    AdiyogiMark()
                         .transition(.opacity)
                 } else if let activity {
                     icon(activity)
@@ -333,7 +330,7 @@ private struct LiveActivityBar: View {
 
             HStack(spacing: 6) {
                 if let activity {
-                    if adiyogi {
+                    if hasCompanion {
                         // The left ear is taken, so the icon sits by its content.
                         icon(activity)
                             .scaleEffect(0.85)

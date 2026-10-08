@@ -312,7 +312,7 @@ final class NotchWindowController: NotchActions {
         let activities = model.activities
         guard model.showsActivity, CaptureService.shared.isRecording,
               let current = activities.current, current.id == activities.ongoing["capture"]?.id else { return false }
-        // With Adiyogi in the left ear, only the right ear is the recording's.
+        // With the mascot in the left ear, only the right ear is the recording's.
         let offset = location.x - model.screenRect.midX
         return activities.showsCompanion ? offset > model.closedSize.width / 2 : abs(offset) > model.closedSize.width / 2
     }

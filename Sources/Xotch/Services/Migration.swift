@@ -12,12 +12,27 @@ enum Migration {
     private static let oldHookMarker = "brim-claude-hook"
 
     static func run() {
+        retireAdiyogi()
         let defaults = UserDefaults.standard
         guard !defaults.bool(forKey: doneKey) else { return }
         defaults.set(true, forKey: doneKey)
         moveFiles()
         copySettings()
         refreshClaudeHook()
+    }
+
+    /// Adiyogi used to be a companion for the left ear, and the default. Anyone
+    /// who had him gets the mascot; anyone who'd turned him off keeps nothing.
+    private static func retireAdiyogi() {
+        let defaults = UserDefaults.standard
+        let oldSwitch = "adiyogiEar"
+        let chosen = defaults.string(forKey: SettingsKey.earCompanion)
+        if chosen == "adiyogi" || (chosen == nil && defaults.object(forKey: oldSwitch) as? Bool != false) {
+            defaults.set(EarCompanion.mascot.rawValue, forKey: SettingsKey.earCompanion)
+        } else if chosen == nil {
+            defaults.set(EarCompanion.none.rawValue, forKey: SettingsKey.earCompanion)
+        }
+        defaults.removeObject(forKey: oldSwitch)
     }
 
     /// ~/Library/Application Support/Brim → …/Xotch, keeping anything already

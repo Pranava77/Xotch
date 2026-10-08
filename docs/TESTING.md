@@ -92,7 +92,8 @@ These need hardware or situations a script can't create. Tick them before a beta
 - [ ] Music and a timer at once: they take turns every 6 s, the notch keeps one width, and two dots show which is up. Clicking the right ear skips to the next without opening the notch.
 - [ ] A screen recording, or Claude waiting for you (fast pulse), stays in the ear while other things are live.
 - [ ] Settings › Features › Celebrate: confetti falls from the notch and the trackpad taps twice. A finished focus session does the same, unless "Celebrate finished focus sessions" is off.
-- [ ] Closed notch: Adiyogi sits at the outer edge of the left ear; a live activity's icon moves to the right ear beside its status, and Settings › Appearance hides the figure.
+- [ ] Closed notch: the mascot sits at the outer edge of the left ear; a live activity's icon moves to the right ear beside its status, and Settings › Appearance › Companion › Nothing hides it.
+- [ ] Updating from a build that had Adiyogi in the ear (or never chose a companion): the mascot is there instead, and the Companion picker shows Mascot, not a blank.
 - [ ] Updating from a build that had Revenue, Analytics or Weather: those modules are gone from the header tabs, the more grid and Settings, and Keychain Access has no `com.pranava.xotch` items for them.
 - [ ] To-dos: right-click a to-do and move it to tomorrow or someday; it lands there and stays after a relaunch.
 - [ ] To-dos: type a to-do and press Return; tick it off and it strikes through.
@@ -144,7 +145,7 @@ With Gemini, Claude or GPT active (`debug.sh ai-ask`, `ai-decide`, `ai-undo`, `a
 
 - [ ] Reduce Motion on: the notch fades instead of springing; the equalizer bars, glow and LED title are still; no confetti or ripple; a flicked shelf item disappears without flying.
 - [ ] Reduce Motion with a capture: flicking a tile off the shelf removes it without the throw.
-- [ ] VoiceOver reads the header tabs and the more grid, playback controls, reminders, the pin and ⌘K buttons, the palette rows, the LED title (as plain text) and Adiyogi. Shelf items offer Open, Show in Finder and Remove actions.
+- [ ] VoiceOver reads the header tabs and the more grid, playback controls, reminders, the pin and ⌘K buttons, the palette rows, the LED title (as plain text) and the mascot. Shelf items offer Open, Show in Finder and Remove actions.
 
 ## Permission audit
 
