@@ -6,9 +6,11 @@ import SwiftUI
 /// data over a made-up wallpaper, so they never show anyone's own data.
 ///
 ///     scripts/debug.sh marketing docs/images
+///
+/// With `promo`, the shots for the promotional film instead (scripts/make-promo.sh).
 @MainActor
 enum MarketingShots {
-    static func render(to directory: String) async {
+    static func render(to directory: String, promo: Bool = false) async {
         guard let screen = NSScreen.screens.first(where: { $0.safeAreaInsets.top > 0 }) ?? NSScreen.screens.first else {
             return
         }
@@ -52,6 +54,12 @@ enum MarketingShots {
                   let jpeg = NSBitmapImageRep(cgImage: image).representation(using: .jpeg,
                                                                            properties: [.compressionFactor: 0.86]) else { return }
             try? jpeg.write(to: folder.appendingPathComponent("\(name).jpg"))
+        }
+
+        if promo {
+            renderPromo(folder: folder, center: center, model: model, open: open,
+                        save: { save($0, $1, size: $2, scale: $3, status: true) })
+            return
         }
 
         let openSize = CGSize(width: 840, height: 300)
@@ -137,9 +145,75 @@ enum MarketingShots {
         saveIcon(to: folder.appendingPathComponent("icon.png"))
     }
 
+    /// The film's shots: whole 1440 × 810 "screens" at 3840 × 2160 pixels, so the
+    /// film can push in close and stay sharp, and geometry.json with the notch's
+    /// size in each, so the film can grow the notch open over the real shot.
+    private static func renderPromo(folder: URL, center: ActivityCenter,
+                                    model: ((NotchViewModel) -> Void) -> NotchViewModel,
+                                    open: (String) -> NotchViewModel,
+                                    save: (String, NotchViewModel, CGSize, CGFloat) -> Void) {
+        let screen = CGSize(width: 1440, height: 810)
+        let scale: CGFloat = 8.0 / 3.0
+        var shapes: [String: [Double]] = [:]
+        func shot(_ name: String, _ model: NotchViewModel) {
+            save(name, model, screen, scale)
+            shapes[name] = [model.bodySize.width, model.bodySize.height, model.shoulder, model.cornerRadius].map(Double.init)
+        }
+
+        withSampleData {
+            shot("home", open("home"))
+            for module in ["todos", "calendar", "timers", "media", "capture", "claude", "clipboard", "shelf"] {
+                shot(module, open(module))
+            }
+            AIChatService.shared.withToolSample {
+                AIChatService.shared.withExpanded { shot("ai-tools", open(AIModule.moduleID)) }
+            }
+            AIChatService.shared.withCodeSample {
+                AIChatService.shared.withExpanded { shot("ai-reply", open(AIModule.moduleID)) }
+            }
+            DictationService.shared.withSample { shot("dictation", open("dictation")) }
+            let palette = open("home")
+            palette.isPinned = true
+            palette.palette.isOpen = true
+            palette.palette.query = "10"
+            shot("palette", palette)
+
+            // The closed notch: quiet, then with each kind of ear.
+            let samples = center.debugStash()
+            shot("screen-quiet", model { _ in })
+            let end = Date().addingTimeInterval(18 * 60 + 24)
+            let ears: [(String, LiveActivity)] = [
+                ("music", LiveActivity(moduleID: "media", symbol: "music.note", content: .playing,
+                                       tint: MediaService.shared.tint, image: MediaService.shared.artwork)),
+                ("timer", LiveActivity(moduleID: "timers", symbol: TimerKind.focus.symbol,
+                                       content: .countdown(until: end), tint: TimerKind.focus.tint,
+                                       progress: .timed(start: end.addingTimeInterval(-25 * 60), end: end))),
+                ("claude", LiveActivity(moduleID: "claude", symbol: "sparkle", content: .text("Editing"),
+                                        tint: ClaudeLiveService.tint, pulse: .calm)),
+                ("dictation", LiveActivity(moduleID: "dictation", symbol: "mic.fill", content: .listening,
+                                           tint: DictationService.tint, pulse: .calm)),
+            ]
+            for (name, activity) in ears {
+                center.setOngoing(activity, for: activity.moduleID)
+                shot("screen-\(name)", model { _ in })
+                center.setOngoing(nil, for: activity.moduleID)
+            }
+            center.debugShowCompanion(.mascot)
+            shot("screen-mascot", model { _ in })
+            center.debugShowCompanion(.none)
+            center.debugRestore(samples)
+        }
+
+        let geometry: [String: Any] = ["screen": [screen.width, screen.height].map(Double.init),
+                                       "scale": Double(scale), "shapes": shapes]
+        if let json = try? JSONSerialization.data(withJSONObject: geometry, options: [.prettyPrinted, .sortedKeys]) {
+            try? json.write(to: folder.appendingPathComponent("geometry.json"))
+        }
+        saveIcon(to: folder.appendingPathComponent("icon.png"), side: 768)
+    }
+
     /// Adiyogi on a rounded square, as the README's app icon.
-    private static func saveIcon(to url: URL) {
-        let side: CGFloat = 256
+    private static func saveIcon(to url: URL, side: CGFloat = 256) {
         let icon = ZStack {
             RoundedRectangle(cornerRadius: side * 0.225, style: .continuous)
                 .fill(LinearGradient(colors: [Color(white: 0.16), Color(white: 0.03)],

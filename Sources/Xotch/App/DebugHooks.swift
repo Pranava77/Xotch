@@ -14,7 +14,7 @@ import SwiftUI
 ///                      record-stop | celebrate | palette | ripple |
 ///                      rebuild <count> |
 ///                      status <file> | snapshot <folder> | effects <folder> |
-///                      marketing <folder> | selftest <file>
+///                      marketing <folder> | promo <folder> | selftest <file>
 ///
 /// `snapshot` renders every notch state to PNGs with ImageRenderer, so the
 /// shell can be checked without screen-recording permission.
@@ -241,6 +241,9 @@ enum DebugHooks {
             } else if command.hasPrefix("marketing:") {
                 let folder = String(command.dropFirst("marketing:".count))
                 Task { await MarketingShots.render(to: folder) }
+            } else if command.hasPrefix("promo:") {
+                let folder = String(command.dropFirst("promo:".count))
+                Task { await MarketingShots.render(to: folder, promo: true) }
             } else if command.hasPrefix("effects:") {
                 let folder = String(command.dropFirst("effects:".count))
                 Task { await renderEffects(to: folder) }

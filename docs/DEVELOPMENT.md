@@ -73,6 +73,7 @@ The project lives on the Desktop, which macOS protects, and every rebuild resets
 | `scripts/switch-peak.sh` | Memory peak while switching modules |
 | `scripts/package-beta.sh` | Release build, signature check and zip for testers |
 | `scripts/package-dmg.sh` | Release build wrapped in a drag-to-Applications disk image (uses `create-dmg` if installed, `hdiutil` otherwise) |
+| `scripts/make-promo.sh [--stills <seconds…>]` | The 46 s promotional film, `build/promo/Xotch-promo.mp4` (1080p60, silent). Needs a debug build running: it renders 4K shots from sample data (`debug.sh promo`), then `scripts/promo/Promo.swift` draws every frame (camera, the notch growing open, San Francisco titles) and writes H.264 with AVFoundation. `--stills 8.1 15.5` renders single frames to review |
 
 See [PERFORMANCE.md](PERFORMANCE.md), [TESTING.md](TESTING.md) (manual checks and permission audit) and [BETA.md](BETA.md).
 

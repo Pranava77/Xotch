@@ -28,7 +28,7 @@ elif [[ "$COMMAND" == "status" ]]; then
   REPORT="${2:?status needs a file path}"
   mkdir -p "$(dirname "$REPORT")"
   COMMAND="status:$(cd "$(dirname "$REPORT")" && pwd)/$(basename "$REPORT")"
-elif [[ "$COMMAND" == "snapshot" || "$COMMAND" == "effects" || "$COMMAND" == "marketing" ]]; then
+elif [[ "$COMMAND" == "snapshot" || "$COMMAND" == "effects" || "$COMMAND" == "marketing" || "$COMMAND" == "promo" ]]; then
   FOLDER="$(cd "${2:?$COMMAND needs a folder}" 2>/dev/null && pwd || (mkdir -p "$2" && cd "$2" && pwd))"
   COMMAND="$COMMAND:$FOLDER"
 elif [[ "$COMMAND" == "selftest" ]]; then
