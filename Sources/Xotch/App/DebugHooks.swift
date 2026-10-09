@@ -121,7 +121,7 @@ enum DebugHooks {
                     "dictation: phase=\(DictationService.shared.phase) model=\(WhistleModel.shared.state) engine=\(WhistleEngine.isSupported ? (WhistleEngine.shared.isRunning ? "running" : "stopped") : "unsupported") fn=\(FnKey.shared.isActive ? "on" : "off") mic=\(MicRecorder.permission.rawValue) live=“\(DictationService.shared.liveText.suffix(60))” delivered=“\(DictationService.shared.debugDelivered.prefix(160))” problem=\(DictationService.shared.problem ?? "-")",
                     "mascot: companion=\(ActivityCenter.shared.companion.rawValue) character=\(AppSettings.mascotCharacter) looking=\(MascotTracker.shared.directions.sorted { $0.key < $1.key }.map { "\($0.key):\($0.value)" }.joined(separator: ","))",
                     "ai log: \(AIChatService.shared.debugLog.joined(separator: " | "))",
-                    "ai: messages=\(AIChatService.shared.messages.count) streaming=\(AIChatService.shared.isStreaming) provider=\(AIProviderStore.shared.active.map { "\($0.kind)/\($0.model)" } ?? "-") notice=\(AIChatService.shared.notice ?? "-") last=\(AIChatService.shared.messages.last.map { "\($0.role) \($0.text.count) chars error=\($0.isError)" } ?? "-")",
+                    "ai: messages=\(AIChatService.shared.messages.count) streaming=\(AIChatService.shared.isStreaming) provider=\(AIProviderStore.shared.active.map { "\($0.kind)/\($0.model)" } ?? "-") notice=\(AIChatService.shared.notice ?? "-") last=\(AIChatService.shared.messages.last.map { "\($0.role) \($0.text.count) chars error=\($0.isError) fix=\($0.fix?.title ?? "-") text=“\($0.text.prefix(140))”" } ?? "-")",
                     "clipboard access: \(ClipboardService.shared.access) polling=\(ClipboardService.shared.debugPolling) polls=\(ClipboardService.shared.debugPolls)",
                     "todos: open today=\(TodoService.shared.openToday) total=\(TodoService.shared.todos.count)",
                     Storage.damaged.isEmpty ? "store: all files read cleanly"
@@ -171,6 +171,11 @@ enum DebugHooks {
                 // Plays one cue whether or not sounds are switched on: `debug.sh sound complete`.
                 if let cue = RetroCue(rawValue: String(command.dropFirst("sound:".count))) {
                     RetroSound.play(cue, force: true)
+                }
+            } else if command == "ai-fix" {
+                // Carries out the fix offered on the last, failed reply.
+                if let fix = AIChatService.shared.messages.last?.fix {
+                    AIChatService.shared.apply(fix)
                 }
             } else if command.hasPrefix("ai-ask:") {
                 // Asks the AI chat a question without the UI: `debug.sh ai-ask "…"`.
@@ -288,6 +293,7 @@ enum DebugHooks {
         lines += mascotSelfTest()
         lines += earMetricsSelfTest()
         lines.append(mirrorSelfTest())
+        lines.append(lmStudioSelfTest())
         lines += await dictationSelfTest()
         lines += await harnessSelfTest()
         lines += retroSoundSelfTest()
@@ -636,6 +642,21 @@ enum DebugHooks {
         let wanted = Motion.reduceMotion ? "layers=true breathing=false" : "layers=true breathing=true"
         lines.append("mascot layers: \(state) → \(state == wanted ? "PASS" : "FAILED: expected \(wanted)")")
         return lines
+    }
+
+    /// Local models: embedding models are never picked to chat, a failed
+    /// reply's fix survives being saved, and a refused connection to LM
+    /// Studio's port offers to start its server (when it's installed).
+    @MainActor
+    private static func lmStudioSelfTest() -> String {
+        let picks = !LMStudio.canChat("text-embedding-nomic-embed-text-v1.5") && LMStudio.canChat("qwen/qwen3.8-27b")
+        var message = ChatMessage(role: .assistant, text: "x")
+        message.fix = .useModel("qwen/qwen3.8-27b")
+        let saved = (try? JSONDecoder().decode(ChatMessage.self, from: JSONEncoder().encode(message)))?.fix == message.fix
+        let refused = AIBackends.describe(URLError(.cannotConnectToHost), kind: .openAICompatible,
+                                    url: URL(string: "http://localhost:\(LMStudio.port)/v1/chat/completions"))
+        let offers = !LMStudio.isInstalled || refused.fix == .startLMStudio
+        return "local models: embeddings skipped=\(picks) fix saved=\(saved) LM Studio offer=\(offers) → \(picks && saved && offers ? "PASS" : "FAILED")"
     }
 
     /// Mirror can ask for the camera, and leaves it off while Home isn't showing.
