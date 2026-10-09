@@ -33,6 +33,8 @@ enum SettingsKey {
     static let mascotCharacter = "mascotCharacter"
     static let homeMascot = "homeMascot"
     static let homeMirror = "homeMirror"
+    /// The first-launch welcome has been shown and closed.
+    static let welcomeSeen = "welcomeSeen"
     static let dictationEnabled = "dictationEnabled"
     /// "auto", or one of Whistle's languages: en, de, fr, es, it, nl, pl.
     static let dictationLanguage = "dictationLanguage"

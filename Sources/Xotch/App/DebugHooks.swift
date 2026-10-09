@@ -299,6 +299,7 @@ enum DebugHooks {
         lines += earMetricsSelfTest()
         lines.append(mirrorSelfTest())
         lines.append(lmStudioSelfTest())
+        lines.append("welcome: every hello has an outline=\(HelloLetteringView.debugWordsDrawable) → \(HelloLetteringView.debugWordsDrawable ? "PASS" : "FAILED")")
         lines += await dictationSelfTest()
         lines += await harnessSelfTest()
         lines += retroSoundSelfTest()
@@ -1216,6 +1217,15 @@ enum DebugHooks {
         render("5-open-pinned") {
             $0.phase = .open
             $0.isPinned = true
+        }
+        render("5-open-welcome") {
+            $0.phase = .open
+            $0.showsWelcome = true
+        }
+        render("5-open-welcome-setup") {
+            $0.phase = .open
+            $0.showsWelcome = true
+            $0.welcomeAtSetup = true
         }
         // Signature UI
         withSampleData {

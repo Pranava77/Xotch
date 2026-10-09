@@ -22,6 +22,7 @@ private struct MenuContent: View {
 
     var body: some View {
         Button("Open Notch") { ScreenManager.shared.openPrimary() }
+        Button("Welcome to Xotch…") { ScreenManager.shared.showWelcome() }
         Divider()
         Button("Take Screenshot") { capture.takeScreenshot(.area) }
         if capture.isRecording {

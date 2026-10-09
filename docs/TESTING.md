@@ -41,6 +41,11 @@ It records states and counts only, never clipboard contents, notes or track titl
 
 These need hardware or situations a script can't create. Tick them before a beta build goes out.
 
+### Welcome
+
+- [ ] First launch (`defaults delete com.pranava.xotch welcomeSeen`): about a second in, the notch opens and "hello" writes itself, traced then filled, then hola, bonjour and on; Continue arrives after the first word. Continue shows three things to know; Set Up AI… and Set Up Dictation… open those Settings pages; Start Using Xotch closes it and it doesn't come back at the next launch. Esc or a click elsewhere also counts as seen.
+- [ ] Menu bar › Welcome to Xotch… shows it again. Reduce Motion shows "hello" already written.
+
 ### Displays
 
 - [ ] External display connected, Settings › Show the notch on › Automatic: the notch stays on the built-in display.
