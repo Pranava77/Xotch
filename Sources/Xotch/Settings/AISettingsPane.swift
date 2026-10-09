@@ -158,6 +158,8 @@ private struct ProviderEditor: View {
     @State private var models: [String]
     @State private var status: (ok: Bool, text: String)?
     @State private var working = false
+    /// Offered under the status, e.g. starting LM Studio's server.
+    @State private var fix: ChatFix?
     @Environment(\.dismiss) private var dismiss
 
     init(draft: ProviderDraft) {
@@ -220,6 +222,10 @@ private struct ProviderEditor: View {
                         .foregroundStyle(status.ok ? Color.green : Color.red)
                         .font(.callout)
                         .textSelection(.enabled)
+                    if fix == .startLMStudio {
+                        Button("Start LM Studio's Server") { startLMStudio() }
+                            .disabled(working)
+                    }
                 }
             }
             .formStyle(.grouped)
@@ -267,11 +273,28 @@ private struct ProviderEditor: View {
         if config.name.isEmpty || config.name == old.shortLabel { config.name = new.shortLabel }
         models = []
         status = nil
+        fix = nil
+    }
+
+    private func startLMStudio() {
+        working = true
+        let baseURL = config.baseURL
+        Task {
+            do {
+                try await LMStudio.startServer(baseURL: baseURL)
+                working = false
+                loadModels()
+            } catch {
+                working = false
+                status = (false, error.localizedDescription)
+            }
+        }
     }
 
     private func loadModels() {
         working = true
         status = nil
+        fix = nil
         let backend = AIBackends.backend(for: config.kind)
         let baseURL = config.baseURL
         let key = keyForRequests
@@ -288,11 +311,14 @@ private struct ProviderEditor: View {
                 } else {
                     status = (true, "Found \(list.count) models.")
                     if config.model.isEmpty || !list.contains(config.model) {
-                        config.model = list.first { $0 == kind.defaultModel } ?? list[0]
+                        // Never an embedding model, which can't chat.
+                        let chat = list.filter(LMStudio.canChat)
+                        config.model = chat.first { $0 == kind.defaultModel } ?? chat.first ?? list[0]
                     }
                 }
             } catch {
                 status = (false, error.localizedDescription)
+                fix = (error as? AIError)?.fix
             }
         }
     }
@@ -320,6 +346,7 @@ private struct ProviderEditor: View {
                     : (true, "Connected. \(config.model) replied “\(trimmed.prefix(60))”.")
             } catch {
                 status = (false, error.localizedDescription)
+                fix = (error as? AIError)?.fix
             }
         }
     }

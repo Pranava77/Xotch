@@ -229,8 +229,17 @@ private struct ReplyCard: View {
                         .frame(height: 16)
                 }
                 if message.isError {
-                    Button("Try again") { chat.retry() }
-                        .buttonStyle(PillButtonStyle(prominent: false))
+                    HStack(spacing: 8) {
+                        if let fix = message.fix, isLast {
+                            Button(chat.isFixing ? "Starting…" : fix.title) { chat.apply(fix) }
+                                .buttonStyle(PillButtonStyle())
+                                .disabled(chat.isFixing)
+                                .debugFrame("ai.fix")
+                        }
+                        Button("Try again") { chat.retry() }
+                            .buttonStyle(PillButtonStyle(prominent: false))
+                            .disabled(chat.isFixing)
+                    }
                 } else if !isStreaming, !parts.body.isEmpty, !message.isLocal {
                     actions
                         .opacity(isLast || hovering ? 1 : 0)

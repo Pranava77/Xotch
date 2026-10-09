@@ -50,6 +50,21 @@ enum MascotMotion {
 
     /// The directions cell to show for a pointer `dx`, `dy` points from the
     /// mascot in screen coordinates (y up), given the cell showing now.
+    /// The poses a turn passes through on the way to `to`, one step of the
+    /// 3 × 3 grid at a time, ending at `to`: left to right goes by straight
+    /// ahead, as a head would.
+    static func path(from: Int, to: Int) -> [Int] {
+        var col = from % 3, row = from / 3
+        let targetCol = to % 3, targetRow = to / 3
+        var steps: [Int] = []
+        while col != targetCol || row != targetRow {
+            col += (targetCol - col).signum()
+            row += (targetRow - row).signum()
+            steps.append(row * 3 + col)
+        }
+        return steps
+    }
+
     static func direction(dx: CGFloat, dy: CGFloat, previous: Int) -> Int {
         guard hypot(dx, dy) >= deadZone else { return Cell.center }
         let angle = atan2(-dy, dx)  // y down, like the page
@@ -172,6 +187,13 @@ final class MascotTracker {
         boops[anchor, default: 0] += 1
     }
 
+    #if DEBUG
+    /// Points a mascot at a pose, as if the pointer had moved: `debug.sh mascot-look home:5`.
+    func debugLook(_ anchor: String, _ cell: Int) {
+        directions[anchor] = cell
+    }
+    #endif
+
     private func update(_ anchor: String, pointer: NSPoint) {
         guard let center = centers[anchor] else { return }
         let next = MascotMotion.direction(dx: pointer.x - center.x, dy: pointer.y - center.y,
@@ -212,8 +234,9 @@ struct MascotView: View {
                         .aspectRatio(contentMode: .fit)
                 }
             } else {
-                MascotLayer(image: image, squashes: squashes, breath: size < 60 ? 0.015 : 0.025,
-                            phase: Double(abs(anchor.hashValue % 1000)) / 1000)
+                MascotLayer(image: image, reacting: reaction != nil, directions: cells?.directions,
+                            direction: tracker.direction(for: anchor), squashes: squashes,
+                            breath: size < 60 ? 0.015 : 0.025, phase: Double(abs(anchor.hashValue % 1000)) / 1000)
             }
         }
         .frame(width: size, height: size)
@@ -262,12 +285,18 @@ struct MascotView: View {
 
 /// The mascot drawn by Core Animation, so its motion runs in the window
 /// server and costs Xotch nothing between changes:
-/// - a turn of the head, or a reaction, crossfades instead of snapping;
+/// - a turn of the head passes through the poses between, dissolving from
+///   one to the next with a slight sway, and a reaction crossfades;
 /// - it breathes, a slow rise and settle, forever;
 /// - a boop squashes it, wide then tall then settling.
 /// Reduce Motion keeps it still and swaps pictures at once.
 private struct MascotLayer: NSViewRepresentable {
     let image: CGImage?
+    /// Showing a reaction rather than looking somewhere.
+    let reacting: Bool
+    /// The nine poses, and which one it's looking toward.
+    let directions: [CGImage]?
+    let direction: Int
     let squashes: Int
     /// How far a breath stretches it, as a fraction of its height.
     let breath: CGFloat
@@ -279,7 +308,11 @@ private struct MascotLayer: NSViewRepresentable {
     }
 
     func updateNSView(_ view: MascotLayerView, context: Context) {
-        view.show(image)
+        if !reacting, let directions, directions.indices.contains(direction) {
+            view.look(direction, poses: directions)
+        } else {
+            view.show(image)
+        }
         view.squash(count: squashes)
     }
 }
@@ -295,9 +328,13 @@ final class MascotLayerView: NSView {
     private let phase: Double
     private var squashes = 0
     private var shown: CGImage?
+    /// The pose it's looking toward, while it's looking rather than reacting.
+    private var looking: Int?
 
-    /// How long a turn of the head takes to fade across.
+    /// How long a reaction takes to fade across.
     static let fade: CFTimeInterval = 0.18
+    /// Each step of a turn, from one pose to the next.
+    static let step: CFTimeInterval = 0.13
     static let breathLength: CFTimeInterval = 2.6
 
     init(breath: CGFloat, phase: Double) {
@@ -339,6 +376,55 @@ final class MascotLayerView: NSView {
     override func viewDidChangeBackingProperties() {
         super.viewDidChangeBackingProperties()
         sprite.contentsScale = window?.backingScaleFactor ?? 2
+    }
+
+    /// Turns toward `direction` through the poses between, as one keyframe
+    /// animation of the picture (Core Animation dissolves each into the
+    /// next), with a slight sway toward the turn that settles as it lands.
+    func look(_ direction: Int, poses: [CGImage]) {
+        let image = poses[direction]
+        guard image !== shown else {
+            looking = direction
+            return
+        }
+        // The first picture, or back from a reaction: a plain crossfade.
+        guard let from = looking, shown === poses[from], !Motion.reduceMotion else {
+            looking = direction
+            show(image)
+            return
+        }
+        looking = direction
+        let route = [from] + MascotMotion.path(from: from, to: direction)
+        let turn = CAKeyframeAnimation(keyPath: "contents")
+        turn.values = route.map { poses[$0] }
+        turn.calculationMode = .linear
+        turn.duration = Self.step * Double(route.count - 1) + 0.05
+        turn.timingFunction = CAMediaTimingFunction(controlPoints: 0.3, 0, 0.2, 1)
+        sprite.removeAnimation(forKey: "turn")
+        sprite.add(turn, forKey: "turn")
+        // Lean a little the way it's turning, then settle.
+        let across = CGFloat(direction % 3 - from % 3), down = CGFloat(direction / 3 - from / 3)
+        let size = max(bounds.width, 1)
+        let sway = CAKeyframeAnimation(keyPath: "transform.translation.x")
+        sway.values = [0, across * size * 0.035, 0]
+        let dip = CAKeyframeAnimation(keyPath: "transform.translation.y")
+        dip.values = [0, -down * size * 0.025, 0]
+        let tilt = CAKeyframeAnimation(keyPath: "transform.rotation.z")
+        tilt.values = [0, -across * 0.045, 0]
+        let lean = CAAnimationGroup()
+        lean.animations = [sway, dip, tilt]
+        for track in [sway, dip, tilt] {
+            track.keyTimes = [0, 0.4, 1]
+            track.timingFunctions = [CAMediaTimingFunction(name: .easeOut), CAMediaTimingFunction(name: .easeInEaseOut)]
+            track.isAdditive = true
+        }
+        lean.duration = turn.duration + 0.18
+        sprite.add(lean, forKey: "lean")
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        sprite.contents = image
+        CATransaction.commit()
+        shown = image
     }
 
     func show(_ image: CGImage?) {
@@ -403,6 +489,12 @@ final class MascotLayerView: NSView {
     /// For the self-test: whether the layers are set up to move.
     var debugState: String {
         "layers=\(sprite.superlayer === spring && spring.superlayer === body) breathing=\(body.animation(forKey: "breath") != nil)"
+    }
+
+    /// The last turn's route, for `debug.sh status`: how many poses it passed through.
+    var debugTurn: String {
+        let turn = sprite.animation(forKey: "turn") as? CAKeyframeAnimation
+        return "turning=\(turn != nil) poses=\(turn?.values?.count ?? 0) looking=\(looking.map(String.init) ?? "-")"
     }
     #endif
 }

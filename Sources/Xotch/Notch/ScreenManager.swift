@@ -69,6 +69,21 @@ final class ScreenManager {
         observers.append((center, token))
     }
 
+    /// The welcome, in the main notch: "hello", then three things to know.
+    /// Shown once at first launch, and from the menu bar.
+    func showWelcome() {
+        guard let primary else { return }
+        primary.revealOverFullScreen()
+        primary.model.showsWelcome = true
+        primary.open(pinned: true)
+    }
+
+    func finishWelcome() {
+        for controller in controllers.values where controller.model.showsWelcome {
+            controller.close()
+        }
+    }
+
     /// Whether any notch is open on this module.
     func isOpen(module moduleID: String) -> Bool {
         controllers.values.contains { $0.model.phase == .open && $0.model.selectedModuleID == moduleID }

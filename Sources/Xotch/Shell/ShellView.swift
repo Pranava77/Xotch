@@ -35,7 +35,11 @@ struct ShellView: View {
                                     namespace: namespace)
                         .transition(.blurFade)
                 }
-                if model.phase == .open {
+                if model.phase == .open, model.showsWelcome {
+                    WelcomeView(notchHeight: model.closedSize.height, atSetup: model.debugWelcomeAtSetup)
+                        .frame(width: model.openSize.width, height: model.openSize.height, alignment: .top)
+                        .transition(.blurScale)
+                } else if model.phase == .open {
                     OpenContent(model: model, modules: modules, selected: selected,
                                 actions: actions, namespace: namespace)
                         .frame(width: model.openSize.width, height: model.openSize.height, alignment: .top)

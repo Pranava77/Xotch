@@ -51,11 +51,13 @@ struct ChatMessage: Codable, Identifiable, Equatable {
     var rounds: [ToolRound]?
     /// A slash command and what it did: shown, never sent to the model.
     var local: Bool?
+    /// For a failed reply, something the person can do about it.
+    var fix: ChatFix?
 
     var isLocal: Bool { local == true }
 
     private enum CodingKeys: String, CodingKey {
-        case id, role, text, date, isError, hadScreenshot, model, rounds, local
+        case id, role, text, date, isError, hadScreenshot, model, rounds, local, fix
     }
 }
 
@@ -72,6 +74,8 @@ final class AIChatService {
     private(set) var messages: [ChatMessage]
     private(set) var isStreaming = false
     private(set) var isCapturing = false
+    /// A fix offered on a failed reply is being carried out.
+    private(set) var isFixing = false
     var draft = ""
     /// A screenshot waiting to go with the next message.
     var attachment: Data?
@@ -256,6 +260,12 @@ final class AIChatService {
                     tools = []
                     notice = "\(provider.model) can't use notch tools, so it answered without them. Gemini, Claude and GPT can."
                     continue
+                }
+                // A local server that answers but doesn't have the model: say
+                // which ones it has, and offer one.
+                if let missing = await missingModel(backend: backend, provider: provider, apiKey: apiKey, after: error) {
+                    fail(replyID, with: missing)
+                    return
                 }
                 fail(replyID, with: error)
                 return
@@ -520,12 +530,54 @@ final class AIChatService {
         messages[index].text += piece
     }
 
+    /// After a failed request to a server on this Mac, whether the model is
+    /// missing from it: then the error names what it has and offers one.
+    private func missingModel(backend: any ChatBackend, provider: ProviderConfig, apiKey: String?,
+                              after error: Error) async -> AIError? {
+        guard (error as? AIError)?.fix == nil, provider.kind == .openAICompatible || provider.kind == .ollama,
+              let url = URL(string: provider.baseURL), ["localhost", "127.0.0.1", "::1"].contains(url.host ?? ""),
+              let list = try? await backend.models(baseURL: provider.baseURL, apiKey: apiKey),
+              !list.isEmpty, !list.contains(provider.model) else { return nil }
+        let chat = list.filter(LMStudio.canChat)
+        let server = LMStudio.serves(provider.baseURL) ? "LM Studio" : provider.name
+        guard let suggestion = chat.first else {
+            return AIError("\(server) doesn't have \(provider.model), and has no chat models. Download one in \(server).")
+        }
+        return AIError("\(server) doesn't have \(provider.model). It has \(chat.joined(separator: ", ")).",
+                       fix: .useModel(suggestion))
+    }
+
+    /// Carries out a failed reply's fix, then asks again.
+    func apply(_ fix: ChatFix) {
+        guard !isFixing, !isStreaming, let provider = AIProviderStore.shared.active else { return }
+        switch fix {
+        case .startLMStudio:
+            isFixing = true
+            Task {
+                do {
+                    try await LMStudio.startServer(baseURL: provider.baseURL)
+                    isFixing = false
+                    retry()
+                } catch {
+                    isFixing = false
+                    notice = error.localizedDescription
+                }
+            }
+        case .useModel(let model):
+            var changed = provider
+            changed.model = model
+            AIProviderStore.shared.save(changed, key: nil)
+            retry()
+        }
+    }
+
     private func fail(_ id: UUID, with error: Error) {
         guard let index = messages.firstIndex(where: { $0.id == id }) else { return }
         // Keep whatever arrived before the failure.
         if messages[index].text.isEmpty {
             messages[index].text = error.localizedDescription
             messages[index].isError = true
+            messages[index].fix = (error as? AIError)?.fix
         } else {
             messages[index].text += "\n\n(\(error.localizedDescription))"
         }

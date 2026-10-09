@@ -75,7 +75,12 @@ struct ChatRequest: Sendable {
 
 struct AIError: LocalizedError {
     let errorDescription: String?
-    init(_ message: String) { errorDescription = message }
+    /// What the person can do about it, offered as a button.
+    var fix: ChatFix?
+    init(_ message: String, fix: ChatFix? = nil) {
+        errorDescription = message
+        self.fix = fix
+    }
 
     /// The server turned the request down because of the tools, as a model
     /// without tool support does.
@@ -101,6 +106,13 @@ protocol StreamParser: AnyObject, Sendable {
 }
 
 enum AIBackends {
+    #if DEBUG
+    /// How a network failure reads in the chat, for the self-test.
+    static func describe(_ error: Error, kind: ProviderKind, url: URL?) -> AIError {
+        HTTP.describe(error, kind: kind, url: url)
+    }
+    #endif
+
     static func backend(for kind: ProviderKind) -> any ChatBackend {
         switch kind {
         case .ollama: OllamaBackend()
@@ -241,6 +253,10 @@ private enum HTTP {
         case .cannotConnectToHost, .cannotFindHost:
             if kind == .ollama {
                 return AIError("Can't reach Ollama at \(host). Open the Ollama app, or run `ollama serve` in Terminal.")
+            }
+            if kind == .openAICompatible, let url, LMStudio.serves(url.absoluteString) {
+                return AIError("LM Studio's server is off. Xotch can start it, or switch it on in LM Studio › Developer.",
+                               fix: .startLMStudio)
             }
             return AIError("Can't reach \(host). Is the server running?")
         case .notConnectedToInternet, .networkConnectionLost:

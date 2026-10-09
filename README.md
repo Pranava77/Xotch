@@ -16,7 +16,7 @@
   &nbsp;·&nbsp;
   <a href="docs/GUIDE.md">User guide</a>
   &nbsp;·&nbsp;
-  <a href="#for-engineers">For engineers</a>
+  <a href="docs/ENGINEERING.md">Engineering</a>
 </p>
 
 <p align="center">
@@ -133,6 +133,8 @@ Setup for the AI, dictation and Claude Code is in the [user guide](docs/GUIDE.md
 
 ## For engineers
 
+Start with **[ENGINEERING.md](docs/ENGINEERING.md)**: the principles, a system diagram, the concurrency rules, each subsystem, the performance budget, how to test and debug, and the decisions behind it all.
+
 - **Native and small:** Swift 6, SwiftUI and AppKit, with no third-party Swift dependencies. One borderless panel per display, sized once, with clicks passing through outside the notch.
 - **Modules:** each feature implements `NotchModule` (Home, AI, Dictation, Media, Calendar, Timers, Clipboard, Shelf, Capture, To-dos, Notes, Stats, Claude Code).
 - **AI:** one streaming backend per provider (Ollama, OpenAI-compatible, Anthropic, Gemini) emitting text and tool calls. A tool loop with approval cards runs over 20 notch tools.
@@ -143,6 +145,7 @@ Setup for the AI, dictation and Claude Code is in the [user guide](docs/GUIDE.md
 
 | Document | What's in it |
 |---|---|
+| [ENGINEERING.md](docs/ENGINEERING.md) | Architecture, rules, subsystems, budgets, testing, decisions |
 | [GUIDE.md](docs/GUIDE.md) | Every feature, setup, shortcuts, permissions, questions |
 | [DEVELOPMENT.md](docs/DEVELOPMENT.md) | Building, debug commands, architecture notes |
 | [PERFORMANCE.md](docs/PERFORMANCE.md) | Budgets, measurements, what was fixed and how |

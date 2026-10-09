@@ -235,6 +235,11 @@ final class NotchWindowController: NotchActions {
     func close() {
         openTask?.cancel()
         closeTask?.cancel()
+        // Closing the welcome, however it's done, means it's been seen.
+        if model.showsWelcome {
+            model.showsWelcome = false
+            UserDefaults.standard.set(true, forKey: SettingsKey.welcomeSeen)
+        }
         openedForDrag = false
         model.palette.isOpen = false
         model.isPinned = false

@@ -24,6 +24,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         DownloadsService.shared.settingsChanged()
         ScreenManager.shared.start()
         GlobalHotKeys.update()
+        // Say hello the first time, once the notch is in place.
+        if !UserDefaults.standard.bool(forKey: SettingsKey.welcomeSeen) {
+            Task { @MainActor in
+                try? await Task.sleep(for: .seconds(1.2))
+                ScreenManager.shared.showWelcome()
+            }
+        }
         #if DEBUG
         DebugHooks.install()
         #endif

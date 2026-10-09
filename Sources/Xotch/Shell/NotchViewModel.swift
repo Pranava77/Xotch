@@ -20,6 +20,15 @@ final class NotchViewModel {
     /// Goes up by one for each drop on the notch; the ripple plays from `dropPoint`.
     var dropCount = 0
     var dropPoint: CGPoint = .zero
+    /// The welcome is showing in the open notch instead of a module.
+    var showsWelcome = false
+    #if DEBUG
+    /// Snapshots of the welcome's second page.
+    var welcomeAtSetup = false
+    var debugWelcomeAtSetup: Bool { welcomeAtSetup }
+    #else
+    var debugWelcomeAtSetup: Bool { false }
+    #endif
     let palette = CommandPaletteState()
 
     let geometry: NotchGeometry
@@ -38,7 +47,8 @@ final class NotchViewModel {
     /// The selected module's room, kept inside the screen so a wide module
     /// still fits a small display.
     var openSize: CGSize {
-        let asked = ModuleRegistry.module(id: selectedModuleID)?.openSize ?? Layout.openSize
+        let asked = showsWelcome ? WelcomeView.size
+            : ModuleRegistry.module(id: selectedModuleID)?.openSize ?? Layout.openSize
         let screen = geometry.screenFrame
         return CGSize(width: min(asked.width, max(Layout.openSize.width, screen.width - 80)),
                       height: min(asked.height, max(Layout.openSize.height, screen.height * 0.62)))
