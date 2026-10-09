@@ -73,7 +73,7 @@ final class ActivityCenter {
     private(set) var hud: LiveActivity?
     private(set) var banner: LiveActivity?
     private(set) var ongoing: [String: LiveActivity] = [:]
-    /// What sits at the outer edge of the left ear: Adiyogi, the mascot, or nothing.
+    /// What sits at the outer edge of the left ear: the mascot, or nothing.
     private(set) var companion: EarCompanion = .none
     var showsCompanion: Bool { companion != .none }
     /// Goes up by one for each celebration; views watch it to play one.

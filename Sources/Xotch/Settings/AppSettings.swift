@@ -28,9 +28,7 @@ enum SettingsKey {
     static let shelfExpiryHours = "shelfExpiryHours"
     static let hideInFullScreen = "hideInFullScreen"
     static let scrollForVolume = "scrollForVolume"
-    static let adiyogiEar = "adiyogiEar"
-    /// What sits in the left ear: Adiyogi, the page mascot, or nothing. Unset,
-    /// it follows the older `adiyogiEar` switch.
+    /// What sits in the left ear: the page mascot, or nothing.
     static let earCompanion = "earCompanion"
     static let mascotCharacter = "mascotCharacter"
     static let homeMascot = "homeMascot"
@@ -74,13 +72,12 @@ enum SettingsKey {
 
 /// What sits at the outer edge of the left ear.
 enum EarCompanion: String, CaseIterable, Identifiable {
-    case adiyogi, mascot, none
+    case mascot, none
 
     var id: String { rawValue }
 
     var label: String {
         switch self {
-        case .adiyogi: "Adiyogi"
         case .mascot: "Mascot"
         case .none: "Nothing"
         }
@@ -89,7 +86,6 @@ enum EarCompanion: String, CaseIterable, Identifiable {
     /// Wide enough for the figure and the ear's edge padding.
     var earWidth: CGFloat {
         switch self {
-        case .adiyogi: AdiyogiMark.earWidth
         case .mascot: 46
         case .none: 0
         }
@@ -126,7 +122,6 @@ enum AppSettings {
             SettingsKey.shelfExpiryHours: 24,
             SettingsKey.hideInFullScreen: true,
             SettingsKey.scrollForVolume: true,
-            SettingsKey.adiyogiEar: true,
             SettingsKey.mascotCharacter: "fox",
             SettingsKey.homeMascot: true,
             SettingsKey.homeMirror: true,
@@ -214,17 +209,8 @@ enum AppSettings {
         UserDefaults.standard.bool(forKey: SettingsKey.scrollForVolume)
     }
 
-    /// Adiyogi in the left ear of the closed notch.
-    static var adiyogiEar: Bool {
-        UserDefaults.standard.bool(forKey: SettingsKey.adiyogiEar)
-    }
-
     static var earCompanion: EarCompanion {
-        if let value = UserDefaults.standard.string(forKey: SettingsKey.earCompanion),
-           let companion = EarCompanion(rawValue: value) {
-            return companion
-        }
-        return adiyogiEar ? .adiyogi : .none
+        UserDefaults.standard.string(forKey: SettingsKey.earCompanion).flatMap(EarCompanion.init) ?? .mascot
     }
 
     static var mascotCharacter: String {

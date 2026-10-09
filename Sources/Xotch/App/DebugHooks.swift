@@ -1220,11 +1220,11 @@ enum DebugHooks {
         center.debugShowCompanion(.mascot)
         render("3-activity-mascot") { _ in }
         center.debugShowCompanion(.none)
-        // The music wave on its own, then with Adiyogi taking the left ear.
+        // The music wave on its own, then with the mascot taking the left ear.
         center.setOngoing(LiveActivity(moduleID: "media", symbol: "music.note", content: .playing, tint: .pink), for: "media")
         render("3-activity-music") { _ in }
-        center.debugShowCompanion(.adiyogi)
-        render("3-activity-music-adiyogi") { _ in }
+        center.debugShowCompanion(.mascot)
+        render("3-activity-music-mascot") { _ in }
         center.debugShowCompanion(.none)
         center.setOngoing(nil, for: "media")
         let end = Date().addingTimeInterval(18 * 60)

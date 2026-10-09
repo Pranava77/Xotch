@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="images/icon.png" width="112" alt="Xotch's icon: Adiyogi, with a topknot, crescent moon, closed eyes and a glowing third eye, on a dark rounded square">
+  <img src="images/icon.png" width="112" alt="Xotch's icon: the top of a screen with the notch, a dot and a sound wave lit in its ears, on a dark rounded square">
 </p>
 
 <h1 align="center">Xotch: the guide</h1>
@@ -59,7 +59,6 @@
 |---|---|
 | **Beside the notch** | Timers, music, Claude, recordings, downloads and volume, shown without opening |
 | **Shortcuts** | ⌘⇧Space asks the AI from any app; ⌘K opens a module, starts a timer, pauses music or adds a to-do |
-| **Adiyogi** | A small Adiyogi bust in the left ear of the closed notch |
 | **Mirror** | Click the tile on Home to see yourself through the camera; it's off again when the notch closes |
 | **Sounds** | Optional 8-bit blips and jingles, generated in code |
 | **Any display** | Monitors without a notch get one drawn in the menu bar |
@@ -130,7 +129,7 @@ When something is going on, the notch grows two small ears to show it without op
 
 <table>
   <tr>
-    <td align="center" width="50%"><img src="images/ears-adiyogi.jpg" alt="Adiyogi, a small bust with a topknot, crescent moon, closed eyes and a glowing third eye, in the left ear of the closed notch"><br><sub><b>Adiyogi</b> rests in the left ear, eyes closed, third eye glowing</sub></td>
+    <td align="center" width="50%"><img src="images/ears-mascot.jpg" alt="A small mascot in the left ear of the closed notch"><br><sub><b>The mascot</b> sits in the left ear and watches your pointer</sub></td>
     <td align="center" width="50%"><img src="images/ears-timer.jpg" alt="A focus timer beside the notch, with a ring around its icon"><br><sub><b>Focus timer:</b> a ring fills as time passes</sub></td>
   </tr>
   <tr>
@@ -147,7 +146,7 @@ When something is going on, the notch grows two small ears to show it without op
   </tr>
 </table>
 
-Adiyogi keeps the outer edge of the left ear. When something else is live, its icon moves to the right, next to its status. If several things are live at once, they take turns in the ear, six seconds each, and small dots show which one of the round you're seeing; click the right ear to skip to the next. A screen recording, or Claude waiting for your answer, stays put until it's done. In **Settings › Appearance › Companion** you can swap Adiyogi for a page mascot, or have nothing there.
+The mascot keeps the outer edge of the left ear. When something else is live, its icon moves to the right, next to its status. If several things are live at once, they take turns in the ear, six seconds each, and small dots show which one of the round you're seeing; click the right ear to skip to the next. A screen recording, or Claude waiting for your answer, stays put until it's done. In **Settings › Appearance › Companion** you can choose the mascot, or have nothing there.
 
 ### A mascot that watches you
 
@@ -278,7 +277,7 @@ The budget is under 0.5% CPU and under 80 MB of memory while idle, with nothing 
 | Open on System | 0.60% | 38 MB |
 | Command palette | 0.10% | 54 MB |
 
-Measured on a 14-inch MacBook Pro with an M5 Pro chip, macOS 26.6.2, averaged over about 10 seconds per state. Recording the screen with system audio costs Xotch about 1% more; macOS does the video encoding in its own processes, so that part doesn't count against Xotch. Adiyogi is drawn once and never animates, so leaving it on doesn't wake Xotch up.
+Measured on a 14-inch MacBook Pro with an M5 Pro chip, macOS 26.6.2, averaged over about 10 seconds per state. Recording the screen with system audio costs Xotch about 1% more; macOS does the video encoding in its own processes, so that part doesn't count against Xotch. The mascot's breathing runs in Core Animation, so leaving it on doesn't wake Xotch up.
 
 The AI chat does nothing until you send a message. A local model does its work in Ollama or LM Studio, not in Xotch, so that cost shows up in those apps.
 
@@ -355,12 +354,6 @@ For live status, press **Add hook** in the Claude Code module. Xotch backs up `~
 <summary><b>The notch disappeared.</b></summary>
 
 Xotch steps aside while an app is full screen. To keep it, turn off **Settings › General › Hide the notch while an app is full screen**. ⌘⇧Space still brings it back over a full-screen app.
-</details>
-
-<details>
-<summary><b>I can't see Adiyogi.</b></summary>
-
-Check that **Settings › Appearance › Show Adiyogi beside the closed notch** is on. Adiyogi shows in the left ear whenever the notch is closed.
 </details>
 
 <details>

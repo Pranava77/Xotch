@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/images/icon.png" width="104" alt="Xotch's icon: Adiyogi, with a topknot, crescent moon, closed eyes and a glowing third eye, on a dark rounded square">
+  <img src="docs/images/icon.png" width="104" alt="Xotch's icon: the top of a screen with the notch, a dot and a sound wave lit in its ears, on a dark rounded square">
 </p>
 
 <h1 align="center">Xotch</h1>

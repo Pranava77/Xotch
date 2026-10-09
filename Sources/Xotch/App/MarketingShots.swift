@@ -123,10 +123,7 @@ enum MarketingShots {
                     save("ears-\(name)", model { _ in }, size: earSize, scale: 2)
                     center.setOngoing(nil, for: activity.moduleID)
                 }
-                // Adiyogi resting in the left ear of an otherwise quiet notch.
-                center.debugShowCompanion(.adiyogi)
-                save("ears-adiyogi", model { _ in }, size: earSize, scale: 2)
-                // The mascot in the same place, watching the pointer.
+                // The mascot in the left ear of an otherwise quiet notch, watching the pointer.
                 center.debugShowCompanion(.mascot)
                 save("ears-mascot", model { _ in }, size: earSize, scale: 2)
                 center.debugShowCompanion(.none)
@@ -137,17 +134,41 @@ enum MarketingShots {
         saveIcon(to: folder.appendingPathComponent("icon.png"))
     }
 
-    /// Adiyogi on a rounded square, as the README's app icon.
+    /// The README's icon: the top of a screen with the notch, its ears lit,
+    /// on a rounded square. A stand-in until Xotch has a logo.
     private static func saveIcon(to url: URL) {
         let side: CGFloat = 256
-        let icon = ZStack {
+        let accent = Theme.accent
+        let icon = ZStack(alignment: .top) {
             RoundedRectangle(cornerRadius: side * 0.225, style: .continuous)
                 .fill(LinearGradient(colors: [Color(white: 0.16), Color(white: 0.03)],
                                      startPoint: .top, endPoint: .bottom))
             RoundedRectangle(cornerRadius: side * 0.225, style: .continuous)
                 .strokeBorder(Color.white.opacity(0.12), lineWidth: 2)
-            AdiyogiMark(size: side * 0.72, ink: .white)
-                .offset(y: side * 0.06)
+            // The screen, in the wallpaper's colours.
+            RoundedRectangle(cornerRadius: side * 0.07, style: .continuous)
+                .fill(LinearGradient(colors: [Color(red: 0.40, green: 0.27, blue: 0.82),
+                                              Color(red: 0.10, green: 0.36, blue: 0.44)],
+                                     startPoint: .topLeading, endPoint: .bottomTrailing))
+                .frame(width: side * 0.70, height: side * 0.50)
+                .padding(.top, side * 0.25)
+            // The notch, with a dot and a wave in its ears.
+            NotchShape(shoulderRadius: side * 0.025, cornerRadius: side * 0.045)
+                .fill(Color.black)
+                .frame(width: side * 0.50, height: side * 0.11)
+                .overlay {
+                    HStack {
+                        Circle().fill(accent).frame(width: side * 0.045, height: side * 0.045)
+                        Spacer()
+                        HStack(spacing: side * 0.012) {
+                            ForEach([0.45, 0.85, 0.6, 1.0, 0.5], id: \.self) { h in
+                                Capsule().fill(accent).frame(width: side * 0.014, height: side * 0.055 * h)
+                            }
+                        }
+                    }
+                    .padding(.horizontal, side * 0.06)
+                }
+                .padding(.top, side * 0.25)
         }
         .frame(width: side, height: side)
         let renderer = ImageRenderer(content: icon)
