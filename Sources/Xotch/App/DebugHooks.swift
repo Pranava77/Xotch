@@ -172,6 +172,11 @@ enum DebugHooks {
                 if let cue = RetroCue(rawValue: String(command.dropFirst("sound:".count))) {
                     RetroSound.play(cue, force: true)
                 }
+            } else if command.hasPrefix("mascot-look:") {
+                let parts = command.dropFirst("mascot-look:".count).split(separator: ":")
+                if parts.count == 2, let cell = Int(parts[1]) {
+                    MascotTracker.shared.debugLook(String(parts[0]), cell)
+                }
             } else if command == "ai-fix" {
                 // Carries out the fix offered on the last, failed reply.
                 if let fix = AIChatService.shared.messages.last?.fix {
@@ -632,6 +637,13 @@ enum DebugHooks {
         let expected = [MascotMotion.Reaction.heart, MascotMotion.Reaction.sparkle, MascotMotion.Reaction.delighted,
                         MascotMotion.Reaction.dizzy, MascotMotion.Reaction.heart]
         lines.append("mascot boops: \(boops) → \(boops == expected ? "PASS" : "FAILED: expected \(expected)")")
+
+        // Turns pass through the poses between, one grid step at a time.
+        typealias C = MascotMotion.Cell
+        let routes = [MascotMotion.path(from: C.left, to: C.right), MascotMotion.path(from: C.upLeft, to: C.downRight),
+                      MascotMotion.path(from: C.center, to: C.right), MascotMotion.path(from: C.up, to: C.downLeft)]
+        let expectedRoutes = [[C.center, C.right], [C.center, C.downRight], [C.right], [C.left, C.downLeft]]
+        lines.append("mascot turns: \(routes) → \(routes == expectedRoutes ? "PASS" : "FAILED: expected \(expectedRoutes)")")
 
         // The layer view nests breath, squash and sprite, and starts breathing.
         let view = MascotLayerView(breath: 0.025, phase: 0.3)
