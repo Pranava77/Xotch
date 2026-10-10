@@ -19,7 +19,7 @@
 	<key>CFBundleShortVersionString</key>
 	<string>0.2.0</string>
 	<key>CFBundleVersion</key>
-	<string>2</string>
+	<string>3</string>
 	<key>LSApplicationCategoryType</key>
 	<string>public.app-category.productivity</string>
 	<key>LSMinimumSystemVersion</key>
@@ -28,7 +28,6 @@
 	<true/>
 	<key>NSAppTransportSecurity</key>
 	<dict>
-		<!-- Ollama and LM Studio on another Mac on the network serve plain http. -->
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
 	</dict>
@@ -40,10 +39,10 @@
 	<string>Xotch shows your upcoming events in the notch.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>Mirror shows your camera in the notch, flipped like a mirror, while it's open. Nothing is recorded or kept.</string>
-	<key>NSMicrophoneUsageDescription</key>
-	<string>Xotch listens while you dictate (hold Fn) and turns your speech into text on this Mac; it never saves or sends your voice. With "Record from the microphone" on, it also includes your voice in screen recordings.</string>
 	<key>NSHighResolutionCapable</key>
 	<true/>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Xotch listens while you dictate (hold Fn) and turns your speech into text on this Mac; it never saves or sends your voice. With "Record from the microphone" on, it also includes your voice in screen recordings.</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
 	<key>NSRemindersFullAccessUsageDescription</key>

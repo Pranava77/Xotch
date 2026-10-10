@@ -71,11 +71,12 @@ final class StatsService {
         return networkHistory.map { $0 / peak }
     }
 
-    #if DEBUG
+    /// A reading now, for the AI's system-stats tool when nothing is sampling.
     func sampleNow() {
         sample()
     }
 
+    #if DEBUG
     func withSample(_ body: () -> Void) {
         let saved = (snapshot, cpuHistory, networkHistory)
         snapshot = StatsSnapshot(cpu: 0.23, memoryUsed: 11.2e9, memoryTotal: 18e9,

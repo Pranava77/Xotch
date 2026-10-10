@@ -46,4 +46,11 @@ private struct DebugFrameRecorder: ViewModifier {
         DebugFrames.record(name, frame)
     }
 }
+#else
+import SwiftUI
+
+extension View {
+    /// Records nothing in a release build; see the debug version.
+    func debugFrame(_ name: String) -> some View { self }
+}
 #endif
