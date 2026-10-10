@@ -2,7 +2,7 @@ import AppKit
 import SwiftUI
 
 /// The first thing Xotch shows, once: "hello" writing itself in the notch the
-/// way a new Mac greets you, in a few languages, then three things to know.
+/// way a new Mac greets you, then three things to know.
 /// It comes back from the menu bar's Welcome to Xotch.
 struct WelcomeView: View {
     static let size = CGSize(width: 760, height: 320)
@@ -39,8 +39,8 @@ struct WelcomeView: View {
         .foregroundStyle(Theme.ink)
         .animation(Motion.switchModule, value: showsSetup)
         .task {
-            // The button arrives once the first word has written itself.
-            try? await Task.sleep(for: .seconds(snapshotMode ? 0 : 1.8))
+            // The button arrives once the word has written itself.
+            try? await Task.sleep(for: .seconds(snapshotMode ? 0 : HelloLetteringView.writing + 0.3))
             withAnimation(Motion.activity) { greeted = true }
         }
     }
@@ -127,21 +127,101 @@ private struct Step: View {
 
 // MARK: - Hello, written out
 
-/// "hello" in cursive, written stroke by stroke through a warm gradient, then
-/// filled, then the next language. Core Animation draws it, so it costs Xotch
-/// nothing while it writes. Snapshots and Reduce Motion get it written already.
+/// "hello" written out by hand: one continuous pen line of even weight, the
+/// way a new Mac greets you, in original lettering. The pen slows into tight
+/// turns and speeds along straight runs, then the word rests, fades, and is
+/// written again. Snapshots and Reduce Motion show it already written.
 private struct HelloLettering: View {
     @Environment(\.snapshotMode) private var snapshotMode
 
     var body: some View {
         if snapshotMode || Motion.reduceMotion {
-            Text("hello")
-                .font(.custom(HelloLetteringView.fontName, size: 96))
-                .foregroundStyle(LinearGradient(colors: HelloLetteringView.colors.map { Color(nsColor: $0) },
-                                                startPoint: .leading, endPoint: .trailing))
+            GeometryReader { geo in
+                let fit = HelloStroke.fit(in: geo.size)
+                Path(HelloStroke.path(in: geo.size))
+                    .stroke(Color.white, style: StrokeStyle(lineWidth: fit.lineWidth, lineCap: .round, lineJoin: .round))
+            }
         } else {
             HelloLayer()
         }
+    }
+}
+
+/// The lettering: points a pen passes through, joined by a Catmull-Rom spline
+/// so the line stays smooth. Laid out with y up and the baseline at 0, then
+/// slanted forward.
+enum HelloStroke {
+    static let points: [CGPoint] = [
+        (0, 26), (46, 58), (96, 128), (138, 214), (166, 292), (176, 340), (166, 368), (144, 370), (126, 340),
+        (112, 270), (102, 190), (95, 110), (90, 48), (87, 0),
+        (96, 66), (114, 114), (140, 144), (168, 148), (188, 128), (195, 94), (194, 52), (199, 18), (216, 2),
+        (240, 10), (266, 36),
+        (296, 66), (326, 96), (336, 126), (322, 148), (292, 148), (270, 124), (264, 82), (274, 38), (298, 10),
+        (330, 4), (362, 22), (388, 58),
+        (414, 130), (440, 212), (462, 290), (474, 342), (468, 370), (448, 376), (430, 350), (418, 290), (410, 214),
+        (405, 136), (404, 64), (410, 18), (428, 0), (452, 10), (476, 46),
+        (502, 124), (528, 208), (550, 288), (562, 342), (556, 370), (536, 376), (518, 350), (506, 290), (498, 214),
+        (493, 136), (492, 64), (498, 18), (516, 0), (540, 10), (564, 44),
+        (590, 92), (620, 128), (654, 144), (630, 148), (604, 128), (592, 90), (596, 44), (616, 10), (648, 0),
+        (682, 14), (700, 52), (698, 98), (678, 132), (652, 146),
+        (690, 146), (736, 134), (784, 140),
+    ].map { CGPoint(x: $0.0 + $0.1 * 0.16, y: $0.1) }
+
+    /// The pen's width, in the points' units.
+    static let penWidth: CGFloat = 19
+
+    /// How the lettering is scaled and placed to fit `size`, centred, with
+    /// room for the pen's width; y is flipped for SwiftUI when `flipped`.
+    static func fit(in size: CGSize, flipped: Bool = true) -> (transform: CGAffineTransform, lineWidth: CGFloat) {
+        let box = spline(points).boundingBoxOfPath.insetBy(dx: -penWidth, dy: -penWidth)
+        let scale = min(size.width / box.width, size.height / box.height)
+        var transform = CGAffineTransform(translationX: size.width / 2, y: size.height / 2)
+        transform = transform.scaledBy(x: scale, y: flipped ? -scale : scale)
+        transform = transform.translatedBy(x: -box.midX, y: -box.midY)
+        return (transform, penWidth * scale)
+    }
+
+    static func path(in size: CGSize, flipped: Bool = true) -> CGPath {
+        var transform = fit(in: size, flipped: flipped).transform
+        return spline(points).copy(using: &transform) ?? spline(points)
+    }
+
+    /// A smooth curve through every point.
+    static func spline(_ p: [CGPoint]) -> CGPath {
+        let path = CGMutablePath()
+        path.move(to: p[0])
+        for i in 0..<(p.count - 1) {
+            let p0 = p[max(i - 1, 0)], p1 = p[i], p2 = p[i + 1], p3 = p[min(i + 2, p.count - 1)]
+            path.addCurve(to: p2,
+                          control1: CGPoint(x: p1.x + (p2.x - p0.x) / 6, y: p1.y + (p2.y - p0.y) / 6),
+                          control2: CGPoint(x: p2.x - (p3.x - p1.x) / 6, y: p2.y - (p3.y - p1.y) / 6))
+        }
+        return path
+    }
+
+    /// How far along the line (0…1) the pen is at each point, and when (0…1):
+    /// each stretch takes its length plus a pause for how sharply it turns.
+    static var pace: (progress: [Double], times: [Double]) {
+        var lengths: [Double] = [], costs: [Double] = []
+        for i in 0..<(points.count - 1) {
+            let a = points[i], b = points[i + 1]
+            let length = hypot(b.x - a.x, b.y - a.y)
+            var turn = 0.0
+            if i > 0 {
+                let before = Double(atan2(a.y - points[i - 1].y, a.x - points[i - 1].x))
+                let after = Double(atan2(b.y - a.y, b.x - a.x))
+                turn = abs(remainder(after - before, 2 * Double.pi))
+            }
+            lengths.append(Double(length))
+            costs.append(length + turn * 26)
+        }
+        let totalLength = lengths.reduce(0, +), totalCost = costs.reduce(0, +)
+        var progress = [0.0], times = [0.0]
+        for i in lengths.indices {
+            progress.append(progress[i] + lengths[i] / totalLength)
+            times.append(times[i] + costs[i] / totalCost)
+        }
+        return (progress, times)
     }
 }
 
@@ -151,36 +231,22 @@ private struct HelloLayer: NSViewRepresentable {
 }
 
 final class HelloLetteringView: NSView {
-    static let fontName = "SnellRoundhand-Bold"
-    static let words = ["hello", "hola", "bonjour", "ciao", "hallo", "olá"]
-    static let colors: [NSColor] = [
-        NSColor(red: 1.0, green: 0.62, blue: 0.04, alpha: 1),
-        NSColor(red: 1.0, green: 0.22, blue: 0.37, alpha: 1),
-        NSColor(red: 0.75, green: 0.35, blue: 0.95, alpha: 1),
-        NSColor(red: 0.39, green: 0.82, blue: 1.0, alpha: 1),
-    ]
-    /// How long a word takes to write, and how long it then stays.
-    static let writing: CFTimeInterval = 1.5
-    static let holding: CFTimeInterval = 1.1
+    /// How long the word takes to write, and how long it then rests.
+    static let writing: CFTimeInterval = 3.0
+    static let resting: CFTimeInterval = 2.4
 
-    private let gradient = CAGradientLayer()
-    private let letters = CAShapeLayer()
+    private let line = CAShapeLayer()
     private var task: Task<Void, Never>?
 
     override init(frame: NSRect) {
         super.init(frame: frame)
         wantsLayer = true
-        gradient.colors = Self.colors.map(\.cgColor)
-        gradient.startPoint = CGPoint(x: 0, y: 0.5)
-        gradient.endPoint = CGPoint(x: 1, y: 0.5)
-        letters.fillColor = NSColor.clear.cgColor
-        letters.strokeColor = NSColor.white.cgColor
-        letters.lineWidth = 2.2
-        letters.lineCap = .round
-        letters.lineJoin = .round
-        letters.strokeEnd = 0
-        gradient.mask = letters
-        layer?.addSublayer(gradient)
+        line.fillColor = nil
+        line.strokeColor = NSColor.white.cgColor
+        line.lineCap = .round
+        line.lineJoin = .round
+        line.strokeEnd = 0
+        layer?.addSublayer(line)
     }
 
     @available(*, unavailable)
@@ -192,8 +258,10 @@ final class HelloLetteringView: NSView {
         super.layout()
         CATransaction.begin()
         CATransaction.setDisableActions(true)
-        gradient.frame = bounds
-        letters.frame = bounds
+        line.frame = bounds
+        // Layers are y up here, like the points.
+        line.path = HelloStroke.path(in: bounds.size, flipped: false)
+        line.lineWidth = HelloStroke.fit(in: bounds.size, flipped: false).lineWidth
         CATransaction.commit()
     }
 
@@ -201,96 +269,67 @@ final class HelloLetteringView: NSView {
 
     override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()
-        task?.cancel()
-        guard window != nil else { return }
+        guard window != nil else {
+            task?.cancel()
+            task = nil
+            return
+        }
+        // Opening the notch can move the view into its window twice; writing
+        // again from the start would show as a hiccup.
+        guard task == nil else { return }
         task = Task { @MainActor [weak self] in
-            var index = 0
             while !Task.isCancelled {
                 guard let self else { return }
-                self.write(Self.words[index % Self.words.count])
-                try? await Task.sleep(for: .seconds(Self.writing + Self.holding))
+                self.write()
+                try? await Task.sleep(for: .seconds(Self.writing + Self.resting))
                 guard !Task.isCancelled else { return }
                 self.fadeOut()
-                try? await Task.sleep(for: .seconds(0.45))
-                index += 1
+                try? await Task.sleep(for: .seconds(0.7))
             }
         }
     }
 
-    /// Traces the word's outline, then fills it.
-    private func write(_ word: String) {
+    /// The pen writes the word at handwriting pace.
+    private func write() {
+        let pace = HelloStroke.pace
+        let pen = CAKeyframeAnimation(keyPath: "strokeEnd")
+        pen.values = pace.progress
+        pen.keyTimes = pace.times.map { NSNumber(value: $0) }
+        pen.calculationMode = .linear
+        pen.duration = Self.writing
+        // Straight off the mark, settling as the hand lifts off.
+        pen.timingFunction = CAMediaTimingFunction(controlPoints: 0.12, 0, 0.5, 1)
         CATransaction.begin()
         CATransaction.setDisableActions(true)
-        letters.path = Self.path(for: word, in: bounds)
-        letters.opacity = 1
-        letters.fillColor = NSColor.clear.cgColor
-        letters.strokeEnd = 1
+        line.removeAllAnimations()
+        line.opacity = 1
+        line.strokeEnd = 1
         CATransaction.commit()
-
-        let trace = CABasicAnimation(keyPath: "strokeEnd")
-        trace.fromValue = 0
-        trace.toValue = 1
-        trace.duration = Self.writing
-        trace.timingFunction = CAMediaTimingFunction(controlPoints: 0.45, 0.05, 0.35, 1)
-        letters.add(trace, forKey: "trace")
-
-        let fill = CABasicAnimation(keyPath: "fillColor")
-        fill.fromValue = NSColor.clear.cgColor
-        fill.toValue = NSColor.white.cgColor
-        fill.beginTime = CACurrentMediaTime() + Self.writing * 0.7
-        fill.duration = Self.writing * 0.45
-        fill.fillMode = .backwards
-        fill.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
-        letters.add(fill, forKey: "fill")
-        CATransaction.begin()
-        CATransaction.setDisableActions(true)
-        letters.fillColor = NSColor.white.cgColor
-        CATransaction.commit()
+        line.add(pen, forKey: "write")
     }
 
     private func fadeOut() {
         let fade = CABasicAnimation(keyPath: "opacity")
         fade.fromValue = 1
         fade.toValue = 0
-        fade.duration = 0.4
-        letters.add(fade, forKey: "fade")
+        fade.duration = 0.6
+        fade.timingFunction = CAMediaTimingFunction(name: .easeIn)
+        line.add(fade, forKey: "fade")
         CATransaction.begin()
         CATransaction.setDisableActions(true)
-        letters.opacity = 0
+        line.opacity = 0
         CATransaction.commit()
     }
 
-    /// The word's letter outlines in the cursive font, sized to fit and centred.
-    static func path(for word: String, in bounds: CGRect) -> CGPath {
-        let font = CTFontCreateWithName(fontName as CFString, 96, nil)
-        let line = CTLineCreateWithAttributedString(NSAttributedString(string: word, attributes: [.font: font]))
-        let outline = CGMutablePath()
-        for run in (CTLineGetGlyphRuns(line) as? [CTRun]) ?? [] {
-            let count = CTRunGetGlyphCount(run)
-            var glyphs = [CGGlyph](repeating: 0, count: count)
-            var positions = [CGPoint](repeating: .zero, count: count)
-            CTRunGetGlyphs(run, CFRange(location: 0, length: count), &glyphs)
-            CTRunGetPositions(run, CFRange(location: 0, length: count), &positions)
-            let runFont = (CTRunGetAttributes(run) as NSDictionary)[kCTFontAttributeName] as! CTFont
-            for (glyph, position) in zip(glyphs, positions) {
-                if let shape = CTFontCreatePathForGlyph(runFont, glyph, nil) {
-                    outline.addPath(shape, transform: CGAffineTransform(translationX: position.x, y: position.y))
-                }
-            }
-        }
-        let box = outline.boundingBoxOfPath
-        guard box.width > 0, box.height > 0, bounds.width > 0 else { return outline }
-        let scale = min(bounds.width * 0.92 / box.width, bounds.height * 0.9 / box.height)
-        var fit = CGAffineTransform(translationX: bounds.midX, y: bounds.midY)
-            .scaledBy(x: scale, y: scale)
-            .translatedBy(x: -box.midX, y: -box.midY)
-        return outline.copy(using: &fit) ?? outline
-    }
-
     #if DEBUG
-    /// For the self-test: every word has an outline to write.
-    static var debugWordsDrawable: Bool {
-        words.allSatisfy { !path(for: $0, in: CGRect(x: 0, y: 0, width: 420, height: 130)).isEmpty }
+    /// For the self-test: one stroke that fits, paced from start to finish.
+    static var debugLettering: Bool {
+        let path = HelloStroke.path(in: CGSize(width: 420, height: 130))
+        let box = path.boundingBoxOfPath
+        let pace = HelloStroke.pace
+        return !path.isEmpty && box.width <= 420 && box.height <= 130
+            && pace.progress.count == HelloStroke.points.count && abs((pace.progress.last ?? 0) - 1) < 1e-9
+            && abs((pace.times.last ?? 0) - 1) < 1e-9 && zip(pace.times, pace.times.dropFirst()).allSatisfy { $0 < $1 }
     }
     #endif
 }

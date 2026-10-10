@@ -65,7 +65,7 @@
 
 ## Quiet until you need it
 
-The first time Xotch opens, the notch says hello: the word writes itself in a few languages, like a new Mac, then three things to know. See it again from the menu bar's **Welcome to Xotch…**.
+The first time Xotch opens, the notch says hello: the word writes itself in one line of white handwriting, like a new Mac, then three things to know. See it again from the menu bar's **Welcome to Xotch…**.
 
 Move the pointer to the notch and it grows a little. Keep it there and Xotch opens, wide and short along the menu bar, with tabs for your first five modules beside the camera and the rest under ···. Click, and it stays open until you press Esc or click somewhere else. From any app, **⌘⇧Space** opens it straight onto the AI chat.
 

@@ -158,7 +158,7 @@ A hook in `~/.claude/settings.json` (backed up before editing) pipes each event 
 
 - **Mascot sprites:** page-mascot (MIT) characters are cut from sprite sheets into 9 head directions and 9 reactions. Only one character is decoded at a time (about 2.6 MB).
 - **Head turns:** a turn steps through the 3 × 3 grid of poses (left goes to right by way of straight ahead). It's one keyframe animation on the picture, with an additive sway.
-- **Welcome:** it masks a gradient with a cursive word's letter outlines, then animates the stroke and fill.
+- **Welcome:** "hello" is original lettering, one monoline pen stroke: a Catmull-Rom spline through hand-placed points. A `CAShapeLayer`'s `strokeEnd` is keyframed by `HelloStroke.pace`, where each stretch takes its length plus a pause for how sharply it turns, so the pen moves like a hand.
 
 ## Performance budget
 
