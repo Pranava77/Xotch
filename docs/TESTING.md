@@ -43,7 +43,7 @@ These need hardware or situations a script can't create. Tick them before a beta
 
 ### Welcome
 
-- [ ] First launch (`defaults delete com.pranava.xotch welcomeSeen`): about a second in, the notch opens and "hello" writes itself, traced then filled, then hola, bonjour and on; Continue arrives after the first word. Continue shows three things to know; Set Up AI… and Set Up Dictation… open those Settings pages; Start Using Xotch closes it and it doesn't come back at the next launch. Esc or a click elsewhere also counts as seen.
+- [ ] First launch (`defaults delete com.pranava.xotch welcomeSeen`): about a second in, the notch opens and "hello" writes itself as one white pen line, quick on the straights and slower round the loops, over about 3 s; Welcome to Xotch and Continue arrive once it's written. Clicks in other apps don't close it. Continue shows three things to know; Set Up AI… and Set Up Dictation… open those Settings pages; Start Using Xotch closes it and it doesn't come back at the next launch. Esc or a click elsewhere also counts as seen.
 - [ ] Menu bar › Welcome to Xotch… shows it again. Reduce Motion shows "hello" already written.
 
 ### Displays

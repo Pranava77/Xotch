@@ -142,7 +142,9 @@ final class NotchWindowController: NotchActions {
     }
 
     func pointerPressed(at location: NSPoint) {
-        guard model.phase == .open, !hotRect.contains(location) else { return }
+        // The welcome stays until its own buttons or Esc close it: a stray
+        // click in another app would otherwise lose it for good.
+        guard model.phase == .open, !model.showsWelcome, !hotRect.contains(location) else { return }
         close()
     }
 

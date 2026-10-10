@@ -299,7 +299,7 @@ enum DebugHooks {
         lines += earMetricsSelfTest()
         lines.append(mirrorSelfTest())
         lines.append(lmStudioSelfTest())
-        lines.append("welcome: every hello has an outline=\(HelloLetteringView.debugWordsDrawable) → \(HelloLetteringView.debugWordsDrawable ? "PASS" : "FAILED")")
+        lines.append("welcome: hello is one paced stroke that fits=\(HelloLetteringView.debugLettering) → \(HelloLetteringView.debugLettering ? "PASS" : "FAILED")")
         lines += await dictationSelfTest()
         lines += await harnessSelfTest()
         lines += retroSoundSelfTest()
