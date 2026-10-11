@@ -122,8 +122,17 @@ The honest picture: Notchy (free) and Crest and Droppy (paid) cover more ground 
 Xotch is in private beta. With an invite:
 
 1. Unzip the download and drag **Xotch** to Applications.
-2. Open it. If macOS says it can't check the app, choose **Open Anyway** in System Settings › Privacy & Security.
-3. Move the pointer to the notch. Xotch lives in the menu bar.
+2. Open it. Beta builds aren't notarised by Apple yet, so macOS says it "could not verify Xotch is free of malware". Press **Done**, not Move to Trash.
+3. Open **System Settings › Privacy & Security**, scroll down to **Security**, and press **Open Anyway** next to "Xotch was blocked". Confirm with your password or Touch ID, then press **Open**. The button shows for about an hour after step 2.
+4. Move the pointer to the notch. Xotch lives in the menu bar.
+
+If **Open Anyway** doesn't appear, run this once in Terminal, then open Xotch as usual:
+
+```bash
+xattr -dr com.apple.quarantine /Applications/Xotch.app
+```
+
+It clears the "downloaded from the internet" mark on Xotch only. You don't need to turn Gatekeeper off for the whole Mac.
 
 **Requirements.**
 - macOS 14 Sonoma or later, on Apple silicon or Intel.
