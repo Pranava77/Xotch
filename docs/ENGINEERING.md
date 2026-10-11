@@ -212,8 +212,14 @@ Before and after any change to the shell, ears or a continuous animation:
   - builds the Swift package;
   - wraps it in `Xotch.app` with the helpers;
   - signs it with `SIGN_IDENTITY`, a Developer ID certificate, or, for debug builds, an Apple Development one, falling back to ad hoc.
-- **`scripts/package-beta.sh`** makes a release build, checks the signature and zips it. **`scripts/package-dmg.sh`** makes a drag-to-Applications disk image.
-- **Not done yet:** Developer ID signing and notarisation, then automatic updates. Until then, testers approve the app once in Privacy & Security.
+- **`scripts/package-beta.sh`** makes a universal release build, checks the signature and zips it. **`scripts/package-dmg.sh`** makes a drag-to-Applications disk image.
+- **Notarisation is automatic once there's a certificate.** With a Developer ID build (every signature carries Apple's secure timestamp), both scripts:
+  - send it to Apple through `scripts/notarize.sh`, using the login saved under `xotch-notary`;
+  - staple the ticket, so it opens offline;
+  - check with `spctl` that Gatekeeper accepts it.
+
+  Ad hoc builds skip all that.
+- **Not done yet:** a Developer ID certificate, so betas are still ad hoc and testers allow them once in Privacy & Security. Then automatic updates.
 
 ## Decisions
 

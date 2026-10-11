@@ -42,23 +42,35 @@ else
 fi
 rm -rf "$STAGING"
 
-# Ad-hoc signing is what an unsigned build gets; a Developer ID replaces it.
-IDENTITY="${SIGN_IDENTITY:--}"
-codesign --force --sign "$IDENTITY" "$DMG"
+# Sign the image the way the app was signed: with its Developer ID, or ad hoc.
+AUTHORITY="$(codesign -dv "$APP" 2>&1 | sed -n 's/^Authority=//p' | head -1)"
+if [[ -n "${SIGN_IDENTITY:-}" ]]; then
+  IDENTITY="$SIGN_IDENTITY"
+elif [[ "$AUTHORITY" == "Developer ID Application"* ]]; then
+  IDENTITY="$AUTHORITY"
+else
+  IDENTITY="-"
+fi
+if [[ "$IDENTITY" == "-" ]]; then
+  codesign --force --sign - "$DMG"
+else
+  codesign --force --timestamp --sign "$IDENTITY" "$DMG"
+fi
+
+# A Developer ID image is notarised and stapled, so it opens without a warning.
+if [[ "$IDENTITY" != "-" && "${SKIP_NOTARIZE:-}" != "1" ]]; then
+  "$ROOT/scripts/notarize.sh" "$DMG"
+  xcrun stapler staple "$DMG"
+  xcrun stapler validate "$DMG"
+  spctl --assess --type open --context context:primary-signature --verbose=2 "$DMG"
+fi
 
 SIZE="$(du -h "$DMG" | cut -f1 | tr -d ' ')"
 echo "Built $DMG ($SIZE)"
 echo "SHA-256: $(shasum -a 256 "$DMG" | cut -d' ' -f1)"
 
 if [[ "$IDENTITY" == "-" ]]; then
-  cat <<'NOTE'
-
-Signed ad hoc, so macOS will warn whoever opens it. Once you have a
-Developer ID Application certificate:
-
-  SIGN_IDENTITY="Developer ID Application: Your Name (TEAMID)" scripts/package-dmg.sh
-  xcrun notarytool submit build/Xotch-*.dmg --apple-id you@example.com \
-        --team-id TEAMID --password APP-SPECIFIC-PASSWORD --wait
-  xcrun stapler staple build/Xotch-*.dmg
-NOTE
+  echo
+  echo "Signed ad hoc, so macOS will warn whoever opens it. With a Developer ID"
+  echo "certificate in your keychain, this script also notarises it (see README › Releasing)."
 fi

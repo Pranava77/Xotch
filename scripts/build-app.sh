@@ -26,6 +26,10 @@ pick_identity() {
   echo "-"
 }
 IDENTITY="${SIGN_IDENTITY:-$(pick_identity)}"
+# Notarisation needs Apple's secure timestamp on every signature. Ad hoc
+# signatures can't have one, and don't need it.
+TIMESTAMP=(--timestamp)
+[[ "$IDENTITY" == "-" ]] && TIMESTAMP=(--timestamp=none)
 
 # The macOS 27 SDK in Command Line Tools declares SwiftUI's @State as a macro
 # whose plugin only ships with Xcode. Without Xcode, build against macOS 26.
@@ -61,7 +65,7 @@ cp "$ROOT/MediaRemoteBridge/mediaremote-bridge.pl" "$APP/Contents/Resources/"
 rm -rf "$APP/Contents/Resources/Mascots"
 cp -R "$ROOT/Resources/Mascots" "$APP/Contents/Resources/Mascots"
 
-codesign --force --options runtime --sign "$IDENTITY" "$APP/Contents/Frameworks/MediaRemoteBridge.dylib"
+codesign --force --options runtime "${TIMESTAMP[@]}" --sign "$IDENTITY" "$APP/Contents/Frameworks/MediaRemoteBridge.dylib"
 
 # Dictation's engine, Whistle on Cactus's needle, runs in its own process (see
 # NeedleHelper/needle-helper.c). The engine is built for macOS 26 on Apple
@@ -71,14 +75,14 @@ if [[ "$(uname -m)" == "arm64" ]]; then
   mkdir -p "$APP/Contents/Helpers"
   clang -O2 -arch arm64 -mmacosx-version-min=26.0 "$ROOT/NeedleHelper/needle-helper.c" \
     "$ROOT/Vendor/Needle/libneedle.a" -lc++ -o "$APP/Contents/Helpers/needle-helper"
-  codesign --force --options runtime --sign "$IDENTITY" "$APP/Contents/Helpers/needle-helper"
+  codesign --force --options runtime "${TIMESTAMP[@]}" --sign "$IDENTITY" "$APP/Contents/Helpers/needle-helper"
 fi
 ENTITLEMENTS="$ROOT/Resources/Xotch.entitlements"
 if [[ "$CONFIG" == "debug" ]]; then
   # Lets leaks, sample and vmmap inspect debug builds. Never in release builds.
   ENTITLEMENTS="$ROOT/Resources/Xotch.debug.entitlements"
 fi
-codesign --force --options runtime --sign "$IDENTITY" --entitlements "$ENTITLEMENTS" "$APP"
+codesign --force --options runtime "${TIMESTAMP[@]}" --sign "$IDENTITY" --entitlements "$ENTITLEMENTS" "$APP"
 
 echo "Built $APP"
 if [[ "$IDENTITY" == "-" ]]; then

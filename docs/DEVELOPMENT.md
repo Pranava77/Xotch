@@ -73,6 +73,7 @@ The project lives on the Desktop, which macOS protects, and every rebuild resets
 | `scripts/switch-peak.sh` | Memory peak while switching modules |
 | `scripts/package-beta.sh` | Release build, signature check and zip for testers |
 | `scripts/package-dmg.sh` | Release build wrapped in a drag-to-Applications disk image (uses `create-dmg` if installed, `hdiutil` otherwise) |
+| `scripts/notarize.sh <zip or dmg>` | Sends a Developer ID–signed build to Apple's notary service and waits; prints Apple's report if it's rejected. The packaging scripts call it themselves when the build has a Developer ID; see the README, under Releasing |
 
 See [PERFORMANCE.md](PERFORMANCE.md), [TESTING.md](TESTING.md) (manual checks and permission audit) and [BETA.md](BETA.md).
 

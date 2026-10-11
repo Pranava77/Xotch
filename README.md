@@ -112,7 +112,7 @@ The honest picture: Notchy (free) and Crest and Droppy (paid) cover more ground 
 - Each new build asks for permissions again.
 
 **Next.**
-1. Developer ID signing and notarisation, so installs and updates are one click and permissions survive updates.
+1. Developer ID signing and notarisation, so installs and updates are one click and permissions survive updates. The packaging scripts already do it once there's a certificate (see [Releasing](#releasing)).
 2. Approving Claude Code's requests from the notch, which Notchy and Crest already offer.
 3. Talking to the AI by voice, joining dictation and the assistant.
 4. Automatic updates, then a public release.
@@ -140,6 +140,39 @@ It clears the "downloaded from the internet" mark on Xotch only. You don't need 
 
 Setup for the AI, dictation and Claude Code is in the [user guide](docs/GUIDE.md).
 
+## Releasing
+
+A beta signed only "ad hoc" is blocked by macOS on every other Mac until the tester allows it by hand (see above). Signing with an Apple **Developer ID** and having Apple **notarise** it removes that: Apple scans the app, approves it, and testers open it like any other app. Permissions also survive updates.
+
+**Once, to set up:**
+
+1. Join the [Apple Developer Program](https://developer.apple.com/programs/) ($99 a year).
+2. In Xcode › Settings › Accounts, add your Apple ID, then **Manage Certificates… › + › Developer ID Application**.
+3. Create an app-specific password at [appleid.apple.com](https://appleid.apple.com) › Sign-In and Security › App-Specific Passwords. Then save your login for the scripts. Your Team ID is under developer.apple.com › Account › Membership details.
+
+   ```bash
+   xcrun notarytool store-credentials xotch-notary --apple-id you@example.com --team-id TEAMID
+   ```
+
+   It asks for the app-specific password and keeps it in your Keychain; the scripts never see it.
+
+**Every release:**
+
+1. Bump `CFBundleShortVersionString` and `CFBundleVersion` in `Resources/Info.plist`.
+2. Run the zip script or the disk-image script:
+
+   ```bash
+   ./scripts/package-beta.sh
+   ```
+
+   ```bash
+   ./scripts/package-dmg.sh
+   ```
+
+It builds a universal release, signs every part with your Developer ID and Apple's secure timestamp, sends it to Apple, waits for approval (usually a few minutes), staples the approval to the app or image so it opens offline too, and checks that macOS accepts it. The last line should read `accepted` with `source=Notarized Developer ID`.
+
+If Apple rejects it, the script prints Apple's report and stops. Fix what it names and run it again; to retry the upload alone, run `./scripts/notarize.sh build/Xotch-<version>-<build>.zip`. Without a Developer ID certificate, the scripts still build an ad hoc beta, as before.
+
 ## For engineers
 
 Start with **[ENGINEERING.md](docs/ENGINEERING.md)**: the principles, a system diagram, the concurrency rules, each subsystem, the performance budget, how to test and debug, and the decisions behind it all.
@@ -156,6 +189,7 @@ Start with **[ENGINEERING.md](docs/ENGINEERING.md)**: the principles, a system d
 |---|---|
 | [ENGINEERING.md](docs/ENGINEERING.md) | Architecture, rules, subsystems, budgets, testing, decisions |
 | [GUIDE.md](docs/GUIDE.md) | Every feature, setup, shortcuts, permissions, questions |
+| [BETA.md](docs/BETA.md) | Sending a beta, and what testers do |
 | [DEVELOPMENT.md](docs/DEVELOPMENT.md) | Building, debug commands, architecture notes |
 | [PERFORMANCE.md](docs/PERFORMANCE.md) | Budgets, measurements, what was fixed and how |
 | [TESTING.md](docs/TESTING.md) | Manual checks and the permission audit |

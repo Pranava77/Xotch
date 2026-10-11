@@ -5,10 +5,9 @@
 1. Set `Diagnostics.supportAddress` in `Sources/Xotch/Services/Diagnostics.swift`, so "Send Feedback…" and crash reports are addressed to you.
 2. Bump `CFBundleShortVersionString` and `CFBundleVersion` in `Resources/Info.plist`.
 3. Run `./scripts/package-beta.sh` for a zip, or `./scripts/package-dmg.sh` for a drag-to-Applications disk image. Both build a release app, check the signature and print a SHA-256.
-4. Strongly recommended: sign with a Developer ID and notarize before sending the build to anyone.
-   - Without that, every tester has to override Gatekeeper by hand (below).
-   - macOS may also ask for Calendar access and Screen Recording again after each update.
-   - Use `SIGN_IDENTITY="Developer ID Application: …" ./scripts/package-beta.sh`, then `xcrun notarytool submit` and `xcrun stapler staple`.
+4. Strongly recommended: sign with a Developer ID and notarise before sending the build to anyone.
+   - Without that, every tester has to override Gatekeeper by hand (below), and macOS asks for permissions again after each update.
+   - With a Developer ID Application certificate in your keychain and your login saved once (`xcrun notarytool store-credentials xotch-notary …`), both packaging scripts sign, notarise and staple by themselves. Setup is in the README, under Releasing.
 
 Still to do for a beta channel: automatic updates. Adding Sparkle needs the Sparkle package, EdDSA signing keys, and an appcast hosted on your site.
 
