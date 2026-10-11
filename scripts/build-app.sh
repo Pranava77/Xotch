@@ -39,8 +39,13 @@ if [[ -z "${SDKROOT:-}" && "$(xcode-select -p)" == *CommandLineTools* ]]; then
 fi
 
 cd "$ROOT"
-swift build -c "$CONFIG" 2>&1 | { grep -v "ld: warning: search path" || true; }
-BIN="$(swift build -c "$CONFIG" --show-bin-path)/Xotch"
+# Release builds run on Apple silicon and Intel; debug builds only need this Mac.
+ARCHS=()
+if [[ "$CONFIG" == "release" ]]; then
+  ARCHS=(--arch arm64 --arch x86_64)
+fi
+swift build -c "$CONFIG" ${ARCHS[@]+"${ARCHS[@]}"} 2>&1 | { grep -v "ld: warning: search path" || true; }
+BIN="$(swift build -c "$CONFIG" ${ARCHS[@]+"${ARCHS[@]}"} --show-bin-path)/Xotch"
 
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources" "$APP/Contents/Frameworks"

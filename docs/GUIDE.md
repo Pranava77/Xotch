@@ -319,8 +319,19 @@ Without those settings, Xotch never asks for Accessibility or Input Monitoring. 
 Xotch is in private beta. If you have an invite:
 
 1. Unzip the download and drag **Xotch** to your Applications folder.
-2. Open Xotch. If macOS says it can't check the app, open **System Settings › Privacy & Security** and choose **Open Anyway**. Beta builds aren't signed yet; releases will be.
-3. Move the pointer to the notch. Xotch lives in the menu bar and has no Dock icon.
+2. Open Xotch. Beta builds aren't notarised by Apple yet, so macOS says it "could not verify Xotch is free of malware". Press **Done**, not Move to Trash.
+3. Open **System Settings › Privacy & Security**, scroll down to **Security**, and press **Open Anyway** next to "Xotch was blocked". Confirm with your password or Touch ID, then press **Open**. The button shows for about an hour after step 2.
+4. Move the pointer to the notch. Xotch lives in the menu bar and has no Dock icon.
+
+If **Open Anyway** doesn't appear, run this once in Terminal, then open Xotch as usual:
+
+```bash
+xattr -dr com.apple.quarantine /Applications/Xotch.app
+```
+
+It clears the "downloaded from the internet" mark on Xotch only. You don't need to turn Gatekeeper off for the whole Mac.
+
+Releases will be signed and notarised, so they open like any other app.
 
 Xotch needs macOS 14 Sonoma or later, on Apple silicon or Intel, and it's at its best on a MacBook with a notch. A few features need newer versions: Liquid Glass needs macOS 26, music bars that follow the real sound need macOS 14.2, and screen recording needs macOS 15. Screenshots and screen questions to the AI work on all of them.
 
