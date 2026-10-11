@@ -19,9 +19,17 @@ Still to do for a beta channel: automatic updates. Adding Sparkle needs the Spar
 ### Install
 
 1. Open `Xotch-….dmg` (or unzip `Xotch-….zip`) and drag Xotch to Applications.
-2. Open Xotch. macOS will probably say it can't check the app for malicious software. Close that message.
-3. Open System Settings › Privacy & Security, scroll to Security, and press **Open Anyway** next to Xotch.
+2. Open Xotch. Beta builds aren't notarised yet, so macOS says it "could not verify Xotch is free of malware". Press **Done**, not Move to Trash.
+3. Open System Settings › Privacy & Security, scroll down to Security, and press **Open Anyway** next to "Xotch was blocked". Confirm with your password or Touch ID, then press **Open**. The button only shows for about an hour after step 2.
 4. Xotch appears in the menu bar; there's no Dock icon. Hover over the notch to peek, then click to open.
+
+If **Open Anyway** doesn't appear, run this once in Terminal, then open Xotch as usual:
+
+```bash
+xattr -dr com.apple.quarantine /Applications/Xotch.app
+```
+
+It removes the "downloaded from the internet" mark from Xotch only. Don't turn Gatekeeper off for the whole Mac.
 
 ### What to try over the week
 
@@ -30,7 +38,7 @@ Still to do for a beta channel: automatic updates. Adding Sparkle needs the Spar
 - **Shelf:** drag a file towards the notch, drop it, then drag it out somewhere else.
 - **To-dos:** put today's to-dos in, tick them off, and right-click one to move it to tomorrow or someday.
 - **Capture:** take a screenshot of an area, a window and the screen, record a few seconds of screen, and check that your own ⌘⇧4 screenshots turn up there too. macOS asks for Screen Recording the first time; screen recording itself needs macOS 15.
-- **Make it yours:** try the themes in Settings › Appearance, ⌘K in the open notch, scrolling on the closed notch for volume, and flicking a file off the Shelf.
+- **Make it yours:** the mascot and the mirror on Home (Settings › Appearance), ⌘K in the open notch, scrolling on the closed notch for volume, and flicking a file off the Shelf.
 - **Different setups:** full-screen apps, an external display, sleep and wake.
 - **Optional:** add the Claude Code hook in the Claude Code module.
 
@@ -44,4 +52,4 @@ Still to do for a beta channel: automatic updates. Adding Sparkle needs the Spar
 
 ### Privacy
 
-Everything Xotch keeps is stored on your Mac, in `~/Library/Application Support/Xotch`. Xotch doesn't connect to any online service.
+Everything Xotch keeps is stored on your Mac, in `~/Library/Application Support/Xotch`. There's no account, analytics or telemetry. Xotch connects only to an AI service you add yourself (and only when you ask it something), and downloads the speech model once if you turn on dictation. Dictation and local models (Ollama, LM Studio) never leave your Mac.
