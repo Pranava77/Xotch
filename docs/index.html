@@ -3,524 +3,279 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Xotch — the notch that does the work</title>
-<meta name="description" content="Xotch turns your Mac's notch into an AI that acts with your permission, push-to-talk dictation that never leaves your Mac, and your whole day one hover away. Compared honestly with Notchy, NotchNook, Alcove, Boring Notch, Atoll, Crest and Droppy.">
-<meta property="og:title" content="Xotch — the notch that does the work">
+<title>Xotch: the notch that does the work</title>
+<meta name="description" content="Xotch turns your Mac's notch into an AI that acts after you click Allow, dictation that stays on your Mac, and your day one hover away.">
+<!-- The site's address. xotch.app doesn't resolve yet: change it here, in og:url/og:image, the JSON-LD, compare/, robots.txt and sitemap.xml once it's live. -->
+<link rel="canonical" href="https://xotch.app/">
+<meta property="og:title" content="Xotch: the notch that does the work">
 <meta property="og:description" content="An AI that acts with your permission, on-device dictation, and your day, one hover away. With an honest comparison of eight notch apps.">
-<meta property="og:image" content="images/hero.jpg">
+<meta property="og:url" content="https://xotch.app/">
+<meta property="og:image" content="https://xotch.app/og.png">
+<meta property="og:image:alt" content="Xotch open under the notch, over the headline The notch that does the work">
 <meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#08090B" media="(prefers-color-scheme: dark)">
-<meta name="theme-color" content="#F6F5F2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#F2F2F5" media="(prefers-color-scheme: light)">
 <link rel="icon" href="images/icon.png">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Hanken+Grotesk:wght@400;500;600&display=swap">
-<style>
-:root {
-  color-scheme: dark;
-  --ink: #F3F4F6;
-  --ink-2: #B9BFC9;
-  --muted: #8A919D;
-  --ground: #08090B;
-  --surface: #101216;
-  --raised: #171A1F;
-  --line: #23272E;
-  --accent: #FF9F0A;
-  --accent-ink: #1A1200;
-  --accent-soft: rgba(255, 159, 10, .12);
-  --good: #34C46E;
-  --good-soft: rgba(52, 196, 110, .13);
-  --part: #E0B341;
-  --part-soft: rgba(224, 179, 65, .14);
-  --bad: #8A919D;
-  --us: rgba(255, 159, 10, .07);
-  --beta-from: #1A1305;
-  --beta-line: #3A2A09;
-  --display: "Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
-  --body: "Hanken Grotesk", -apple-system, "Segoe UI", system-ui, sans-serif;
-  --spring: cubic-bezier(.32, 1.28, .44, 1);
-}
-@media (prefers-color-scheme: light) {
-  :root:not([data-theme="dark"]) {
-    color-scheme: light;
-    --ink: #15171B;
-    --ink-2: #454B55;
-    --muted: #6A707B;
-    --ground: #F6F5F2;
-    --surface: #FFFFFF;
-    --raised: #EFEDE8;
-    --line: #E1DED7;
-    --accent: #C26A00;
-    --accent-ink: #FFFFFF;
-    --accent-soft: rgba(194, 106, 0, .1);
-    --good: #18864A;
-    --good-soft: rgba(24, 134, 74, .1);
-    --part: #8F6A00;
-    --part-soft: rgba(143, 106, 0, .1);
-    --bad: #8A8F98;
-    --us: rgba(194, 106, 0, .06);
-    --beta-from: #FFF1DA;
-    --beta-line: #F0D6A8;
-  }
-}
-:root[data-theme="light"] {
-  color-scheme: light;
-  --ink: #15171B;
-  --ink-2: #454B55;
-  --muted: #6A707B;
-  --ground: #F6F5F2;
-  --surface: #FFFFFF;
-  --raised: #EFEDE8;
-  --line: #E1DED7;
-  --accent: #C26A00;
-  --accent-ink: #FFFFFF;
-  --accent-soft: rgba(194, 106, 0, .1);
-  --good: #18864A;
-  --good-soft: rgba(24, 134, 74, .1);
-  --part: #8F6A00;
-  --part-soft: rgba(143, 106, 0, .1);
-  --bad: #8A8F98;
-  --us: rgba(194, 106, 0, .06);
-  --beta-from: #FFF1DA;
-  --beta-line: #F0D6A8;
-}
-
-* { box-sizing: border-box; }
-html { scroll-behavior: smooth; scroll-padding-top: 72px; -webkit-text-size-adjust: 100%; }
-body {
-  margin: 0;
-  background: var(--ground);
-  color: var(--ink);
-  font-family: var(--body);
-  font-size: 17px;
-  line-height: 1.6;
-  -webkit-font-smoothing: antialiased;
-  overflow-x: hidden;
-}
-img { max-width: 100%; height: auto; display: block; }
-a { color: var(--accent); text-underline-offset: 3px; }
-h1, h2, h3 { font-family: var(--display); margin: 0; text-wrap: balance; letter-spacing: -.02em; line-height: 1.1; }
-p { margin: 0; }
-kbd {
-  font-family: var(--body);
-  font-size: .85em;
-  font-weight: 600;
-  padding: 1px 7px;
-  border-radius: 6px;
-  border: 1px solid var(--line);
-  border-bottom-width: 2px;
-  background: var(--raised);
-  color: var(--ink);
-  white-space: nowrap;
-}
-code { font-size: .9em; background: var(--raised); padding: 1px 6px; border-radius: 5px; }
-:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 6px; }
-.skip { position: absolute; left: -999px; top: 8px; z-index: 60; background: var(--accent); color: var(--accent-ink); padding: 8px 14px; border-radius: 8px; }
-.skip:focus { left: 16px; }
-
-/* The notch, holding the navigation. It stays black in both themes, like the real one. */
-.notch {
-  position: fixed;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 40;
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  height: 40px;
-  padding: 0 20px;
-  padding-top: env(safe-area-inset-top, 0px);
-  background: #000;
-  border-radius: 0 0 18px 18px;
-  font-size: 14px;
-  font-weight: 500;
-  max-width: calc(100vw - 32px);
-}
-.notch::before, .notch::after {
-  content: "";
-  position: absolute;
-  top: env(safe-area-inset-top, 0px);
-  width: 14px; height: 14px;
-  pointer-events: none;
-}
-.notch::before { left: -14px; background: radial-gradient(circle at 0 100%, transparent 13.5px, #000 14px); }
-.notch::after { right: -14px; background: radial-gradient(circle at 100% 100%, transparent 13.5px, #000 14px); }
-.notch a { color: #B9BFC9; text-decoration: none; white-space: nowrap; }
-.notch a:hover { color: #fff; }
-.notch .name { font-family: var(--display); font-weight: 700; color: #F3F4F6; letter-spacing: -.01em; display: flex; align-items: center; gap: 8px; text-decoration: none; }
-.notch .dot { width: 7px; height: 7px; border-radius: 50%; background: #FF9F0A; box-shadow: 0 0 9px #FF9F0A; }
-.theme-toggle {
-  background: none; border: 0; padding: 4px; margin: 0 -4px 0 0; cursor: pointer; color: #B9BFC9;
-  display: grid; place-items: center; border-radius: 50%;
-}
-.theme-toggle:hover { color: #fff; }
-.theme-toggle svg { width: 16px; height: 16px; }
-
-.wrap { max-width: 1120px; margin: 0 auto; padding-inline: 24px; }
-main { display: grid; gap: 112px; padding-block: 128px 96px; }
-section { display: grid; gap: 28px; min-width: 0; }
-.head { display: grid; gap: 10px; max-width: 64ch; }
-h2 { font-size: clamp(28px, 4vw, 40px); font-weight: 700; }
-h3 { font-size: 21px; font-weight: 700; }
-.head p { color: var(--ink-2); font-size: 18px; }
-.kicker, .head .kicker { font-size: 13px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); }
-.lead { color: var(--ink-2); }
-
-/* Hero */
-.hero { display: grid; gap: 26px; justify-items: center; text-align: center; }
-.hero .icon { width: 84px; height: 84px; border-radius: 20px; box-shadow: 0 10px 40px rgba(255, 159, 10, .18); }
-.hero h1 { font-size: clamp(46px, 9vw, 96px); font-weight: 700; letter-spacing: -.045em; max-width: 13ch; }
-.hero .lede { font-size: clamp(18px, 2.2vw, 22px); color: var(--ink-2); max-width: 52ch; line-height: 1.45; }
-.badges { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; font-size: 13.5px; color: var(--muted); }
-.badges span { border: 1px solid var(--line); border-radius: 999px; padding: 3px 12px; }
-.cta { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
-.button {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 13px 26px;
-  border-radius: 999px;
-  font-weight: 600;
-  font-size: 16px;
-  text-decoration: none;
-  border: 1px solid transparent;
-  transition: transform .25s var(--spring), background .2s ease;
-}
-.button.primary { background: var(--accent); color: var(--accent-ink); }
-.button.ghost { border-color: var(--line); color: var(--ink); }
-.button:hover { transform: translateY(-2px); }
-.button.ghost:hover { background: var(--surface); }
-.shot { border-radius: 16px; overflow: hidden; border: 1px solid var(--line); background: #000; }
-.hero .shot { max-width: 1000px; width: 100%; box-shadow: 0 30px 80px rgba(0, 0, 0, .35); }
-
-/* Pillars */
-.pillars { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
-.pillar {
-  display: grid; gap: 8px; align-content: start;
-  padding: 22px; border-radius: 16px;
-  background: var(--surface); border: 1px solid var(--line);
-  text-decoration: none; color: inherit;
-  transition: transform .25s var(--spring), border-color .2s ease;
-}
-.pillar:hover { transform: translateY(-3px); border-color: var(--accent); }
-.pillar .glyph { width: 38px; height: 38px; border-radius: 11px; background: var(--accent-soft); color: var(--accent); display: grid; place-items: center; }
-.pillar .glyph svg { width: 20px; height: 20px; }
-.pillar b { font-family: var(--display); font-size: 19px; letter-spacing: -.01em; }
-.pillar span { color: var(--muted); font-size: 14.5px; line-height: 1.5; }
-
-/* Split sections */
-.split { display: grid; grid-template-columns: minmax(0, .95fr) minmax(0, 1.2fr); gap: 44px; align-items: center; }
-.split.flip > .media { order: -1; }
-.split ul, .ticks { margin: 16px 0 0; padding: 0; list-style: none; color: var(--ink-2); display: grid; gap: 10px; }
-.split li, .ticks li { position: relative; padding-left: 26px; }
-.split li::before, .ticks li::before {
-  content: ""; position: absolute; left: 2px; top: .55em;
-  width: 12px; height: 7px; border-left: 2px solid var(--accent); border-bottom: 2px solid var(--accent);
-  transform: rotate(-45deg) translateY(-3px);
-}
-.media { display: grid; gap: 14px; min-width: 0; }
-.caption { color: var(--muted); font-size: 14px; }
-
-/* Grids */
-.grid { display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); }
-.grid.wide { grid-template-columns: repeat(auto-fit, minmax(min(100%, 440px), 1fr)); gap: 20px; }
-.card { display: grid; gap: 8px; align-content: start; min-width: 0; }
-.card .shot { border-radius: 12px; }
-.card b { font-size: 16px; font-weight: 600; }
-.card span { color: var(--muted); font-size: 14.5px; line-height: 1.5; }
-
-/* Numbers */
-.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
-.stats div { background: var(--surface); padding: 20px; display: grid; gap: 4px; align-content: start; }
-.stats b { font-family: var(--display); font-size: 30px; font-weight: 700; letter-spacing: -.02em; }
-.stats span { color: var(--muted); font-size: 14px; line-height: 1.45; }
-
-/* Privacy */
-.two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
-.panel { display: grid; gap: 12px; align-content: start; background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 26px; }
-.panel ul { margin: 0; padding-left: 20px; display: grid; gap: 9px; color: var(--ink-2); }
-.panel strong { color: var(--ink); }
-
-/* Comparison */
-.notice { display: flex; gap: 12px; align-items: flex-start; font-size: 14.5px; color: var(--ink-2); background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px 18px; }
-.notice svg { flex: none; width: 18px; height: 18px; margin-top: 3px; color: var(--accent); }
-.table-scroll {
-  overflow-x: auto;
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  background: var(--surface);
-  -webkit-overflow-scrolling: touch;
-}
-.table-scroll:focus-visible { outline-offset: 2px; }
-table.matrix { border-collapse: separate; border-spacing: 0; width: 100%; min-width: 980px; font-size: 14px; }
-.matrix caption { text-align: left; padding: 14px 18px 0; color: var(--muted); font-size: 13px; caption-side: bottom; padding-bottom: 14px; }
-.matrix th, .matrix td { padding: 10px 12px; border-bottom: 1px solid var(--line); text-align: center; vertical-align: middle; line-height: 1.35; }
-.matrix thead th { font-family: var(--display); font-size: 15px; font-weight: 700; letter-spacing: -.01em; position: sticky; top: 0; background: var(--surface); z-index: 1; }
-.matrix thead th small { display: block; font-family: var(--body); font-weight: 500; font-size: 12px; color: var(--muted); letter-spacing: 0; }
-.matrix tbody th { text-align: left; font-weight: 500; color: var(--ink-2); position: sticky; left: 0; background: var(--surface); z-index: 2; min-width: 190px; }
-.matrix thead th:first-child { left: 0; z-index: 3; text-align: left; }
-.matrix tr.group th { background: var(--raised); color: var(--muted); font-size: 12px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; padding-block: 8px; }
-.matrix tr.group td { background: var(--raised); }
-.matrix .us { background: var(--us); }
-.matrix thead .us { color: var(--accent); background: linear-gradient(var(--us), var(--us)), var(--surface); }
-.matrix tbody tr:last-child > * { border-bottom: 0; }
-.mark { display: inline-flex; align-items: center; justify-content: center; gap: 5px; font-weight: 600; font-size: 13px; }
-.mark::before { content: ""; width: 20px; height: 20px; border-radius: 50%; flex: none; background-position: center; background-repeat: no-repeat; }
-.yes { color: var(--good); }
-.yes::before { background-color: var(--good-soft); background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M5.5 10.5l3 3 6-7' fill='none' stroke='%2334C46E' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); }
-.part { color: var(--part); }
-.part::before { background-color: var(--part-soft); background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Ccircle cx='10' cy='10' r='4.5' fill='none' stroke='%23E0B341' stroke-width='2'/%3E%3Cpath d='M10 5.5a4.5 4.5 0 0 1 0 9z' fill='%23E0B341'/%3E%3C/svg%3E"); }
-.no { color: var(--bad); font-weight: 500; }
-.no::before { width: 12px; height: 2px; border-radius: 2px; background: var(--bad); opacity: .6; }
-.unk { color: var(--muted); font-weight: 500; font-size: 12.5px; }
-.unk::before { display: none; }
-.note-cell { display: block; color: var(--muted); font-size: 11.5px; font-weight: 500; margin-top: 2px; }
-.legend { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 13.5px; color: var(--muted); }
-.legend .mark { font-weight: 500; }
-
-.verdicts { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 330px), 1fr)); gap: 16px; }
-.verdict { display: grid; gap: 12px; align-content: start; background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 22px; }
-.verdict.us { border-color: var(--accent); background: linear-gradient(160deg, var(--accent-soft), var(--surface) 55%); }
-.verdict header { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
-.verdict h3 { font-size: 20px; }
-.verdict .price { font-size: 13px; color: var(--muted); font-weight: 600; }
-.verdict .best { font-size: 14.5px; color: var(--ink-2); }
-.verdict .best b { color: var(--ink); }
-.pc { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
-.pc h4 { margin: 0 0 6px; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; }
-.pc .pro h4 { color: var(--good); }
-.pc .con h4 { color: var(--muted); }
-.pc ul { margin: 0; padding-left: 16px; display: grid; gap: 5px; font-size: 14px; color: var(--ink-2); line-height: 1.45; }
-.sources { font-size: 13.5px; color: var(--muted); display: grid; gap: 8px; }
-.sources ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
-.sources a { color: var(--ink-2); word-break: break-word; }
-
-/* FAQ */
-.faq { display: grid; gap: 10px; max-width: 820px; }
-.faq details { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 0 20px; }
-.faq summary { cursor: pointer; list-style: none; padding: 16px 0; font-weight: 600; display: flex; justify-content: space-between; gap: 16px; }
-.faq summary::-webkit-details-marker { display: none; }
-.faq summary::after { content: "+"; color: var(--accent); font-size: 22px; line-height: 1; transition: transform .2s ease; }
-.faq details[open] summary::after { transform: rotate(45deg); }
-.faq details p { padding-bottom: 18px; color: var(--ink-2); }
-
-/* Beta */
-.beta { background: linear-gradient(160deg, var(--beta-from), var(--surface) 60%); border: 1px solid var(--beta-line); border-radius: 22px; padding: 40px; display: grid; gap: 18px; justify-items: start; }
-.beta ol { margin: 0; padding-left: 20px; color: var(--ink-2); display: grid; gap: 8px; }
-.note { font-size: 14px; color: var(--muted); }
-
-footer { border-top: 1px solid var(--line); padding-block: 34px 60px; color: var(--muted); font-size: 14px; display: grid; gap: 10px; }
-footer a { color: var(--ink-2); }
-
-@media (max-width: 960px) {
-  .pillars { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-}
-@media (max-width: 860px) {
-  .split, .split.flip, .two { grid-template-columns: minmax(0, 1fr); }
-  .split.flip > .media { order: 0; }
-  main { gap: 80px; padding-block: 100px 64px; }
-  .notch { gap: 14px; padding: 0 16px; font-size: 13px; }
-  .notch .hide-small { display: none; }
-}
-@media (max-width: 560px) {
-  .wrap { padding-inline: 16px; }
-  .pillars { grid-template-columns: minmax(0, 1fr); }
-  .pc { grid-template-columns: minmax(0, 1fr); }
-  .beta { padding: 26px 20px; }
-  .panel { padding: 20px; }
-  .matrix tbody th { min-width: 150px; }
-}
-@media (prefers-reduced-motion: reduce) {
-  html { scroll-behavior: auto; }
-  * { transition-duration: .01ms !important; }
-}
-</style>
+<link rel="apple-touch-icon" href="images/icon.png">
+<link rel="preload" href="fonts/bricolage-grotesque-700-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/hanken-grotesk-400_600-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="site.css">
 <script>
   // Remember a theme picked with the toggle; otherwise follow the system.
   try {
     const saved = localStorage.getItem("xotch-theme");
     if (saved === "light" || saved === "dark") document.documentElement.dataset.theme = saved;
+    // Arriving from another page of the site: the notch that covered it opens again (site.js).
+    const curtain = sessionStorage.getItem("xotch-curtain");
+    if (curtain) {
+      sessionStorage.removeItem("xotch-curtain");
+      if (!matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        document.documentElement.dataset.curtain = curtain;
+        document.documentElement.classList.add("arriving");
+      }
+    }
   } catch {}
 </script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "Xotch",
+  "url": "https://xotch.app/",
+  "applicationCategory": "UtilitiesApplication",
+  "operatingSystem": "macOS 14 or later",
+  "description": "A Mac notch app with an AI that acts after you click Allow, on-device push-to-talk dictation, and your to-dos, calendar, focus timer and music one hover away."
+}
+</script>
+<script src="site.js" defer></script>
 </head>
 <body>
 <a class="skip" href="#content">Skip to content</a>
 
 <nav class="notch" aria-label="Main">
+  <span class="ear ear-l" aria-hidden="true"><span class="ear-slot">
+    <span data-for="top"><span class="mascot" data-character="fox"></span></span>
+    <span data-for="ai" style="color:#FF9F0A"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg></span>
+    <span data-for="dictation" style="color:#FF453A"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></span>
+    <span data-for="day"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="3"/><path d="M3 9h18M8 2v4M16 2v4M8 14l2.5 2.5L16 12"/></svg></span>
+    <span data-for="ears"><span class="art"></span></span>
+    <span data-for="yours" style="color:#FFD60A"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8.5 14.5a4.5 4.5 0 0 0 7 0"/><circle cx="9" cy="10" r=".6" fill="currentColor"/><circle cx="15" cy="10" r=".6" fill="currentColor"/></svg></span>
+    <span data-for="privacy" style="color:#30D158"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="10" width="14" height="11" rx="2.5"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span>
+    <span data-for="compare"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M3 10h18M10 4v16"/></svg></span>
+    <span data-for="faq"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6v.4M12 17h.01"/></svg></span>
+    <span data-for="beta"><span class="live"></span></span>
+  </span></span>
+  <span class="ear ear-r" aria-hidden="true"><span class="ear-slot">
+    <span data-for="top" data-turn style="color:#FF8A80"><span class="bars wave"><i></i><i></i><i></i><i></i><i></i></span></span>
+    <span data-for="top" data-turn style="color:#FF8A3D">Editing</span>
+    <span data-for="ai" style="color:#FF9F0A"><span class="dots"><i></i><i></i><i></i></span></span>
+    <span data-for="dictation"><span class="bars"><i></i><i></i><i></i><i></i><i></i></span></span>
+    <span data-for="day" data-module-label>To-dos</span>
+    <span data-for="ears" style="color:#FF8A80"><span class="bars wave"><i></i><i></i><i></i><i></i><i></i></span></span>
+    <span data-for="yours">×12</span>
+    <span data-for="privacy">Local</span>
+    <span data-for="compare">8 apps</span>
+    <span data-for="faq">FAQ</span>
+    <span data-for="beta" style="color:#FF9F0A">3 steps</span>
+  </span></span>
   <a class="name" href="#top"><span class="dot" aria-hidden="true"></span>Xotch</a>
   <a href="#ai" class="hide-small">AI</a>
   <a href="#dictation" class="hide-small">Dictation</a>
-  <a href="#compare">Compare</a>
+  <a href="#compare" class="hide-small">Compare</a>
   <a href="#privacy" class="hide-small">Privacy</a>
   <a href="#beta">Beta</a>
   <button class="theme-toggle" type="button" aria-label="Switch between light and dark">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"/></svg>
   </button>
+  <button class="menu-toggle" type="button" aria-label="Sections" aria-expanded="false" aria-controls="notch-menu">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 9h14"/><path d="M5 15h14"/></svg>
+  </button>
+  <div class="notch-menu" id="notch-menu">
+    <a href="#ai">AI</a>
+    <a href="#dictation">Dictation</a>
+    <a href="#day">Your day</a>
+    <a href="#yours">Make it yours</a>
+    <a href="#privacy">Privacy</a>
+    <a href="#compare">Compare</a>
+    <a href="#faq">Questions</a>
+    <a href="#beta">Beta</a>
+  </div>
 </nav>
 
 <div class="wrap" id="top">
 <main id="content">
 
-  <!-- Hero -->
-  <section class="hero" aria-labelledby="hero-title">
-    <img class="icon" src="images/icon.png" alt="" width="84" height="84">
-    <h1 id="hero-title">The notch that does the work</h1>
-    <p class="lede">Xotch turns your Mac's notch into an AI that acts with your permission, dictation that never leaves your Mac, and your whole day, one hover away.</p>
-    <div class="cta">
-      <a class="button primary" href="#beta">Get the beta</a>
-      <a class="button ghost" href="#compare">Compare notch apps</a>
+  <!-- Hero: the notch, open -->
+  <section class="hero" aria-labelledby="hero-title" data-ear="top">
+    <div class="stage-wrap">
+      <picture class="stage">
+        <source media="(max-width: 560px)" type="image/avif" srcset="images/home-open-narrow.avif" width="975" height="520">
+        <source media="(max-width: 560px)" srcset="images/home-open-narrow.jpg" width="975" height="520">
+        <source type="image/avif" srcset="images/home-open.avif" width="2040" height="520">
+        <img src="images/home-open.jpg" alt="Xotch open under the notch, on Home: the song playing, a page mascot, the camera mirror, the next meeting with a Join button, a focus timer, to-dos and Claude Code" width="2040" height="520" fetchpriority="high">
+      </picture>
     </div>
-    <div class="badges">
-      <span>macOS 14 or later</span>
-      <span>Native Swift</span>
-      <span>No account</span>
-      <span>No analytics</span>
-      <span>Any display, notch or not</span>
+    <div class="hero-copy">
+      <h1 id="hero-title" class="drop">The notch that does the work</h1>
+      <div class="hero-side">
+        <p class="lede drop" style="--i:1">Xotch turns your Mac's notch into an AI that acts with your permission, dictation that never leaves your Mac, and your whole day, one hover away.</p>
+        <div class="cta drop" style="--i:2">
+          <a class="button primary" href="#beta">Join the beta</a>
+          <a class="button ghost" href="compare/">Compare notch apps</a>
+        </div>
+        <ul class="tags drop" style="--i:3">
+          <li>macOS 14 or later</li>
+          <li>Native Swift</li>
+          <li>No account</li>
+          <li>No analytics</li>
+          <li>Any display, notch or not</li>
+        </ul>
+      </div>
     </div>
-    <div class="shot"><img src="images/hero.jpg" alt="Xotch open at the top of a Mac screen: Home's tiles for the song playing, a page mascot, the next meeting with a Join button, a focus timer, to-dos and Claude Code" width="2160" height="800"></div>
   </section>
 
-  <!-- Pillars -->
-  <section aria-label="What Xotch does">
-    <div class="pillars">
-      <a class="pillar" href="#ai">
-        <span class="glyph" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg></span>
-        <b>Ask, and it acts</b>
-        <span>An AI in the notch that checks your day and changes it, only after you click Allow.</span>
-      </a>
-      <a class="pillar" href="#dictation">
-        <span class="glyph" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></span>
-        <b>Talk instead of typing</b>
-        <span>Hold Fn, speak, let go. The words land in any app, transcribed on your Mac.</span>
-      </a>
-      <a class="pillar" href="#day">
-        <span class="glyph" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="3"/><path d="M3 9h18M8 2v4M16 2v4M8 14l2.5 2.5L16 12"/></svg></span>
-        <b>Run your day</b>
-        <span>To-dos, calendar, focus, music, capture and Claude Code, one hover away.</span>
-      </a>
-      <a class="pillar" href="#yours">
-        <span class="glyph" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8.5 14.5a4.5 4.5 0 0 0 7 0"/><circle cx="9" cy="10" r=".6" fill="currentColor"/><circle cx="15" cy="10" r=".6" fill="currentColor"/></svg></span>
-        <b>Make it yours</b>
-        <span>A mascot that watches your pointer, a mirror for a look before a call, and only the modules you want.</span>
-      </a>
-    </div>
+  <!-- What it does, in one paragraph -->
+  <section class="statement" aria-label="What Xotch does" data-ear="top">
+    <p class="drop" style="--i:4">Press <kbd>⌘⇧Space</kbd> in any app and ask. <strong>It can move your day around, but only after you click</strong> <a class="chip" href="#ai"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Allow</a>. Hold <a class="chip" href="#dictation">fn</a> and talk; <strong>the words land where you're typing.</strong> To-dos, calendar, focus and music sit <a class="chip" href="#day">one hover away</a>, and <strong>a small fox keeps an eye on your pointer</strong> <a class="chip" href="#yours">meet it</a>.</p>
   </section>
 
   <!-- AI -->
-  <section id="ai" class="split">
-    <div>
-      <p class="kicker">Ask, and it acts</p>
+  <section id="ai" class="pair" data-ear="ai">
+    <figure class="main-shot">
+      <div class="shot"><picture><source type="image/avif" srcset="images/ai-tools.avif"><img src="images/ai-tools.jpg" alt="The AI planning an afternoon: it checked the calendar, added a to-do, and waits for Allow on a focus timer and a calendar event" width="1650" height="930" loading="lazy"></picture></div>
+      <figcaption class="caption">Planning an afternoon: two lookups, one change made, two waiting for Allow.</figcaption>
+    </figure>
+    <div class="side">
       <h2>An assistant at the top of the screen, not in another tab</h2>
-      <p class="lead" style="margin-top:12px">Press <kbd>⌘⇧Space</kbd> from any app and ask. Xotch works with Claude, GPT, Gemini, Groq and OpenRouter, or a model on your own Mac through Ollama or LM Studio.</p>
-      <ul>
-        <li>It can look at your calendar, to-dos, timer, notes and what's playing, then add a to-do, start a focus session, write a note or put an event on your calendar.</li>
+      <p class="lead">Works with Claude, GPT, Gemini, Groq and OpenRouter, or a model on your own Mac through Ollama or LM Studio.</p>
+      <ul class="ticks">
+        <li>It looks at your calendar, to-dos, timer, notes and what's playing, then adds a to-do, starts a focus session, writes a note or books an event.</li>
         <li><strong>Nothing changes until you click Allow.</strong> Each action shows as a card first, and most can be undone from the card afterwards.</li>
-        <li>Shortcuts skip the model entirely: <code>/todo</code>, <code>/timer 25m</code>, <code>/focus</code>, <code>/note</code>, <code>/play</code>.</li>
-        <li>Replies are formatted for reading: headings, lists, tables and highlighted code. Make the chat bigger when an answer needs room.</li>
+        <li>Shortcuts skip the model: <code>/todo</code>, <code>/timer 25m</code>, <code>/focus</code>, <code>/note</code>, <code>/play</code>.</li>
       </ul>
     </div>
-    <div class="media">
-      <div class="shot"><img src="images/ai-tools.jpg" alt="The AI planning an afternoon: it checked the calendar, added a to-do, and waits for Allow on a focus timer and a calendar event" width="1650" height="930" loading="lazy"></div>
-      <p class="caption">Planning an afternoon: two lookups, one change made, two waiting for Allow.</p>
-    </div>
-  </section>
-
-  <section class="split flip" aria-label="AI replies">
-    <div>
+    <div class="second-text">
       <h3>Answers you can use straight away</h3>
-      <p class="lead" style="margin-top:10px">Code comes highlighted with a copy button. Attach a screenshot of what's on screen and ask about it. Chats are kept on your Mac, and the AI only sees what you choose to share.</p>
+      <p class="muted">Code comes highlighted with a copy button, and the chat grows when an answer needs room. Attach a screenshot and ask about it. Chats stay on your Mac, and the AI only sees what you choose to share.</p>
     </div>
-    <div class="media">
-      <div class="shot"><img src="images/ai-reply.jpg" alt="An AI reply in the enlarged chat, with a heading, a list and a highlighted code block" width="1650" height="930" loading="lazy"></div>
-    </div>
+    <figure class="second-shot">
+      <div class="shot"><picture><source type="image/avif" srcset="images/ai-reply.avif"><img src="images/ai-reply.jpg" alt="An AI reply in the enlarged chat, with a heading, a list and a highlighted code block" width="1650" height="930" loading="lazy"></picture></div>
+    </figure>
   </section>
 
   <!-- Dictation -->
-  <section id="dictation" class="split">
-    <div>
-      <p class="kicker">Talk instead of typing</p>
-      <h2>Hold Fn. Speak. Let go.</h2>
-      <p class="lead" style="margin-top:12px">The words appear where you're typing, in any app, tidied up. Speech becomes text on your Mac with Whistle from Cactus Compute: a 17 MB model that turns five seconds of speech into text in about 30 ms.</p>
-      <ul>
-        <li>Double-tap Fn to keep listening hands-free. <kbd>Esc</kbd> cancels.</li>
-        <li>"Um"s and repeats dropped, capitals fixed. Optionally, your AI polishes the grammar.</li>
-        <li>Teach it names and jargon. English, German, French, Spanish, Italian, Dutch and Polish, or detect.</li>
-        <li>Your voice is never saved or sent. Password fields are refused, and your clipboard is put back afterwards.</li>
-      </ul>
-    </div>
+  <section id="dictation" class="poster" data-ear="dictation">
+    <h2 class="mega"><span>Hold fn.</span> <span>Speak.</span> <span>Let go.</span></h2>
+    <p class="lead">The words appear where you're typing, in any app, tidied up. Speech becomes text on your Mac with Whistle from Cactus Compute: a 17&nbsp;MB model that turns five seconds of speech into text in about 30&nbsp;ms.</p>
     <div class="media">
-      <div class="shot"><img src="images/module-dictation.jpg" alt="Dictation listening in the open notch: a red stop button and the sentence heard so far" width="1260" height="450" loading="lazy"></div>
-      <div class="shot"><img src="images/ears-dictation.jpg" alt="The closed notch while dictating: a microphone and a live level beside the camera" width="1040" height="100" loading="lazy"></div>
+      <div class="shot"><picture><source type="image/avif" srcset="images/module-dictation.avif"><img src="images/module-dictation.jpg" alt="Dictation listening in the open notch: a red stop button and the sentence heard so far" width="1260" height="450" loading="lazy"></picture></div>
+      <div class="shot"><picture><source type="image/avif" srcset="images/ears-dictation.avif"><img src="images/ears-dictation.jpg" alt="The closed notch while dictating: a microphone and a live level beside the camera" width="1040" height="100" loading="lazy"></picture></div>
       <p class="caption">Open, and closed: while you talk, the ears beside the camera show it's listening.</p>
     </div>
+    <dl>
+      <div><dt>Hands-free</dt><dd>Double-tap fn to keep listening. <kbd>Esc</kbd> cancels.</dd></div>
+      <div><dt>Tidied up</dt><dd>"Um"s and repeats dropped, capitals fixed. Your AI can polish the grammar too.</dd></div>
+      <div><dt>Your words</dt><dd>Teach it names and jargon. English, German, French, Spanish, Italian, Dutch and Polish.</dd></div>
+      <div><dt>Never kept</dt><dd>Your voice isn't saved or sent. Password fields are refused, and your clipboard is put back.</dd></div>
+    </dl>
   </section>
 
   <!-- Your day -->
-  <section id="day">
+  <section id="day" class="day" data-ear="day">
     <div class="head">
-      <p class="kicker">Run your day</p>
       <h2>The things you reach for fifty times a day</h2>
-      <p>Home puts the essentials on one screen. Everything else is a tab away, and each module can be switched off or reordered.</p>
+      <p class="lead">Home puts the essentials on one screen. Everything else is a tab away, and each module can be switched off or reordered.</p>
     </div>
-    <div class="grid">
-      <div class="card"><div class="shot"><img src="images/module-todos.jpg" alt="To-dos: today's list under an add field" width="1260" height="450" loading="lazy"></div><b>To-dos</b><span>Today and someday. Unfinished to-dos carry over instead of disappearing.</span></div>
-      <div class="card"><div class="shot"><img src="images/module-calendar.jpg" alt="Calendar: the next few days with a Join button, and reminders" width="1260" height="450" loading="lazy"></div><b>Calendar</b><span>The next seven days, one-click Join for Zoom, Meet and Teams, and reminders.</span></div>
-      <div class="card"><div class="shot"><img src="images/module-timers.jpg" alt="Timers: a 25-minute focus session ready to start" width="1260" height="450" loading="lazy"></div><b>Focus and timers</b><span>Focus sessions with breaks, countdowns, and a stopwatch with laps.</span></div>
-      <div class="card"><div class="shot"><img src="images/module-media.jpg" alt="Now Playing: album art, a dot-matrix track display and controls" width="1260" height="450" loading="lazy"></div><b>Now Playing</b><span>Music, Spotify or any app playing audio, with bars that follow the real sound.</span></div>
-      <div class="card"><div class="shot"><img src="images/module-capture.jpg" alt="Capture: buttons for area, window and screen, with recent captures" width="1260" height="450" loading="lazy"></div><b>Capture</b><span>Screenshots and screen recordings, landing on a shelf ready to drag.</span></div>
-      <div class="card"><div class="shot"><img src="images/module-claude.jpg" alt="Claude Code: today's tokens, a streak, a 7-day chart and live sessions" width="1260" height="450" loading="lazy"></div><b>Claude Code</b><span>What it's doing right now, beside the camera, and today's usage from the logs on your Mac.</span></div>
-      <div class="card"><div class="shot"><img src="images/module-clipboard.jpg" alt="Clipboard: a searchable list of copied text, links and files" width="1260" height="450" loading="lazy"></div><b>Clipboard</b><span>Everything you've copied, searchable and pinnable. Passwords are skipped.</span></div>
-      <div class="card"><div class="shot"><img src="images/module-shelf.jpg" alt="Shelf: files waiting, with AirDrop and Clear buttons" width="1260" height="450" loading="lazy"></div><b>Shelf</b><span>Drop files on the notch to keep them handy. Drag them out, or AirDrop them.</span></div>
-      <div class="card"><div class="shot"><img src="images/module-stats.jpg" alt="Stats: processor, memory, battery and network" width="1260" height="450" loading="lazy"></div><b>Stats</b><span>Processor, memory, battery and network at a glance.</span></div>
+    <ol class="modules">
+      <li data-module="todos" data-label="To-dos"><h3>To-dos</h3><p>Today and someday. Unfinished ones carry over instead of disappearing.</p><picture><source type="image/avif" srcset="images/module-todos.avif"><img src="images/module-todos.jpg" alt="To-dos: today's list under an add field" width="1260" height="450" loading="lazy"></picture></li>
+      <li data-module="calendar" data-label="Calendar"><h3>Calendar</h3><p>The next seven days, one-click Join for Zoom, Meet and Teams, and reminders.</p><picture><source type="image/avif" srcset="images/module-calendar.avif"><img src="images/module-calendar.jpg" alt="Calendar: the next few days with a Join button, and reminders" width="1260" height="450" loading="lazy"></picture></li>
+      <li data-module="timers" data-label="Focus"><h3>Focus and timers</h3><p>Focus sessions with breaks, countdowns, and a stopwatch with laps.</p><picture><source type="image/avif" srcset="images/module-timers.avif"><img src="images/module-timers.jpg" alt="Timers: a 25-minute focus session ready to start" width="1260" height="450" loading="lazy"></picture></li>
+      <li data-module="media" data-label="Music"><h3>Now Playing</h3><p>Music, Spotify or any app playing audio, with bars that follow the real sound.</p><picture><source type="image/avif" srcset="images/module-media.avif"><img src="images/module-media.jpg" alt="Now Playing: album art, a dot-matrix track display and controls" width="1260" height="450" loading="lazy"></picture></li>
+      <li data-module="capture" data-label="Capture"><h3>Capture</h3><p>Screenshots and screen recordings, landing on a shelf ready to drag.</p><picture><source type="image/avif" srcset="images/module-capture.avif"><img src="images/module-capture.jpg" alt="Capture: buttons for area, window and screen, with recent captures" width="1260" height="450" loading="lazy"></picture></li>
+      <li data-module="claude" data-label="Claude"><h3>Claude Code</h3><p>What it's doing right now, beside the camera, and today's usage from the logs on your Mac.</p><picture><source type="image/avif" srcset="images/module-claude.avif"><img src="images/module-claude.jpg" alt="Claude Code: today's tokens, a streak, a 7-day chart and live sessions" width="1260" height="450" loading="lazy"></picture></li>
+      <li data-module="clipboard" data-label="Clipboard"><h3>Clipboard</h3><p>Everything you've copied, searchable and pinnable. Passwords are skipped.</p><picture><source type="image/avif" srcset="images/module-clipboard.avif"><img src="images/module-clipboard.jpg" alt="Clipboard: a searchable list of copied text, links and files" width="1260" height="450" loading="lazy"></picture></li>
+      <li data-module="shelf" data-label="Shelf"><h3>Shelf</h3><p>Drop files on the notch to keep them handy. Drag them out, or AirDrop them.</p><picture><source type="image/avif" srcset="images/module-shelf.avif"><img src="images/module-shelf.jpg" alt="Shelf: files waiting, with AirDrop and Clear buttons" width="1260" height="450" loading="lazy"></picture></li>
+      <li data-module="stats" data-label="Stats"><h3>Stats</h3><p>Processor, memory, battery and network at a glance.</p><picture><source type="image/avif" srcset="images/module-stats.avif"><img src="images/module-stats.jpg" alt="Stats: processor, memory, battery and network" width="1260" height="450" loading="lazy"></picture></li>
+    </ol>
+    <div class="preview" aria-hidden="true">
+      <div class="preview-frame">
+        <picture><source type="image/avif" srcset="images/module-todos.avif"><img data-module="todos" src="images/module-todos.jpg" alt="" width="1260" height="450" loading="lazy"></picture>
+        <picture><source type="image/avif" srcset="images/module-calendar.avif"><img data-module="calendar" src="images/module-calendar.jpg" alt="" width="1260" height="450" loading="lazy"></picture>
+        <picture><source type="image/avif" srcset="images/module-timers.avif"><img data-module="timers" src="images/module-timers.jpg" alt="" width="1260" height="450" loading="lazy"></picture>
+        <picture><source type="image/avif" srcset="images/module-media.avif"><img data-module="media" src="images/module-media.jpg" alt="" width="1260" height="450" loading="lazy"></picture>
+        <picture><source type="image/avif" srcset="images/module-capture.avif"><img data-module="capture" src="images/module-capture.jpg" alt="" width="1260" height="450" loading="lazy"></picture>
+        <picture><source type="image/avif" srcset="images/module-claude.avif"><img data-module="claude" src="images/module-claude.jpg" alt="" width="1260" height="450" loading="lazy"></picture>
+        <picture><source type="image/avif" srcset="images/module-clipboard.avif"><img data-module="clipboard" src="images/module-clipboard.jpg" alt="" width="1260" height="450" loading="lazy"></picture>
+        <picture><source type="image/avif" srcset="images/module-shelf.avif"><img data-module="shelf" src="images/module-shelf.jpg" alt="" width="1260" height="450" loading="lazy"></picture>
+        <picture><source type="image/avif" srcset="images/module-stats.avif"><img data-module="stats" src="images/module-stats.jpg" alt="" width="1260" height="450" loading="lazy"></picture>
+      </div>
+      <p class="caption"></p>
     </div>
   </section>
 
-  <section aria-labelledby="ears-title">
+  <!-- The ears -->
+  <section id="ears" class="ears-demo" aria-labelledby="ears-title" data-ear="ears">
     <div class="head">
-      <h3 id="ears-title" style="font-size:26px">While it's closed, the ears take turns</h3>
-      <p>Anything live shows beside the camera. When several things are live, they take turns, and Volume and brightness get their own HUD.</p>
+      <h2 id="ears-title">While it's closed, the ears take turns</h2>
+      <p class="lead">Anything live shows beside the camera. When several things are live, they share the space, and volume and brightness get their own HUD.</p>
     </div>
-    <div class="grid wide">
-      <div class="card"><div class="shot"><img src="images/ears-music.jpg" alt="Album art and a sound wave beside the notch" width="1040" height="100" loading="lazy"></div><b>Music</b><span>Artwork and a wave that follows the real sound.</span></div>
-      <div class="card"><div class="shot"><img src="images/ears-claude.jpg" alt="Claude Code status beside the notch, reading Editing" width="1040" height="100" loading="lazy"></div><b>Claude Code</b><span>Working, needs you, or done.</span></div>
-      <div class="card"><div class="shot"><img src="images/ears-timer.jpg" alt="A focus timer beside the notch, with a ring around its icon" width="1040" height="100" loading="lazy"></div><b>Focus timer</b><span>A ring fills as the session runs down.</span></div>
-      <div class="card"><div class="shot"><img src="images/ears-recording.jpg" alt="A red dot and elapsed time beside the notch while the screen records" width="1040" height="100" loading="lazy"></div><b>Screen recording</b><span>The time so far. Click to stop.</span></div>
+    <div class="ears-stage">
+      <picture><source type="image/avif" srcset="images/ears-music.avif"><img src="images/ears-music.jpg" alt="Album art and a sound wave beside the notch" width="1040" height="100" loading="lazy"></picture>
+      <picture><source type="image/avif" srcset="images/ears-claude.avif"><img src="images/ears-claude.jpg" alt="Claude Code status beside the notch, reading Editing" width="1040" height="100" loading="lazy"></picture>
+      <picture><source type="image/avif" srcset="images/ears-timer.avif"><img src="images/ears-timer.jpg" alt="A focus timer beside the notch, with a ring around its icon" width="1040" height="100" loading="lazy"></picture>
+      <picture><source type="image/avif" srcset="images/ears-recording.avif"><img src="images/ears-recording.jpg" alt="A red dot and elapsed time beside the notch while the screen records" width="1040" height="100" loading="lazy"></picture>
     </div>
+    <ul class="ears-legend">
+      <li><button type="button" aria-pressed="true"><b>Music</b><span>Artwork, and a wave that follows the real sound.</span></button></li>
+      <li><button type="button" aria-pressed="false"><b>Claude Code</b><span>Working, needs you, or done.</span></button></li>
+      <li><button type="button" aria-pressed="false"><b>Focus timer</b><span>A ring fills as the session runs down.</span></button></li>
+      <li><button type="button" aria-pressed="false"><b>Screen recording</b><span>The time so far. Click to stop.</span></button></li>
+    </ul>
+    <button class="ears-pause button ghost" type="button">Stop taking turns</button>
   </section>
 
   <!-- Make it yours -->
-  <section id="yours">
+  <section id="yours" class="yours" data-ear="yours">
     <div class="head">
-      <p class="kicker">Make it yours</p>
       <h2>A little character, and a look that's yours</h2>
-      <p>A page mascot sits in the ear and on Home. It turns to watch your pointer, breathes while it waits, and reacts when you click it. Twelve characters, from a fox to a CRT.</p>
+      <p class="lead">A page mascot sits in the ear and on Home. It turns to watch your pointer, breathes while it waits, and reacts when you click it. Here are all twelve. Click one.</p>
+      <dl class="facets">
+        <div class="wide"><dt>One shortcut for everything</dt><dd>Press <kbd>⌘K</kbd> and type: <code>10 min</code> starts a timer, <code>shot</code> takes a screenshot, anything else becomes a to-do.</dd></div>
+        <div><dt>A mirror, when you want one</dt><dd>A tile on Home shows you through the camera, flipped, for a look before a call. It starts only when you click it, so the camera light never comes on just because the notch opened.</dd></div>
+        <div><dt>macOS's own dark look</dt><dd>The open notch uses the same dark material as Control Center, and the closed notch stays black to match the camera. Themes of Xotch's own come later.</dd></div>
+      </dl>
     </div>
-    <div class="grid wide">
-      <div class="card"><div class="shot"><img src="images/ears-mascot.jpg" alt="A small fox mascot in the ear beside the notch" width="1040" height="100" loading="lazy"></div><b>In the ear</b><span>Company while you work. It costs no measurable processor time.</span></div>
-      <div class="card"><div class="shot"><img src="images/palette.jpg" alt="The command palette over the open notch" width="1500" height="450" loading="lazy"></div><b>One shortcut for everything</b><span>Press <kbd>⌘K</kbd> and type: <code>10 min</code> starts a timer, <code>shot</code> takes a screenshot, anything else becomes a to-do.</span></div>
-    </div>
-    <div class="split">
-      <div>
-        <h3 style="font-size:24px">A mirror, when you want one</h3>
-        <p class="lead" style="margin-top:10px">A tile on Home shows you through the camera, flipped like a mirror, for a look before a call. It starts only when you click it, and stops when you click again or close the notch, so the camera light never comes on just because the notch opened.</p>
-      </div>
-      <div>
-        <h3 style="font-size:24px">macOS's own dark look</h3>
-        <p class="lead" style="margin-top:10px">The open notch uses the same dark material as Control Center, and the closed notch stays black to match the camera. Themes of Xotch's own are coming later.</p>
-      </div>
-    </div>
+    <ul class="wall">
+      <li><button type="button" data-boop><span class="mascot" data-character="fox"></span>Fox</button></li>
+      <li><button type="button" data-boop><span class="mascot" data-character="cat"></span>Cat</button></li>
+      <li><button type="button" data-boop><span class="mascot" data-character="bunny"></span>Bunny</button></li>
+      <li><button type="button" data-boop><span class="mascot" data-character="bear"></span>Bear</button></li>
+      <li><button type="button" data-boop><span class="mascot" data-character="frog"></span>Frog</button></li>
+      <li><button type="button" data-boop><span class="mascot" data-character="dino"></span>Dino</button></li>
+      <li><button type="button" data-boop><span class="mascot" data-character="hamster"></span>Hamster</button></li>
+      <li><button type="button" data-boop><span class="mascot" data-character="deer"></span>Deer</button></li>
+      <li><button type="button" data-boop><span class="mascot" data-character="astronaut"></span>Astronaut</button></li>
+      <li><button type="button" data-boop><span class="mascot" data-character="gearbot"></span>Gearbot</button></li>
+      <li><button type="button" data-boop><span class="mascot" data-character="chef"></span>Chef</button></li>
+      <li><button type="button" data-boop><span class="mascot" data-character="crt"></span>CRT</button></li>
+    </ul>
   </section>
 
   <!-- Privacy and performance -->
-  <section id="privacy">
+  <section id="privacy" class="facts" data-ear="privacy">
     <div class="head">
-      <p class="kicker">Privacy and performance</p>
       <h2>Clear about what leaves your Mac, and light on it</h2>
-      <p>No account, no analytics, no telemetry. Everything else is your choice, and it's written down.</p>
+      <p class="lead">No account, no analytics, no telemetry. Everything else is your choice, and it's written down.</p>
     </div>
-    <div class="two">
-      <div class="panel">
+    <dl class="numbers">
+      <div><dt>CPU with the notch closed and three live activities taking turns</dt><dd>~0.3%</dd></div>
+      <div><dt>memory with the notch closed, on two displays</dt><dd>29&nbsp;MB</dd></div>
+      <div><dt>to transcribe five seconds of speech, on the Mac</dt><dd>~30&nbsp;ms</dd></div>
+      <div><dt>CPU from the speech engine while idle; it quits after two quiet minutes</dt><dd>0%</dd></div>
+    </dl>
+    <div class="ledger">
+      <div>
         <h3>Stays on your Mac</h3>
         <ul>
           <li><strong>Dictation.</strong> Your voice is turned into text on the Mac and never saved or sent.</li>
@@ -529,472 +284,43 @@ footer a { color: var(--ink-2); }
           <li><strong>API keys</strong> are kept in the Keychain.</li>
         </ul>
       </div>
-      <div class="panel">
+      <div>
         <h3>Leaves, only when you choose</h3>
         <ul>
-          <li><strong>Cloud AI.</strong> Your messages, the context you picked, any screenshot you attach, and what the AI looks up to answer go to the provider you chose. Clipboard and notes go only after you click Allow.</li>
+          <li><strong>Cloud AI.</strong> Your messages, the context you picked, any screenshot you attach, and what the AI looks up go to the provider you chose. Clipboard and notes go only after you click Allow.</li>
           <li><strong>Optional polish.</strong> If you turn it on, dictated text goes to your AI to fix the grammar.</li>
-          <li><strong>One download.</strong> The 17 MB speech model, from Hugging Face, once.</li>
-          <li><strong>Permissions</strong> are asked for when a feature needs them: Accessibility for the Fn key and HUDs, Microphone for dictation, Calendar, Screen Recording.</li>
+          <li><strong>One download.</strong> The 17&nbsp;MB speech model, from Hugging Face, once.</li>
+          <li><strong>Permissions</strong> are asked for when a feature needs them: Accessibility for the fn key and HUDs, Microphone, Calendar, Screen Recording.</li>
         </ul>
       </div>
-    </div>
-    <div class="stats" role="list">
-      <div role="listitem"><b>~0.3%</b><span>CPU with the notch closed and three live activities taking turns</span></div>
-      <div role="listitem"><b>29 MB</b><span>memory with the notch closed, on two displays</span></div>
-      <div role="listitem"><b>~30 ms</b><span>to transcribe five seconds of speech, on the Mac</span></div>
-      <div role="listitem"><b>0%</b><span>CPU from the speech engine while idle; it quits after two quiet minutes</span></div>
     </div>
     <p class="note">Measured with <code>top</code>, <code>sample</code> and <code>footprint</code> on an M5 Pro, and written up in the project's performance notes.</p>
   </section>
 
-  <!-- Comparison -->
-  <section id="compare">
+  <!-- Compare -->
+  <section id="compare" class="teaser" data-ear="compare">
     <div class="head">
-      <p class="kicker">Compared honestly</p>
-      <h2>Xotch and seven other notch apps, free and paid</h2>
-      <p>Every notch app does music and HUDs. They differ on AI, voice, price and polish. Here's where each one stands, Xotch's gaps included.</p>
+      <h2>Xotch and seven other notch apps</h2>
+      <p class="lead">Every notch app does music and HUDs. They differ on AI, voice, price and polish. Here's where Xotch stands, its gaps included.</p>
+      <a class="button ghost" href="compare/">See the full comparison</a>
     </div>
-
-    <div class="notice" role="note">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg>
-      <p>Checked 6 October 2026 against each app's own site or repository. These are the vendors' claims, not our tests. "Not stated" means we couldn't confirm it either way. Apps change fast, so check before you buy.</p>
-    </div>
-
-    <div class="legend" aria-hidden="true">
-      <span class="mark yes">Yes</span>
-      <span class="mark part">Partly</span>
-      <span class="mark no">No</span>
-      <span class="mark unk">? Not stated</span>
-    </div>
-
-    <div class="table-scroll" tabindex="0" role="region" aria-label="Feature comparison table, scrolls sideways">
-      <table class="matrix">
-        <caption>Scroll sideways on small screens. Sources are listed below the table.</caption>
-        <thead>
-          <tr>
-            <th scope="col">Feature</th>
-            <th scope="col" class="us">Xotch<small>Beta</small></th>
-            <th scope="col">Notchy<small>Free</small></th>
-            <th scope="col">NotchNook<small>Paid</small></th>
-            <th scope="col">Alcove<small>Paid</small></th>
-            <th scope="col">Boring Notch<small>Open source</small></th>
-            <th scope="col">Atoll<small>Open source</small></th>
-            <th scope="col">Crest<small>Paid</small></th>
-            <th scope="col">Droppy<small>Paid</small></th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr class="group"><th scope="rowgroup" colspan="1">Price and platform</th><td colspan="8"></td></tr>
-          <tr>
-            <th scope="row">Price</th>
-            <td class="us">Free during beta</td>
-            <td>Free, donations</td>
-            <td>$25 once, or a subscription</td>
-            <td>$14.99</td>
-            <td>Free</td>
-            <td>Free</td>
-            <td>$24.99 once (Pro), or $2.99/mo</td>
-            <td>$9.99 once</td>
-          </tr>
-          <tr>
-            <th scope="row">Open source</th>
-            <td class="us"><span class="mark no">No</span></td>
-            <td><span class="mark no">No</span></td>
-            <td><span class="mark no">No</span></td>
-            <td><span class="mark no">No</span></td>
-            <td><span class="mark yes">GPL-3.0</span></td>
-            <td><span class="mark yes">GPL-3.0</span></td>
-            <td><span class="mark no">No</span></td>
-            <td><span class="mark unk">? Not stated</span></td>
-          </tr>
-          <tr>
-            <th scope="row">Signed and notarised by Apple</th>
-            <td class="us"><span class="mark no">Not yet</span></td>
-            <td><span class="mark unk">? Not stated</span></td>
-            <td><span class="mark unk">? Not stated</span></td>
-            <td><span class="mark unk">? Not stated</span></td>
-            <td><span class="mark no">No</span><span class="note-cell">Homebrew handles it</span></td>
-            <td><span class="mark unk">? Not stated</span></td>
-            <td><span class="mark yes">Yes</span></td>
-            <td><span class="mark yes">Yes</span></td>
-          </tr>
-          <tr>
-            <th scope="row">Macs without a notch</th>
-            <td class="us"><span class="mark yes">Yes</span><span class="note-cell">Drawn on every display</span></td>
-            <td><span class="mark yes">Yes</span><span class="note-cell">Floating pill</span></td>
-            <td><span class="mark yes">Yes</span></td>
-            <td><span class="mark unk">? Not stated</span></td>
-            <td><span class="mark yes">Yes</span></td>
-            <td><span class="mark no">No</span><span class="note-cell">Notched MacBook only</span></td>
-            <td><span class="mark yes">Yes</span><span class="note-cell">Pill</span></td>
-            <td><span class="mark yes">Yes</span><span class="note-cell">Floating shelf</span></td>
-          </tr>
-          <tr>
-            <th scope="row">Oldest macOS</th>
-            <td class="us">14</td>
-            <td>13</td>
-            <td>14.6</td>
-            <td>15</td>
-            <td>14</td>
-            <td>14</td>
-            <td>14</td>
-            <td>14</td>
-          </tr>
-
-          <tr class="group"><th scope="rowgroup">AI and voice</th><td colspan="8"></td></tr>
-          <tr>
-            <th scope="row">AI chat in the notch</th>
-            <td class="us"><span class="mark yes">Yes</span><span class="note-cell">Cloud or local models</span></td>
-            <td><span class="mark no">No</span></td>
-            <td><span class="mark no">No</span></td>
-            <td><span class="mark no">No</span></td>
-            <td><span class="mark no">No</span></td>
-            <td><span class="mark no">No</span></td>
-            <td><span class="mark no">No</span></td>
-            <td><span class="mark no">No</span></td>
-          </tr>
-          <tr>
-            <th scope="row">AI that changes your to-dos, timer, notes and calendar</th>
-            <td class="us"><span class="mark yes">Yes</span><span class="note-cell">After you click Allow</span></td>
-            <td><span class="mark no">No</span></td>
-            <td><span class="mark no">No</span></td>
-            <td><span class="mark no">No</span></td>
-            <td><span class="mark no">No</span></td>
-            <td><span class="mark no">No</span></td>
-            <td><span class="mark no">No</span></td>
-            <td><span class="mark no">No</span></td>
-          </tr>
-          <tr>
-            <th scope="row">Voice to text</th>
-            <td class="us"><span class="mark yes">Yes</span><span class="note-cell">Hold Fn, types into any app, on the Mac</span></td>
-            <td><span class="mark no">No</span></td>
-            <td><span class="mark no">No</span></td>
-            <td><span class="mark no">No</span></td>
-            <td><span class="mark no">No</span></td>
-            <td><span class="mark no">No</span></td>
-            <td><span class="mark part">Partly</span><span class="note-cell">Meeting notes, in the Minutes app</span></td>
-            <td><span class="mark part">Partly</span><span class="note-cell">Transcribes recordings, on the Mac</span></td>
-          </tr>
-          <tr>
-            <th scope="row">Coding-agent status (Claude Code)</th>
-            <td class="us"><span class="mark yes">Yes</span></td>
-            <td><span class="mark yes">Yes</span></td>
-            <td><span class="mark no">No</span></td>
-            <td><span class="mark no">No</span></td>
-            <td><span class="mark no">No</span></td>
-            <td><span class="mark no">No</span><span class="note-cell">A fork adds it</span></td>
-            <td><span class="mark yes">Yes</span></td>
-            <td><span class="mark yes">Yes</span><span class="note-cell">Agents add-on</span></td>
-          </tr>
-          <tr>
-            <th scope="row">Approve agent requests from the notch</th>
-            <td class="us"><span class="mark no">No</span><span class="note-cell">Shows "Needs you"</span></td>
-            <td><span class="mark yes">Yes</span></td>
-            <td><span class="mark no">No</span></td>
-            <td><span class="mark no">No</span></td>
-            <td><span class="mark no">No</span></td>
-            <td><span class="mark no">No</span></td>
-            <td><span class="mark yes">Yes</span></td>
-            <td><span class="mark unk">? Not stated</span></td>
-          </tr>
-
-          <tr class="group"><th scope="rowgroup">Your day</th><td colspan="8"></td></tr>
-          <tr>
-            <th scope="row">To-dos or reminders</th>
-            <td class="us"><span class="mark yes">Yes</span></td>
-            <td><span class="mark yes">Yes</span></td>
-            <td><span class="mark unk">? Not stated</span></td>
-            <td><span class="mark unk">? Not stated</span></td>
-            <td><span class="mark no">No</span><span class="note-cell">On the roadmap</span></td>
-            <td><span class="mark no">No</span></td>
-            <td><span class="mark yes">Yes</span></td>
-            <td><span class="mark no">No</span></td>
-          </tr>
-          <tr>
-            <th scope="row">Calendar</th>
-            <td class="us"><span class="mark yes">Yes</span><span class="note-cell">One-click Join</span></td>
-            <td><span class="mark yes">Yes</span></td>
-            <td><span class="mark yes">Yes</span></td>
-            <td><span class="mark unk">? Not stated</span></td>
-            <td><span class="mark yes">Yes</span></td>
-            <td><span class="mark yes">Yes</span></td>
-            <td><span class="mark yes">Yes</span><span class="note-cell">One-click Join</span></td>
-            <td><span class="mark unk">? Not stated</span></td>
-          </tr>
-          <tr>
-            <th scope="row">Focus timer</th>
-            <td class="us"><span class="mark yes">Yes</span></td>
-            <td><span class="mark yes">Yes</span></td>
-            <td><span class="mark unk">? Not stated</span></td>
-            <td><span class="mark unk">? Not stated</span></td>
-            <td><span class="mark unk">? Not stated</span></td>
-            <td><span class="mark yes">Yes</span></td>
-            <td><span class="mark unk">? Not stated</span></td>
-            <td><span class="mark unk">? Not stated</span></td>
-          </tr>
-          <tr>
-            <th scope="row">Music controls</th>
-            <td class="us"><span class="mark yes">Yes</span></td>
-            <td><span class="mark yes">Yes</span></td>
-            <td><span class="mark yes">Yes</span></td>
-            <td><span class="mark yes">Yes</span></td>
-            <td><span class="mark yes">Yes</span></td>
-            <td><span class="mark yes">Yes</span></td>
-            <td><span class="mark yes">Yes</span></td>
-            <td><span class="mark yes">Yes</span></td>
-          </tr>
-          <tr>
-            <th scope="row">Synced lyrics</th>
-            <td class="us"><span class="mark no">No</span></td>
-            <td><span class="mark yes">Yes</span></td>
-            <td><span class="mark no">No</span></td>
-            <td><span class="mark unk">? Not stated</span></td>
-            <td><span class="mark no">No</span></td>
-            <td><span class="mark no">No</span></td>
-            <td><span class="mark yes">Yes</span></td>
-            <td><span class="mark yes">Yes</span><span class="note-cell">Add-on</span></td>
-          </tr>
-          <tr>
-            <th scope="row">File shelf</th>
-            <td class="us"><span class="mark yes">Yes</span></td>
-            <td><span class="mark yes">Yes</span></td>
-            <td><span class="mark yes">Yes</span></td>
-            <td><span class="mark unk">? Not stated</span></td>
-            <td><span class="mark yes">Yes</span></td>
-            <td><span class="mark unk">? Not stated</span></td>
-            <td><span class="mark yes">Yes</span></td>
-            <td><span class="mark yes">Yes</span></td>
-          </tr>
-          <tr>
-            <th scope="row">Clipboard history</th>
-            <td class="us"><span class="mark yes">Yes</span></td>
-            <td><span class="mark yes">Yes</span></td>
-            <td><span class="mark yes">Yes</span></td>
-            <td><span class="mark unk">? Not stated</span></td>
-            <td><span class="mark no">No</span></td>
-            <td><span class="mark yes">Yes</span></td>
-            <td><span class="mark yes">Yes</span></td>
-            <td><span class="mark yes">Yes</span></td>
-          </tr>
-          <tr>
-            <th scope="row">Screenshots and recording</th>
-            <td class="us"><span class="mark yes">Yes</span></td>
-            <td><span class="mark yes">Yes</span></td>
-            <td><span class="mark unk">? Not stated</span></td>
-            <td><span class="mark unk">? Not stated</span></td>
-            <td><span class="mark no">No</span></td>
-            <td><span class="mark no">No</span></td>
-            <td><span class="mark yes">Yes</span><span class="note-cell">Take app</span></td>
-            <td><span class="mark yes">Yes</span></td>
-          </tr>
-          <tr>
-            <th scope="row">Volume and brightness HUDs</th>
-            <td class="us"><span class="mark yes">Yes</span></td>
-            <td><span class="mark yes">Yes</span></td>
-            <td><span class="mark yes">Yes</span></td>
-            <td><span class="mark yes">Yes</span></td>
-            <td><span class="mark yes">Yes</span></td>
-            <td><span class="mark yes">Yes</span></td>
-            <td><span class="mark yes">Yes</span></td>
-            <td><span class="mark yes">Yes</span></td>
-          </tr>
-          <tr>
-            <th scope="row">Camera mirror</th>
-            <td class="us"><span class="mark yes">Yes</span><span class="note-cell">On Home, after a click</span></td>
-            <td><span class="mark unk">? Not stated</span></td>
-            <td><span class="mark yes">Yes</span></td>
-            <td><span class="mark unk">? Not stated</span></td>
-            <td><span class="mark no">No</span><span class="note-cell">On the roadmap</span></td>
-            <td><span class="mark unk">? Not stated</span></td>
-            <td><span class="mark unk">? Not stated</span></td>
-            <td><span class="mark unk">? Not stated</span></td>
-          </tr>
-          <tr>
-            <th scope="row">A companion character</th>
-            <td class="us"><span class="mark yes">Yes</span><span class="note-cell">Page mascot</span></td>
-            <td><span class="mark no">No</span></td>
-            <td><span class="mark no">No</span></td>
-            <td><span class="mark no">No</span></td>
-            <td><span class="mark no">No</span></td>
-            <td><span class="mark no">No</span></td>
-            <td><span class="mark no">No</span></td>
-            <td><span class="mark no">No</span></td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <div class="head" style="margin-top:20px">
-      <h3 style="font-size:26px">Pros and cons, app by app</h3>
-      <p>Which one fits depends on what you want the notch to be.</p>
-    </div>
-
-    <div class="verdicts">
-      <article class="verdict us">
-        <header><h3>Xotch</h3><span class="price">Free during beta</span></header>
-        <p class="best"><b>Best for</b> people who want an assistant in the notch that does things, and dictation that stays on the Mac.</p>
-        <div class="pc">
-          <div class="pro"><h4>Pros</h4><ul>
-            <li>The only one with an AI chat, cloud or local</li>
-            <li>AI actions, each approved first</li>
-            <li>Push-to-talk dictation into any app, on the Mac</li>
-            <li>Live Claude Code status and usage</li>
-            <li>Light: about 0.3% CPU closed, 29 MB</li>
-          </ul></div>
-          <div class="con"><h4>Cons</h4><ul>
-            <li>Private beta, not yet notarised</li>
-            <li>Permissions reset with each beta build</li>
-            <li>Dictation needs Apple silicon and macOS 26</li>
-            <li>No lyrics, launcher or agent approvals</li>
-            <li>No macOS 13</li>
-          </ul></div>
-        </div>
-      </article>
-
-      <article class="verdict">
-        <header><h3>Notchy</h3><span class="price">Free, donations</span></header>
-        <p class="best"><b>Best for</b> the most features for nothing.</p>
-        <div class="pc">
-          <div class="pro"><h4>Pros</h4><ul>
-            <li>Free, with 70-plus features</li>
-            <li>Synced lyrics, Face Unlock, OCR, launcher</li>
-            <li>Claude Code activity and approvals</li>
-            <li>Runs on macOS 13, and as a pill without a notch</li>
-          </ul></div>
-          <div class="con"><h4>Cons</h4><ul>
-            <li>No AI chat or voice typing</li>
-            <li>Closed source</li>
-            <li>So much in one app can feel busy</li>
-          </ul></div>
-        </div>
-      </article>
-
-      <article class="verdict">
-        <header><h3>NotchNook</h3><span class="price">$25 once, or subscription</span></header>
-        <p class="best"><b>Best for</b> a polished, established widget dock.</p>
-        <div class="pc">
-          <div class="pro"><h4>Pros</h4><ul>
-            <li>Long-running and widely reviewed</li>
-            <li>Media, calendar, file tray, AirDrop, mirror</li>
-            <li>Lots of visual customisation, and a camera mirror</li>
-          </ul></div>
-          <div class="con"><h4>Cons</h4><ul>
-            <li>The priciest one-time licence here</li>
-            <li>No AI or voice features</li>
-            <li>Recent reviews report slow support</li>
-            <li>Needs macOS 14.6</li>
-          </ul></div>
-        </div>
-      </article>
-
-      <article class="verdict">
-        <header><h3>Alcove</h3><span class="price">$14.99</span></header>
-        <p class="best"><b>Best for</b> the most iPhone-like Dynamic Island.</p>
-        <div class="pc">
-          <div class="pro"><h4>Pros</h4><ul>
-            <li>Known for fluid, polished animation</li>
-            <li>Live Activities, notifications, HUDs</li>
-            <li>Lock Screen widgets</li>
-          </ul></div>
-          <div class="con"><h4>Cons</h4><ul>
-            <li>Needs macOS 15</li>
-            <li>Narrower: little for to-dos or files</li>
-            <li>No AI or voice features</li>
-          </ul></div>
-        </div>
-      </article>
-
-      <article class="verdict">
-        <header><h3>The Boring Notch</h3><span class="price">Free, GPL-3.0</span></header>
-        <p class="best"><b>Best for</b> a free, open-source music and shelf notch.</p>
-        <div class="pc">
-          <div class="pro"><h4>Pros</h4><ul>
-            <li>Free and open source, about 11k stars</li>
-            <li>Music with a visualiser, shelf with AirDrop</li>
-            <li>Full HUD replacement</li>
-          </ul></div>
-          <div class="con"><h4>Cons</h4><ul>
-            <li>Not signed: a security bypass to open</li>
-            <li>No AI; to-dos only on the roadmap</li>
-            <li>No clipboard or capture</li>
-          </ul></div>
-        </div>
-      </article>
-
-      <article class="verdict">
-        <header><h3>Atoll</h3><span class="price">Free, GPL-3.0</span></header>
-        <p class="best"><b>Best for</b> a free notch with system stats.</p>
-        <div class="pc">
-          <div class="pro"><h4>Pros</h4><ul>
-            <li>Free and open source</li>
-            <li>Media, timers, clipboard, colour picker</li>
-            <li>CPU, GPU, memory and network at a glance</li>
-          </ul></div>
-          <div class="con"><h4>Cons</h4><ul>
-            <li>Needs a MacBook with a notch</li>
-            <li>No AI or voice features</li>
-            <li>No to-dos</li>
-          </ul></div>
-        </div>
-      </article>
-
-      <article class="verdict">
-        <header><h3>Crest</h3><span class="price">$24.99 Pro, or $2.99/mo</span></header>
-        <p class="best"><b>Best for</b> developers who want agent approvals and GitHub in the notch.</p>
-        <div class="pc">
-          <div class="pro"><h4>Pros</h4><ul>
-            <li>Approves Claude Code, Codex and Copilot CLI requests</li>
-            <li>GitHub pull requests and CI</li>
-            <li>Lyrics, calendar, to-dos, shelf, clipboard</li>
-            <li>Signed, notarised, two Macs per licence</li>
-          </ul></div>
-          <div class="con"><h4>Cons</h4><ul>
-            <li>Screenshots and meeting notes are separate apps</li>
-            <li>No AI chat or dictation into any app</li>
-            <li>Subscription or bundle pricing</li>
-          </ul></div>
-        </div>
-      </article>
-
-      <article class="verdict">
-        <header><h3>Droppy</h3><span class="price">$9.99 once</span></header>
-        <p class="best"><b>Best for</b> a cheap, extensible shelf and clipboard.</p>
-        <div class="pc">
-          <div class="pro"><h4>Pros</h4><ul>
-            <li>Low one-time price, 3-day trial</li>
-            <li>Shelf, clipboard, window snapping, launcher</li>
-            <li>35 add-ons: lyrics, agents, on-device transcription</li>
-          </ul></div>
-          <div class="con"><h4>Cons</h4><ul>
-            <li>Key features are add-ons to set up</li>
-            <li>Transcribes recordings rather than typing as you talk</li>
-            <li>No AI chat, to-dos or calendar</li>
-          </ul></div>
-        </div>
-      </article>
-    </div>
-
-    <div class="sources">
-      <p><b>Sources</b>, read on 6 October 2026. Third-party "best notch apps" lists are often published by one of the apps they rank, so we used each app's own page wherever we could.</p>
-      <ul>
-        <li><a href="https://notchy.dev/">notchy.dev</a></li>
-        <li><a href="https://notchnook.macupdate.com">NotchNook on MacUpdate</a></li>
-        <li><a href="https://tryalcove.com">tryalcove.com</a></li>
-        <li><a href="https://github.com/TheBoredTeam/boring.notch">TheBoredTeam/boring.notch on GitHub</a></li>
-        <li><a href="https://github.com/Ebullioscopic/Atoll">Ebullioscopic/Atoll on GitHub</a></li>
-        <li><a href="https://crestnotch.app">crestnotch.app</a></li>
-        <li><a href="https://getdroppy.app/">getdroppy.app</a> and <a href="https://getdroppy.app/blog/voice-transcription-mac-private">its voice transcription post</a></li>
-      </ul>
-    </div>
+    <table class="slice">
+      <caption class="caption" style="caption-side:bottom;text-align:left;padding-top:12px">From each app's own site, checked 6 October 2026.</caption>
+      <thead><tr><th scope="col">Feature</th><th scope="col">Xotch</th><th scope="col">The other seven</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">AI chat in the notch</th><td><span class="mark yes">Yes</span></td><td>None of them</td></tr>
+        <tr><th scope="row">AI that changes your day, after Allow</th><td><span class="mark yes">Yes</span></td><td>None of them</td></tr>
+        <tr><th scope="row">Voice typing into any app</th><td><span class="mark yes">Yes</span></td><td>None; two transcribe in other ways</td></tr>
+        <tr><th scope="row">Claude Code status</th><td><span class="mark yes">Yes</span></td><td>Notchy, Crest, Droppy</td></tr>
+        <tr><th scope="row">Approve agent requests</th><td><span class="mark no">No</span></td><td>Notchy, Crest</td></tr>
+        <tr><th scope="row">Synced lyrics</th><td><span class="mark no">No</span></td><td>Notchy, Crest, Droppy</td></tr>
+      </tbody>
+    </table>
   </section>
 
   <!-- FAQ -->
-  <section id="faq">
-    <div class="head">
-      <p class="kicker">Questions</p>
-      <h2>Good to know</h2>
-    </div>
+  <section id="faq" class="faq-block" data-ear="faq">
+    <h2>Good to know</h2>
     <div class="faq">
       <details>
         <summary>Does it work without a notch?</summary>
@@ -1018,46 +344,38 @@ footer a { color: var(--ink-2); }
       </details>
       <details>
         <summary>Will it slow my Mac down?</summary>
-        <p>With the notch closed it uses about 0.3% of the processor and 29 MB of memory. The speech engine runs only while you dictate and quits after two quiet minutes.</p>
+        <p>With the notch closed it uses about 0.3% of the processor and 29&nbsp;MB of memory. The speech engine runs only while you dictate and quits after two quiet minutes.</p>
       </details>
     </div>
   </section>
 
-  <!-- Beta -->
-  <section id="beta">
-    <div class="beta">
-      <p class="kicker">Private beta</p>
-      <h2>Try it before it ships</h2>
-      <p class="lead" style="max-width:56ch">Xotch is in private beta while it's signed and notarised. Testers get the build, the changelog, and a direct line for anything that breaks.</p>
-      <!-- Set this to your own address (or swap in a form service) before publishing. -->
-      <a class="button primary" href="mailto:hello@xotch.app?subject=Xotch%20beta">Ask for an invite</a>
-      <ol>
-        <li>Unzip the download and drag <strong>Xotch</strong> to Applications.</li>
-        <li>Open it. If macOS says it can't check the app, choose <strong>Open Anyway</strong> in System Settings › Privacy &amp; Security.</li>
-        <li>Move the pointer to the notch. Xotch lives in the menu bar and has no Dock icon.</li>
-      </ol>
-      <p class="note">Needs macOS 14 Sonoma or later, on Apple silicon or Intel. Dictation needs Apple silicon and macOS 26; screen recording needs macOS 15; Liquid Glass needs macOS 26.</p>
+  <!-- Beta: the finale -->
+  <section id="beta" class="finale" data-ear="beta">
+    <div class="big-notch" aria-hidden="true">
+      <span class="mascot" data-character="fox"></span>
+      <span class="camera"><i></i></span>
+      <span class="status">Beta</span>
     </div>
+    <h2>Try it before it ships</h2>
+    <p class="lead">Xotch is in private beta while it's signed and notarised. Testers get the build, the changelog, and a direct line for anything that breaks.</p>
+    <!-- xotch.app has no mail records yet, so this address bounces. Set a working one (here and in the footer) before publishing. -->
+    <a class="button primary" href="mailto:hello@xotch.app?subject=Xotch%20beta">Ask for an invite</a>
+    <ol class="steps" aria-label="Once your invite arrives">
+      <li>Unzip the build from your invite and drag <strong>Xotch</strong> to Applications.</li>
+      <li>Open it. If macOS says it can't check the app, choose <strong>Open Anyway</strong> in System Settings › Privacy &amp; Security.</li>
+      <li>Move the pointer to the notch. Xotch lives in the menu bar and has no Dock icon.</li>
+    </ol>
+    <p class="note">Needs macOS 14 Sonoma or later, on Apple silicon or Intel. Dictation needs Apple silicon and macOS 26; screen recording needs macOS 15; Liquid Glass needs macOS 26.</p>
   </section>
 
 </main>
 
 <footer>
-  <div>Xotch, a Mac notch app. Built solo.</div>
-  <div>Speech recognition by <a href="https://huggingface.co/Cactus-Compute/whistle">Whistle</a> from Cactus Compute (Apache 2.0). Characters from <a href="https://github.com/nilbuild/page-mascot">page-mascot</a> by Kamran Ahmed (MIT).</div>
-  <div>Notchy, NotchNook, Alcove, The Boring Notch, Atoll, Crest and Droppy are their owners' products, named here only for comparison.</div>
-  <div>Questions: <a href="mailto:hello@xotch.app">hello@xotch.app</a></div>
+  <p class="sign">Xotch, a Mac notch app. Built solo.</p>
+  <p>Questions: <a href="mailto:hello@xotch.app">hello@xotch.app</a></p>
+  <p>Speech recognition by <a href="https://huggingface.co/Cactus-Compute/whistle">Whistle</a> from Cactus Compute (Apache 2.0). Characters from <a href="https://github.com/nilbuild/page-mascot">page-mascot</a> by Kamran Ahmed (MIT).</p>
+  <p>Notchy, NotchNook, Alcove, The Boring Notch, Atoll, Crest and Droppy are their owners' products, named here only for comparison.</p>
 </footer>
 </div>
-
-<script>
-  // The toggle flips away from whatever is showing now, and remembers it.
-  document.querySelector(".theme-toggle").addEventListener("click", () => {
-    const root = document.documentElement;
-    const dark = root.dataset.theme ? root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
-    root.dataset.theme = dark ? "light" : "dark";
-    try { localStorage.setItem("xotch-theme", root.dataset.theme); } catch {}
-  });
-</script>
 </body>
 </html>

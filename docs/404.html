@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en" data-base="/">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Nothing live here: Xotch</title>
+<meta name="description" content="This page isn’t in the notch. Head back to Xotch, or compare eight Mac notch apps.">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#08090B" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#F2F2F5" media="(prefers-color-scheme: light)">
+<link rel="icon" href="/images/icon.png">
+<link rel="preload" href="/fonts/bricolage-grotesque-700-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/hanken-grotesk-400_600-normal.woff2" as="font" type="font/woff2" crossorigin>
+<!-- Root-absolute paths: GitHub Pages serves this file for any missing path, at any depth. -->
+<link rel="stylesheet" href="/site.css">
+<script>
+  try {
+    const saved = localStorage.getItem("xotch-theme");
+    if (saved === "light" || saved === "dark") document.documentElement.dataset.theme = saved;
+    // Arriving from another page of the site: the notch that covered it opens again (site.js).
+    const curtain = sessionStorage.getItem("xotch-curtain");
+    if (curtain) {
+      sessionStorage.removeItem("xotch-curtain");
+      if (!matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        document.documentElement.dataset.curtain = curtain;
+        document.documentElement.classList.add("arriving");
+      }
+    }
+  } catch {}
+</script>
+<script src="/site.js" defer></script>
+</head>
+<body>
+<a class="skip" href="#content">Skip to content</a>
+
+<nav class="notch" aria-label="Main">
+  <span class="ear ear-l" aria-hidden="true"><span class="ear-slot">
+    <span data-for="top"><span class="mascot" data-character="fox"></span></span>
+    <span data-for="ai" style="color:#FF9F0A"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg></span>
+    <span data-for="dictation" style="color:#FF453A"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></span>
+    <span data-for="day"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="3"/><path d="M3 9h18M8 2v4M16 2v4M8 14l2.5 2.5L16 12"/></svg></span>
+    <span data-for="ears"><span class="art"></span></span>
+    <span data-for="yours" style="color:#FFD60A"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8.5 14.5a4.5 4.5 0 0 0 7 0"/><circle cx="9" cy="10" r=".6" fill="currentColor"/><circle cx="15" cy="10" r=".6" fill="currentColor"/></svg></span>
+    <span data-for="privacy" style="color:#30D158"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="10" width="14" height="11" rx="2.5"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span>
+    <span data-for="compare"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M3 10h18M10 4v16"/></svg></span>
+    <span data-for="faq"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6v.4M12 17h.01"/></svg></span>
+    <span data-for="beta"><span class="live"></span></span>
+  </span></span>
+  <span class="ear ear-r" aria-hidden="true"><span class="ear-slot">
+    <span data-for="top">404</span>
+    <span data-for="ai" style="color:#FF9F0A"><span class="dots"><i></i><i></i><i></i></span></span>
+    <span data-for="dictation"><span class="bars"><i></i><i></i><i></i><i></i><i></i></span></span>
+    <span data-for="day" data-today>Today</span>
+    <span data-for="ears" style="color:#FF8A80"><span class="bars wave"><i></i><i></i><i></i><i></i><i></i></span></span>
+    <span data-for="yours">×12</span>
+    <span data-for="privacy">Local</span>
+    <span data-for="compare">8 apps</span>
+    <span data-for="faq">FAQ</span>
+    <span data-for="beta" style="color:#FF9F0A">3 steps</span>
+  </span></span>
+  <a class="name" href="/"><span class="dot" aria-hidden="true"></span>Xotch</a>
+  <a href="/#ai" class="hide-small">AI</a>
+  <a href="/#dictation" class="hide-small">Dictation</a>
+  <a href="/#compare" class="hide-small">Compare</a>
+  <a href="/#privacy" class="hide-small">Privacy</a>
+  <a href="/#beta">Beta</a>
+  <button class="theme-toggle" type="button" aria-label="Switch between light and dark">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"/></svg>
+  </button>
+  <button class="menu-toggle" type="button" aria-label="Sections" aria-expanded="false" aria-controls="notch-menu">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 9h14"/><path d="M5 15h14"/></svg>
+  </button>
+  <div class="notch-menu" id="notch-menu">
+    <a href="/#ai">AI</a>
+    <a href="/#dictation">Dictation</a>
+    <a href="/#day">Your day</a>
+    <a href="/#yours">Make it yours</a>
+    <a href="/#privacy">Privacy</a>
+    <a href="/#compare">Compare</a>
+    <a href="/#faq">Questions</a>
+    <a href="/#beta">Beta</a>
+  </div>
+</nav>
+
+<div class="wrap">
+<main id="content">
+  <section class="lost" data-ear="top">
+    <div class="big-notch" aria-hidden="true">
+      <span class="mascot" data-character="fox"></span>
+      <span class="camera"><i></i></span>
+      <span class="status">404</span>
+    </div>
+    <h1>Nothing live here</h1>
+    <p class="lead">This page isn’t in the notch. The link may be old, or have a typo in it. The fox is looking too.</p>
+    <div class="cta">
+      <a class="button primary" href="/">Back to Xotch</a>
+      <a class="button ghost" href="/compare/">Compare notch apps</a>
+    </div>
+  </section>
+</main>
+</div>
+</body>
+</html>

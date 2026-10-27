@@ -1,0 +1,693 @@
+/* Xotch site. The system is written up in DESIGN.md: the notch is the one object, things drop
+   out of it on the app's spring and tuck back into it. */
+
+:root {
+  color-scheme: dark;
+  --notch: #000;
+  --ink: #F3F4F6;
+  --ink-2: #B9BFC9;
+  --muted: #8A919D;
+  --ground: #08090B;
+  --surface: #101216;
+  --raised: #171A1F;
+  --line: #23272E;
+  --accent: #FF9F0A;
+  --accent-ink: #1A1200;
+  --accent-soft: rgba(255, 159, 10, .12);
+  --good: #34C46E;
+  --good-soft: rgba(52, 196, 110, .13);
+  --part: #E0B341;
+  --part-soft: rgba(224, 179, 65, .14);
+  --bad: #8A919D;
+  --us: rgba(255, 159, 10, .07);
+  --display: "Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
+  --body: "Hanken Grotesk", -apple-system, "Segoe UI", system-ui, sans-serif;
+  --mac: -apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", sans-serif;
+  --spring: cubic-bezier(.32, 1.28, .44, 1);
+  --out: cubic-bezier(.2, .7, .2, 1);
+  --t-mega: clamp(56px, 11.5vw, 172px);
+  --t-xl: clamp(44px, 6.6vw, 84px);
+  --t-l: clamp(32px, 4.2vw, 52px);
+  --t-m: clamp(22px, 2.3vw, 30px);
+  --gutter: 24px;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    color-scheme: light;
+    --ink: #1D1D1F;
+    --ink-2: #3F4249;
+    --muted: #5E626B;
+    --ground: #F2F2F5;
+    --surface: #FFFFFF;
+    --raised: #E8E8ED;
+    --line: #D9D9DF;
+    --accent: #A35600;
+    --accent-ink: #FFFFFF;
+    --accent-soft: rgba(163, 86, 0, .1);
+    --good: #147540;
+    --good-soft: rgba(20, 117, 64, .1);
+    --part: #835F00;
+    --part-soft: rgba(131, 95, 0, .1);
+    --bad: #646A74;
+    --us: rgba(163, 86, 0, .06);
+  }
+}
+:root[data-theme="light"] {
+  color-scheme: light;
+  --ink: #1D1D1F;
+  --ink-2: #3F4249;
+  --muted: #5E626B;
+  --ground: #F2F2F5;
+  --surface: #FFFFFF;
+  --raised: #E8E8ED;
+  --line: #D9D9DF;
+  --accent: #A35600;
+  --accent-ink: #FFFFFF;
+  --accent-soft: rgba(163, 86, 0, .1);
+  --good: #147540;
+  --good-soft: rgba(20, 117, 64, .1);
+  --part: #835F00;
+  --part-soft: rgba(131, 95, 0, .1);
+  --bad: #646A74;
+  --us: rgba(163, 86, 0, .06);
+}
+
+/* Fonts, self-hosted: Bricolage Grotesque 700 with its optical sizes, Hanken Grotesk 400 to 600. */
+@font-face {
+  font-family: "Bricolage Grotesque";
+  src: url("fonts/bricolage-grotesque-700-normal.woff2") format("woff2");
+  font-weight: 700; font-style: normal; font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Hanken Grotesk";
+  src: url("fonts/hanken-grotesk-400_600-normal.woff2") format("woff2");
+  font-weight: 400 600; font-style: normal; font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* Base */
+* { box-sizing: border-box; }
+/* Screenshots sit in <picture> for their AVIF; the img stays the layout box. */
+picture:not(.stage) { display: contents; }
+html { scroll-padding-top: 72px; -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: 17px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: clip;
+}
+::selection { background: var(--accent); color: var(--accent-ink); }
+img { max-width: 100%; height: auto; display: block; }
+a { color: var(--ink); text-decoration-color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 3px; transition: text-decoration-thickness .2s ease; }
+@media (hover: hover) { a:hover { text-decoration-thickness: 3px; } }
+h1, h2, h3 { font-family: var(--display); font-weight: 700; margin: 0; text-wrap: balance; line-height: 1.05; }
+h2 { font-size: var(--t-l); letter-spacing: -.035em; }
+h3 { font-size: 22px; letter-spacing: -.02em; }
+p { margin: 0; }
+kbd {
+  font-family: var(--mac); font-size: .82em; font-weight: 600;
+  padding: 1px 7px; border-radius: 6px;
+  border: 1px solid var(--line); border-bottom-width: 2px;
+  background: var(--raised); color: var(--ink); white-space: nowrap;
+}
+code { font-size: .9em; background: var(--raised); padding: 1px 6px; border-radius: 5px; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 6px; }
+.skip { position: absolute; left: -999px; top: 56px; z-index: 60; background: var(--accent); color: var(--accent-ink); padding: 8px 14px; border-radius: 8px; }
+.skip:focus { left: 16px; }
+.wrap { max-width: 1248px; margin: 0 auto; padding-inline: var(--gutter); }
+.lead { color: var(--ink-2); font-size: 18px; text-wrap: pretty; }
+.muted { color: var(--muted); }
+.note { font-size: 14px; color: var(--muted); }
+.caption { color: var(--muted); font-size: 14px; }
+.shot { border-radius: 14px; overflow: hidden; border: 1px solid var(--line); background: var(--notch); }
+.ticks { margin: 0; padding: 0; list-style: none; color: var(--ink-2); display: grid; gap: 10px; }
+.ticks li { position: relative; padding-left: 26px; }
+.ticks li::before {
+  content: ""; position: absolute; left: 2px; top: .55em;
+  width: 12px; height: 7px; border-left: 2px solid var(--accent); border-bottom: 2px solid var(--accent);
+  rotate: -45deg; translate: 0 -3px;
+}
+
+/* ───────── The notch: the nav, its ears and the phone menu. Black in both themes. ───────── */
+.notch {
+  position: fixed; top: 0; left: 50%; translate: -50% 0;
+  z-index: 40; display: flex; align-items: center; gap: 2px;
+  height: 40px; padding: 0 10px; padding-top: env(safe-area-inset-top, 0px);
+  background: var(--notch); border-radius: 0 0 18px 18px;
+  font-family: var(--mac); font-size: 13.5px; font-weight: 500; letter-spacing: -.005em;
+  max-width: calc(100vw - 32px);
+  transition: border-radius .2s ease;
+}
+.notch::before, .notch::after, .ear::before {
+  content: ""; position: absolute; top: env(safe-area-inset-top, 0px);
+  width: 14px; height: 14px; pointer-events: none;
+}
+.notch::before, .ear-l::before { left: -14px; background: radial-gradient(circle at 0 100%, transparent 13.5px, #000 14px); }
+.notch::after, .ear-r::before { right: -14px; background: radial-gradient(circle at 100% 100%, transparent 13.5px, #000 14px); }
+.notch a, .notch button {
+  position: relative; display: inline-flex; align-items: center; gap: 8px;
+  height: 30px; padding: 0 9px; border-radius: 999px;
+  color: #B9BFC9; text-decoration: none; white-space: nowrap;
+  font: inherit; background: none; border: 0; cursor: pointer;
+}
+/* Hover opens a pill under the link with the notch's own spring. */
+.notch a::after, .notch button::after {
+  content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit;
+  background: rgba(255, 255, 255, .13); opacity: 0; scale: .55 .7;
+  transition: opacity .2s ease, scale .45s var(--spring);
+}
+@media (hover: hover) {
+  .notch :is(a, button):hover { color: #fff; }
+  .notch :is(a, button):hover::after { opacity: 1; scale: 1; }
+}
+.notch :is(a, button):focus-visible { color: #fff; }
+.notch :is(a, button):focus-visible::after { opacity: 1; scale: 1; }
+.notch :is(a, button):active::after { scale: .9; }
+.notch :focus-visible { outline-color: #FF9F0A; outline-offset: 1px; border-radius: 999px; }
+.notch a[aria-current] { color: #fff; }
+.notch a[aria-current]::before { content: ""; position: absolute; left: 50%; bottom: 1px; width: 4px; height: 4px; margin-left: -2px; border-radius: 50%; background: #FF9F0A; }
+.notch .name { font-family: var(--display); font-size: 15px; font-weight: 700; color: #F3F4F6; letter-spacing: -.01em; }
+.notch .dot { width: 7px; height: 7px; border-radius: 50%; background: #FF9F0A; box-shadow: 0 0 9px #FF9F0A; }
+.notch button { width: 32px; padding: 0; justify-content: center; }
+.notch button svg { width: 16px; height: 16px; }
+.menu-toggle { display: none !important; }
+.menu-toggle path { transition: rotate .35s var(--spring), translate .35s var(--spring); transform-origin: 12px 12px; }
+.notch.open .menu-toggle path:first-child { translate: 0 3px; rotate: 45deg; }
+.notch.open .menu-toggle path:last-child { translate: 0 -3px; rotate: -45deg; }
+
+/* The ears grow out beside the notch with what's live: here, the part of the page you're in. */
+.ear {
+  position: absolute; top: 0; bottom: 0; width: 74px;
+  background: var(--notch); pointer-events: none;
+  transition: clip-path .55s var(--spring);
+}
+.ear-l { right: calc(100% - 18px); border-radius: 0 0 0 18px; clip-path: inset(0 0 0 100%); }
+.ear-r { left: calc(100% - 18px); border-radius: 0 0 18px 0; clip-path: inset(0 100% 0 0); }
+.notch.ears-on .ear-l { clip-path: inset(0 0 0 -14px); }
+.notch.ears-on .ear-r { clip-path: inset(0 -14px 0 0); }
+.ear-slot { position: absolute; top: env(safe-area-inset-top, 0px); bottom: 0; width: 48px; }
+.ear-l .ear-slot { left: 6px; }
+.ear-r .ear-slot { right: 8px; }
+@media (min-width: 861px) { .ear-r { width: 90px; } .ear-r .ear-slot { width: 62px; } }
+.ear-slot > span {
+  position: absolute; inset: 0; display: grid; place-items: center;
+  color: #F3F4F6; font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap;
+  opacity: 0; translate: 0 6px;
+  transition: opacity .2s ease, translate .45s var(--spring);
+}
+.ear-slot > .on { opacity: 1; translate: 0 0; }
+.ear-slot svg { width: 16px; height: 16px; }
+.ear .art { width: 18px; height: 18px; border-radius: 5px; background: linear-gradient(#E9707A, #F3B36B 48%, #6A3592 49%, #2E1A4F); }
+.ear .live { width: 8px; height: 8px; border-radius: 50%; background: #FF9F0A; box-shadow: 0 0 10px #FF9F0A; animation: live 1.6s ease-in-out infinite alternate paused; }
+.ear .mascot { width: 26px; height: 26px; }
+.bars { display: flex; align-items: center; gap: 2px; height: 14px; }
+.bars i { width: 3px; height: 100%; border-radius: 2px; background: currentColor; scale: 1 .3; animation: level .5s ease-in-out infinite alternate paused; }
+.bars i:nth-child(2) { animation-duration: .38s; animation-delay: -.2s; }
+.bars i:nth-child(3) { animation-duration: .62s; animation-delay: -.1s; }
+.bars i:nth-child(4) { animation-duration: .44s; animation-delay: -.3s; }
+.bars i:nth-child(5) { animation-duration: .56s; }
+.bars.wave i { width: 2px; }
+.dots { display: flex; gap: 4px; }
+.dots i { width: 5px; height: 5px; border-radius: 50%; background: currentColor; opacity: .3; animation: think 1.2s ease-in-out infinite paused; }
+.dots i:nth-child(2) { animation-delay: .2s; }
+.dots i:nth-child(3) { animation-delay: .4s; }
+.ear .on :is(i, .live) { animation-play-state: running; }
+@keyframes level { to { scale: 1 1; } }
+@keyframes think { 30% { opacity: 1; } }
+@keyframes live { to { scale: .7; opacity: .6; } }
+
+/* On a phone the sections drop out of the notch, the way the app opens downward. */
+.notch-menu {
+  position: absolute; top: 100%; left: 0; right: 0;
+  display: none; padding: 4px 8px 14px;
+  background: var(--notch); border-radius: 0 0 22px 22px;
+  clip-path: inset(0 0 100% 0 round 0 0 22px 22px); visibility: hidden;
+  transition: clip-path .4s var(--spring), visibility 0s .4s;
+}
+.notch.open { border-radius: 0; }
+.notch.open .notch-menu { clip-path: inset(0 0 0 0 round 0 0 22px 22px); visibility: visible; transition: clip-path .55s var(--spring); }
+.notch-menu a { display: flex; height: 44px; padding: 0 14px; font-size: 15px; }
+
+/* ───────── Mascots: page-mascot's 3 × 3 sheets, turned toward the pointer as in the app ───────── */
+.mascot { position: relative; display: block; }
+.mascot .sprite {
+  position: absolute; inset: 0;
+  background: var(--sheet) 0 0 / 300% 300% no-repeat;
+  background-position: calc(var(--col, 1) * 50%) calc(var(--row, 1) * 50%);
+  animation: breathe 3.2s ease-in-out infinite alternate;
+  animation-delay: var(--phase, 0s);
+  transform-origin: 50% 90%;
+}
+.mascot.reacting .sprite { background-image: var(--reactions); }
+.mascot.squash .sprite { animation: squash .45s var(--spring); }
+@keyframes breathe { to { scale: 1.025 1.02; } }
+@keyframes squash { 30% { scale: 1.12 .86; } 60% { scale: .95 1.06; } }
+
+/* ───────── Buttons: a black notch drops into the pill from its top edge ───────── */
+.button {
+  position: relative; isolation: isolate; overflow: hidden;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  height: 50px; padding: 0 26px; border-radius: 999px;
+  font-weight: 600; font-size: 16px; text-decoration: none;
+  border: 1px solid transparent; cursor: pointer;
+  transition: color .3s ease, border-color .3s ease, scale .2s var(--spring);
+}
+.button::before {
+  content: ""; position: absolute; inset: 0; z-index: -1; background: var(--notch);
+  clip-path: inset(0 28% 100% 28% round 0 0 14px 14px);
+  transition: clip-path .5s var(--spring);
+}
+.button.primary { background: var(--accent); color: var(--accent-ink); }
+.button.ghost { border-color: var(--line); color: var(--ink); }
+@media (hover: hover) {
+  .button:hover { color: #FF9F0A; border-color: var(--notch); }
+  .button:hover::before { clip-path: inset(0 0 0 0 round 0 0 0 0); }
+}
+.button:focus-visible { color: #FF9F0A; border-color: var(--notch); }
+.button:focus-visible::before { clip-path: inset(0 0 0 0 round 0 0 0 0); }
+.button:active { scale: .97; }
+.cta { display: flex; flex-wrap: wrap; gap: 12px; }
+
+/* ───────── Home ───────── */
+main { display: grid; padding-block: 0 0; }
+main > section { padding-block: 112px 0; min-width: 0; }
+
+/* Hero: the notch, open. The nav sits where the camera would, and the page opens out of it. */
+.hero { display: grid; gap: 48px; padding-top: 0 !important; }
+.stage-wrap { justify-self: center; width: 100%; }
+.stage { display: block; background: var(--notch); border-radius: 0 0 28px 28px; overflow: hidden; animation: notch-open 1s var(--spring) .15s both; }
+.stage img { width: 100%; height: auto; animation: settle 1.2s var(--out) .15s both; }
+.hero-copy { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 28px var(--gutter); align-items: end; }
+.hero h1 { grid-column: 1 / 8; font-size: clamp(48px, 7vw, 100px); letter-spacing: -.045em; line-height: .98; margin-left: -.04em; max-width: 10ch; }
+.hero-side { grid-column: 8 / 13; display: grid; gap: 22px; justify-items: start; padding-top: 6px; }
+.hero .lede { font-size: clamp(18px, 1.6vw, 20px); color: var(--ink-2); line-height: 1.45; }
+.drop { animation: drop .6s var(--out) calc(.35s + var(--i, 0) * 70ms) both; }
+.tags { display: flex; flex-wrap: wrap; gap: 8px; font-size: 13.5px; color: var(--muted); margin: 0; padding: 0; list-style: none; }
+.tags li { border: 1px solid var(--line); border-radius: 999px; padding: 3px 12px; }
+@keyframes notch-open {
+  from { clip-path: inset(0 calc(50% - 100px) calc(100% - 40px) calc(50% - 100px) round 0 0 18px 18px); }
+  to { clip-path: inset(0 0 0 0 round 0 0 28px 28px); }
+}
+@keyframes settle { from { scale: 1.06; } }
+@keyframes drop { from { opacity: .3; translate: 0 -14px; } }
+/* Scrolling away closes the notch again, back into the one holding the nav. */
+@supports (animation-timeline: scroll()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .stage-wrap { animation: notch-close linear both; animation-timeline: scroll(root); animation-range: 0px 320px; }
+  }
+}
+@keyframes notch-close {
+  from { clip-path: inset(0 0 0 0 round 0 0 28px 28px); }
+  to { clip-path: inset(0 calc(50% - 100px) calc(100% - 40px) calc(50% - 100px) round 0 0 18px 18px); }
+}
+
+/* Statement: what it does, in one paragraph that links into the page. */
+.statement { padding-top: 64px !important; }
+.statement p {
+  max-width: 44ch; font-family: var(--display); font-size: var(--t-m); font-weight: 700;
+  letter-spacing: -.025em; line-height: 1.32; color: var(--muted);
+}
+.statement strong { color: var(--ink); font-weight: inherit; }
+.chip {
+  display: inline-flex; align-items: center; gap: 6px; vertical-align: .08em;
+  height: 1.3em; min-height: 24px; padding: 0 .45em 0 .35em; margin-inline: .08em;
+  border-radius: 999px; background: var(--notch); color: #F3F4F6;
+  font-family: var(--mac); font-size: .62em; font-weight: 600; letter-spacing: 0; text-decoration: none;
+  transition: scale .3s var(--spring), background .2s ease, color .2s ease
+}
+.chip svg { width: 1.05em; height: 1.05em; }
+@media (hover: hover) { .chip:hover { scale: 1.1; background: #FF9F0A; color: #1A1200; } }
+.chip:focus-visible { scale: 1.1; background: #FF9F0A; color: #1A1200; }
+
+/* AI: an asymmetric pair, the second image stepping in from the right. */
+.pair { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 40px var(--gutter); align-items: start; }
+.pair .main-shot { grid-column: 1 / 9; }
+.pair .side { grid-column: 9 / 13; display: grid; gap: 16px; padding-top: 8px; }
+.pair .side h2 { font-size: clamp(30px, 3vw, 42px); }
+.pair .second-text { grid-column: 1 / 5; align-self: end; display: grid; gap: 10px; padding-bottom: 8px; }
+.pair .second-shot { grid-column: 5 / 13; }
+.pair figure { margin: 0; display: grid; gap: 12px; }
+
+/* Dictation: a poster. The three beats of push-to-talk, set huge. */
+.poster { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 40px var(--gutter); }
+.mega { grid-column: 1 / 13; grid-row: 1; font-size: var(--t-mega); letter-spacing: -.055em; line-height: .86; margin-left: -.06em; }
+.mega span { display: block; }
+.mega span:nth-child(2) { padding-left: .7em; }
+.mega span:nth-child(3) { padding-left: 1.4em; color: var(--accent); }
+.in-view .mega span { animation: drop .9s var(--out) both; }
+.in-view .mega span:nth-child(2) { animation-delay: .08s; }
+.in-view .mega span:nth-child(3) { animation-delay: .16s; }
+.poster .lead { grid-column: 1 / 6; }
+.poster .media { grid-column: 8 / 13; grid-row: 1; align-self: center; display: grid; gap: 12px; }
+.poster dl { grid-column: 1 / 13; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--gutter); margin: 0; }
+.poster dl div { border-top: 1px solid var(--line); padding-top: 14px; display: grid; gap: 4px; align-content: start; }
+.poster dt { font-weight: 600; }
+.poster dd { margin: 0; color: var(--muted); font-size: 15px; line-height: 1.5; }
+
+/* Your day: an index of modules with one large preview, like the app's tab bar. */
+.day { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 40px var(--gutter); }
+.day .head { grid-column: 1 / 9; display: grid; gap: 14px; }
+.day .head h2, .facts .head h2 { font-size: var(--t-xl); letter-spacing: -.045em; line-height: 1; }
+.modules { grid-column: 1 / 6; margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--line); }
+.modules li {
+  position: relative; display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; align-items: center;
+  padding: 16px 0; border-bottom: 1px solid var(--line); cursor: default;
+}
+.modules h3 { font-size: 21px; transition: translate .45s var(--spring), color .2s ease; }
+.modules p { grid-column: 1; color: var(--muted); font-size: 15px; line-height: 1.45; }
+.modules img { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+/* One notch hangs from the active row's top rule and slides to the next row on the spring. */
+.modules { position: relative; }
+.modules::before {
+  content: ""; position: absolute; left: 0; top: -1px; z-index: 1; width: 56px; height: 8px;
+  background: var(--notch); border-radius: 0 0 8px 8px;
+  translate: 0 var(--marker-y, 0px); transition: translate .55s var(--spring);
+}
+:root:not([data-theme="light"]) .modules::before { background: var(--accent); }
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) .modules::before { background: var(--notch); } }
+.modules li.active h3 { translate: 16px 0; }
+.modules li.active p { translate: 16px 0; }
+.modules li p { transition: translate .45s var(--spring) .03s; }
+.preview { grid-column: 6 / 13; position: sticky; top: 96px; align-self: start; }
+.preview-frame { position: relative; aspect-ratio: 1260 / 450; background: var(--notch); border-radius: 0 0 24px 24px; overflow: hidden; }
+.preview-frame img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; scale: 1.14; transform-origin: 50% 0; opacity: 0; translate: 0 -12px; transition: opacity .3s ease, translate .6s var(--spring); }
+.preview-frame img.on { opacity: 1; translate: 0 0; }
+.preview .caption { margin-top: 12px; min-height: 1.6em; }
+
+/* The ears: one closed notch that takes turns, as the app does. */
+.ears-demo { display: grid; gap: 36px; justify-items: center; text-align: center; }
+.ears-demo .head { display: grid; gap: 12px; max-width: 46ch; justify-items: center; }
+.ears-stage { position: relative; width: 100%; max-width: 1040px; aspect-ratio: 1040 / 100; border-radius: 14px; overflow: hidden; background: var(--notch); }
+.ears-stage img { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; translate: 0 -8px; transition: opacity .35s ease, translate .6s var(--spring); }
+.ears-stage img.on { opacity: 1; translate: 0 0; }
+.ears-legend { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; width: 100%; max-width: 1040px; margin: 0; padding: 0; list-style: none; }
+.ears-legend button { position: relative; isolation: isolate; overflow: hidden; }
+.ears-legend button::before {
+  content: ""; position: absolute; inset: 0; z-index: -1; background: var(--notch);
+  clip-path: inset(0 30% 100% 30% round 0 0 14px 14px); transition: clip-path .5s var(--spring);
+}
+.ears-legend button {
+  display: grid; gap: 2px; text-align: left; width: 100%; height: 100%; align-content: start; padding: 12px 16px; border-radius: 0 0 16px 16px;
+  font: inherit; color: var(--ink); background: none; border: 1px solid var(--line); border-top-width: 3px; cursor: pointer;
+  transition: border-color .25s ease, background .25s ease, color .25s ease;
+}
+.ears-legend button b { font-weight: 600; font-size: 15px; }
+.ears-legend button span { color: var(--muted); font-size: 13.5px; line-height: 1.4; }
+.ears-legend button[aria-pressed="true"] { border-top-color: var(--accent); background: var(--surface); }
+@media (hover: hover) {
+  .ears-legend button:hover { color: #F3F4F6; border-color: var(--notch); border-top-color: #FF9F0A; }
+  .ears-legend button:hover::before { clip-path: inset(0 0 0 0 round 0 0 0 0); }
+  .ears-legend button:hover span { color: #B9BFC9; }
+}
+.ears-legend button:focus-visible { color: #F3F4F6; border-color: var(--notch); border-top-color: #FF9F0A; }
+.ears-legend button:focus-visible::before { clip-path: inset(0 0 0 0 round 0 0 0 0); }
+.ears-legend button:focus-visible span { color: #B9BFC9; }
+.ears-pause.button { height: 40px; padding: 0 18px; font-size: 14px; }
+
+/* Make it yours: the twelve characters, hung on the grid, all watching the pointer. */
+.yours { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 40px var(--gutter); align-items: start; }
+.yours .head { grid-column: 1 / 6; display: grid; gap: 14px; }
+.wall { grid-column: 6 / 13; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin: 0; padding: 0; list-style: none; }
+.wall button {
+  width: 100%; display: grid; justify-items: center; gap: 6px; padding: 14px 6px 12px;
+  background: var(--notch); border: 1px solid var(--notch); border-radius: 0 0 22px 22px;
+  font: inherit; font-family: var(--mac); font-size: 13px; font-weight: 500; color: #B9BFC9; cursor: pointer;
+  transition: border-color .25s ease, color .25s ease;
+}
+.wall .mascot { width: min(92px, 100%); aspect-ratio: 1; }
+@media (hover: hover) { .wall button:hover { border-color: #FF9F0A; color: #fff; } }
+.wall button:focus-visible { border-color: #FF9F0A; color: #fff; }
+.facets { display: grid; gap: 20px; margin: 18px 0 0; }
+.facets div { display: grid; gap: 6px; align-content: start; border-top: 1px solid var(--line); padding-top: 14px; }
+.facets dt { font-weight: 600; }
+.facets dd { margin: 0; color: var(--muted); font-size: 15px; line-height: 1.5; }
+
+/* Privacy and performance: real numbers, then a ledger of what stays and what leaves. */
+.facts { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 40px var(--gutter); }
+.facts .head { grid-column: 1 / 10; display: grid; gap: 14px; }
+.numbers { grid-column: 1 / 13; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--gutter); margin: 0; }
+.numbers div { display: grid; gap: 6px; align-content: start; border-top: 1px solid var(--ink); padding-top: 14px; }
+.numbers dd { margin: 0; order: -1; font-family: var(--display); font-weight: 700; font-size: var(--t-xl); letter-spacing: -.045em; line-height: 1; font-variant-numeric: tabular-nums; }
+.numbers dt { color: var(--muted); font-size: 14.5px; line-height: 1.45; max-width: 26ch; }
+.ledger { grid-column: 1 / 13; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--gutter); }
+.ledger h3 { font-size: 20px; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
+.ledger ul { margin: 0; padding: 0; list-style: none; }
+.ledger li { padding: 12px 0; border-bottom: 1px solid var(--line); color: var(--ink-2); font-size: 16px; }
+.ledger strong { color: var(--ink); }
+.facts .note { grid-column: 1 / 13; }
+
+/* Compare teaser: where Xotch stands, its gaps included. */
+.teaser { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 40px var(--gutter); align-items: start; }
+.teaser .head { grid-column: 1 / 6; display: grid; gap: 16px; justify-items: start; }
+.slice { grid-column: 6 / 13; width: 100%; border-collapse: collapse; font-size: 15px; }
+.slice th, .slice td { padding: 13px 10px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: baseline; }
+.slice thead th { font-size: 13px; color: var(--muted); font-weight: 600; border-bottom-color: var(--ink); }
+.slice tbody th { font-weight: 500; color: var(--ink); }
+.slice td:nth-child(2) { width: 90px; }
+.slice td:last-child { color: var(--muted); width: 38%; }
+
+/* FAQ */
+.faq-block { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 32px var(--gutter); }
+.faq-block h2 { grid-column: 1 / 5; position: sticky; top: 96px; align-self: start; }
+.faq { grid-column: 5 / 13; display: grid; border-top: 1px solid var(--line); }
+.faq details { border-bottom: 1px solid var(--line); }
+.faq summary {
+  cursor: pointer; list-style: none; padding: 18px 0; font-weight: 600; font-size: 18px;
+  display: flex; justify-content: space-between; gap: 16px; align-items: center;
+}
+.faq summary::-webkit-details-marker { display: none; }
+.faq summary::after { content: "+"; flex: none; color: var(--accent); font-size: 24px; line-height: 1; transition: rotate .35s var(--spring); }
+.faq details[open] summary::after { rotate: 45deg; }
+@media (hover: hover) { .faq summary:hover { color: var(--accent); } }
+.faq details p { padding-bottom: 20px; color: var(--ink-2); max-width: 62ch; }
+
+/* Beta: the finale, centred on the notch's axis. */
+.finale { display: grid; justify-items: center; text-align: center; gap: 22px; padding-block: 160px 96px !important; }
+.big-notch {
+  position: relative; display: grid; grid-template-columns: 64px auto 64px; align-items: center;
+  height: 64px; padding: 0 8px; margin-bottom: 18px; background: var(--notch); border-radius: 0 0 28px 28px;
+  color: #F3F4F6; font-family: var(--mac); font-weight: 600; font-size: 15px;
+}
+.big-notch::before, .big-notch::after { content: ""; position: absolute; top: 0; width: 22px; height: 22px; }
+.big-notch::before { left: -22px; background: radial-gradient(circle at 0 100%, transparent 21.5px, #000 22px); }
+.big-notch::after { right: -22px; background: radial-gradient(circle at 100% 100%, transparent 21.5px, #000 22px); }
+.big-notch .camera { width: 120px; display: grid; place-items: center; }
+.big-notch .camera i { width: 10px; height: 10px; border-radius: 50%; background: #16181d; box-shadow: inset 0 0 0 2px #23262d; }
+.big-notch .mascot { width: 44px; height: 44px; justify-self: center; }
+.big-notch .status { justify-self: center; color: #FF9F0A; display: inline-flex; align-items: center; gap: 6px; }
+.big-notch .status::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: #FF9F0A; box-shadow: 0 0 9px #FF9F0A; animation: live 1.6s ease-in-out infinite alternate; }
+.finale h2 { font-size: var(--t-xl); letter-spacing: -.045em; }
+.finale .lead { max-width: 52ch; }
+.steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--gutter); margin: 28px 0 0; padding: 0; list-style: none; counter-reset: step; text-align: left; max-width: 1000px; width: 100%; }
+.steps li { counter-increment: step; border-top: 1px solid var(--line); padding-top: 14px; color: var(--ink-2); font-size: 16px; }
+.steps li::before { content: counter(step); display: block; font-family: var(--display); font-weight: 700; font-size: 28px; color: var(--ink); line-height: 1.2; margin-bottom: 6px; font-variant-numeric: tabular-nums; }
+.finale .note { max-width: 70ch; }
+
+footer { border-top: 1px solid var(--line); padding-block: 28px 56px; color: var(--muted); font-size: 14px; display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 12px var(--gutter); }
+footer > * { grid-column: span 6; }
+footer .sign { font-family: var(--display); font-weight: 700; font-size: 18px; color: var(--ink); letter-spacing: -.02em; }
+footer a { color: var(--ink-2); text-decoration-color: currentColor; display: inline-block; padding-block: 3px; }
+@media (hover: hover) { footer a:hover { color: var(--ink); } }
+
+/* ───────── Compare page ───────── */
+.page-head { padding-top: 140px; display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 24px var(--gutter); }
+.page-head h1 { grid-column: 1 / 13; font-size: clamp(48px, 7vw, 100px); letter-spacing: -.045em; line-height: .98; margin-left: -.04em; }
+.page-head .lead { grid-column: 1 / 8; }
+.page-head .back { grid-column: 1 / 13; justify-self: start; height: 36px; padding: 0 16px; font-size: 14px; }
+.block { padding-top: 88px; display: grid; gap: 24px; }
+.jump { grid-column: 1 / 13; display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.jump .button { height: 38px; padding: 0 16px; font-size: 14px; }
+.matrix tr.group { scroll-margin-top: 130px; }
+.notice { display: flex; gap: 12px; align-items: flex-start; font-size: 14.5px; color: var(--ink-2); border-left: 3px solid var(--accent); padding: 4px 0 4px 16px; max-width: 80ch; }
+.table-scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); -webkit-overflow-scrolling: touch; }
+.table-scroll:focus-visible { outline-offset: 2px; }
+table.matrix { border-collapse: separate; border-spacing: 0; width: 100%; min-width: 980px; font-size: 14px; }
+.matrix caption { text-align: left; color: var(--muted); font-size: 13px; caption-side: bottom; padding: 14px 18px; }
+.matrix th, .matrix td { padding: 10px 12px; border-bottom: 1px solid var(--line); text-align: center; vertical-align: middle; line-height: 1.35; }
+.matrix thead th { font-family: var(--display); font-size: 15px; font-weight: 700; letter-spacing: -.01em; background: var(--surface); }
+.matrix thead th small { display: block; font-family: var(--body); font-weight: 500; font-size: 12px; color: var(--muted); letter-spacing: 0; }
+.matrix tbody th { text-align: left; font-weight: 500; color: var(--ink-2); position: sticky; left: 0; background: var(--surface); z-index: 2; min-width: 190px; }
+.matrix thead th:first-child { position: sticky; left: 0; z-index: 3; text-align: left; }
+.matrix tr.group th { background: var(--raised); color: var(--muted); font-size: 12px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; padding-block: 8px; }
+.matrix tr.group td { background: var(--raised); }
+.matrix .us { background: var(--us); }
+.matrix thead .us { color: var(--accent); background: linear-gradient(var(--us), var(--us)), var(--surface); }
+.matrix tbody tr:last-child > * { border-bottom: 0; }
+.mark { display: inline-flex; align-items: center; justify-content: center; gap: 5px; font-weight: 600; font-size: 13px; }
+.mark::before { content: ""; width: 20px; height: 20px; border-radius: 50%; flex: none; background-position: center; background-repeat: no-repeat; }
+.yes { color: var(--good); }
+.yes::before { background-color: var(--good-soft); background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M5.5 10.5l3 3 6-7' fill='none' stroke='%2334C46E' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); }
+.part { color: var(--part); }
+.part::before { background-color: var(--part-soft); background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Ccircle cx='10' cy='10' r='4.5' fill='none' stroke='%23E0B341' stroke-width='2'/%3E%3Cpath d='M10 5.5a4.5 4.5 0 0 1 0 9z' fill='%23E0B341'/%3E%3C/svg%3E"); }
+.no { color: var(--bad); font-weight: 500; }
+.no::before { width: 12px; height: 2px; border-radius: 2px; background: var(--bad); opacity: .6; }
+.unk { color: var(--muted); font-weight: 500; font-size: 12.5px; }
+.unk::before { display: none; }
+.note-cell { display: block; color: var(--muted); font-size: 11.5px; font-weight: 500; margin-top: 2px; }
+.legend { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 13.5px; color: var(--muted); }
+.legend .mark { font-weight: 500; }
+
+.verdicts { margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--ink); }
+.verdict { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 16px var(--gutter); padding: 0 0 32px; border-bottom: 1px solid var(--ink); }
+.verdict header { grid-column: 1 / 5; grid-row: 1 / 3; display: grid; gap: 10px; justify-items: start; align-content: start; align-self: start; position: sticky; top: 40px; }
+.verdict h3 {
+  font-size: var(--t-m); letter-spacing: -.03em; line-height: 1;
+  background: var(--notch); color: #F3F4F6; padding: .32em .6em .42em; border-radius: 0 0 .55em .55em;
+}
+.verdict .price { font-size: 14px; color: var(--muted); font-weight: 600; }
+.verdict .best { grid-column: 5 / 13; font-size: 17px; color: var(--ink-2); padding-top: 18px; }
+.verdict .best b { color: var(--ink); }
+.verdict .pc { grid-column: 5 / 13; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--gutter); }
+.verdict.us h3 { color: #FF9F0A; }
+.pc h4 { margin: 0 0 6px; font-size: 13px; font-weight: 600; }
+.pc .pro h4 { color: var(--good); }
+.pc .con h4 { color: var(--muted); }
+.pc ul { margin: 0; padding-left: 16px; display: grid; gap: 5px; font-size: 15px; color: var(--ink-2); line-height: 1.45; }
+.sources { font-size: 14px; color: var(--muted); display: grid; gap: 8px; max-width: 80ch; }
+.sources ul { margin: 0; padding-left: 18px; display: grid; gap: 6px; }
+.sources a { color: var(--ink-2); word-break: break-word; display: inline-block; padding-block: 3px; }
+.page-cta { padding-block: 120px 96px; display: grid; justify-items: start; gap: 18px; }
+.page-cta h2 { font-size: var(--t-l); }
+
+/* ───────── 404 ───────── */
+.lost { min-height: 100svh; display: grid; place-content: center; justify-items: center; text-align: center; gap: 22px; padding: 120px 0 80px; }
+.lost h1 { font-size: var(--t-xl); letter-spacing: -.045em; }
+.lost .lead { max-width: 44ch; }
+.lost .cta { justify-content: center; }
+
+/* Links that lead out of a list (sources, the breadcrumb): underlined at rest, and an orange
+   line draws over it from the left. */
+.sources a {
+  text-decoration: none;
+  background:
+    linear-gradient(#FF9F0A 0 0) left bottom / 0% 2px no-repeat,
+    linear-gradient(currentColor 0 0) left bottom / 100% 1px no-repeat;
+  transition: background-size .45s var(--out), color .2s ease;
+}
+@media (hover: hover) { .sources a:hover { background-size: 100% 2px, 100% 1px; color: var(--ink); } }
+.sources a:focus-visible { background-size: 100% 2px, 100% 1px; color: var(--ink); }
+
+/* Page changes: the notch drops down over the page you're leaving, and the next page opens
+   back out of it. site.js plays the first half; the next page's head script plays the second.
+   The notch itself stays on top the whole time. */
+html.leaving::after, html.arriving::after {
+  content: attr(data-curtain); position: fixed; inset: 0; z-index: 39; background: var(--notch); pointer-events: none;
+  display: grid; place-items: center; color: #F3F4F6;
+  font-family: var(--display); font-weight: 700; font-size: clamp(36px, 6vw, 84px); letter-spacing: -.045em;
+}
+html.leaving::after { animation: notch-cover .42s var(--out) both; }
+html.arriving::after { animation: notch-uncover .6s var(--out) .04s both; }
+@keyframes notch-cover {
+  from { clip-path: inset(0 calc(50% - 110px) calc(100% - 40px) calc(50% - 110px) round 0 0 18px 18px); }
+  to { clip-path: inset(-40px round 0); }
+}
+@keyframes notch-uncover {
+  from { clip-path: inset(-40px round 0); }
+  to { clip-path: inset(0 calc(50% - 110px) calc(100% - 40px) calc(50% - 110px) round 0 0 18px 18px); }
+}
+
+/* Past the hero a menu bar fills in behind the notch, as on a Mac, so nothing reads beside it. */
+body::before {
+  content: ""; position: fixed; top: 0; left: 0; right: 0; z-index: 39; pointer-events: none;
+  height: calc(40px + env(safe-area-inset-top, 0px));
+  background: var(--ground);
+  border-bottom: 1px solid color-mix(in srgb, var(--line) 80%, transparent);
+  translate: 0 -101%; transition: translate .45s var(--spring);
+}
+:root[data-section]:not([data-section="top"]) body::before { translate: 0 0; }
+
+/* On a phone each feature becomes its own block, and every answer carries its app's name,
+   so nothing depends on a header that has scrolled away. */
+@media (max-width: 700px) {
+  .table-scroll { overflow: visible; border: 0; background: none; border-radius: 0; }
+  table.matrix, .matrix tbody { display: block; min-width: 0; }
+  .matrix thead { display: none; }
+  .matrix tr { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; margin-bottom: 14px; background: var(--line); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+  .matrix tr.group { display: block; background: none; border: 0; margin: 28px 0 10px; }
+  .matrix tr.group th { background: none; padding: 0; }
+  .matrix tr.group td { display: none; }
+  .matrix tbody th { grid-column: 1 / -1; position: static; min-width: 0; font-weight: 600; color: var(--ink); font-size: 15px; }
+  .matrix th, .matrix td { border: 0; background: var(--surface); padding: 10px 12px; text-align: left; }
+  .matrix td { display: grid; gap: 2px; align-content: start; justify-items: start; font-size: 13.5px; }
+  .matrix td::before { content: attr(data-app); font-size: 12px; font-weight: 600; color: var(--muted); }
+  .matrix td.us { background: linear-gradient(var(--us), var(--us)), var(--surface); }
+  .matrix td.us::before { color: var(--accent); }
+  .matrix .mark { justify-content: flex-start; }
+  .matrix caption { display: block; padding: 0 0 12px; caption-side: top; }
+  .matrix tr.same td { display: none; }
+  .matrix tr.same th::after { content: attr(data-all); display: block; margin-top: 2px; color: var(--good); font-size: 13.5px; font-weight: 600; }
+}
+/* On a wide screen the whole table fits, so its header can stay under the menu bar. */
+@media (min-width: 1100px) {
+  .table-scroll { overflow: visible; }
+  .matrix thead th { position: sticky; top: 40px; z-index: 4; border-bottom-color: var(--ink); }
+  .matrix thead th:first-child { z-index: 5; border-top-left-radius: 16px; }
+  .matrix thead th:last-child { border-top-right-radius: 16px; }
+  .table-scroll.past .matrix thead th { position: static; }
+}
+
+/* ───────── Responsive ───────── */
+@media (max-width: 1024px) {
+  .hero h1 { grid-column: 1 / 13; }
+  .hero-side { grid-column: 1 / 10; }
+  .pair .main-shot, .pair .second-shot { grid-column: 1 / 13; }
+  .pair .side { grid-column: 1 / 10; }
+  .pair .second-text { grid-column: 1 / 10; order: 1; }
+  .poster .media { grid-column: 1 / 13; grid-row: auto; }
+  .poster .lead { grid-column: 1 / 10; }
+  .poster dl { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .yours .head { grid-column: 1 / 13; position: static; }
+  .wall { grid-column: 1 / 13; }
+  .wall { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .teaser .head, .slice { grid-column: 1 / 13; }
+}
+@media (max-width: 860px) {
+  .notch .hide-small { display: none; }
+  .menu-toggle { display: inline-flex !important; }
+  .notch-menu { display: grid; }
+  .hero { gap: 36px; }
+  main > section { padding-top: 88px; }
+  .day .head, .modules { grid-column: 1 / 13; }
+  .preview { display: none; }
+  .modules li { grid-template-columns: minmax(0, 1fr); }
+  .modules img { position: static; width: 100%; height: auto; clip-path: none; margin-top: 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--notch); }
+  .modules::before { display: none; }
+  .modules li.active h3, .modules li.active p { translate: none; }
+  .numbers { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: 28px; }
+  .ledger { grid-template-columns: minmax(0, 1fr); row-gap: 40px; }
+  .faq-block h2 { grid-column: 1 / 13; position: static; }
+  .faq { grid-column: 1 / 13; }
+  .steps { grid-template-columns: minmax(0, 1fr); }
+  .verdict header, .verdict .best, .verdict .pc { grid-column: 1 / 13; }
+  .verdict header { grid-row: auto; position: static; }
+  .page-head h1, .page-head .lead { grid-column: 1 / 13; }
+  .page-head { padding-top: 88px; }
+  footer > * { grid-column: 1 / 13; }
+}
+@media (max-width: 560px) {
+  :root { --gutter: 16px; --t-mega: 21vw; }
+  /* The nav notch would cover the tabs in the narrow crop, so it gets its own strip. */
+  .stage { padding-top: 44px; }
+  .hero-side, .poster .lead, .pair .side, .pair .second-text, .day .head, .facts .head { grid-column: 1 / 13; }
+  .poster dl { grid-template-columns: minmax(0, 1fr); }
+  .mega span:nth-child(2) { padding-left: .5em; }
+  .mega span:nth-child(3) { padding-left: 1em; }
+  /* The twelve become one strip you swipe along. */
+  .wall { display: grid; grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 104px; overflow-x: auto; scroll-snap-type: x mandatory; margin-inline: calc(var(--gutter) * -1); padding: 4px var(--gutter) 12px; scroll-padding-inline: var(--gutter); }
+  .wall li { scroll-snap-align: start; }
+  .hero .cta .button { flex: 1 1 100%; }
+  .lost { min-height: calc(100svh - 40px); padding: 72px 0 48px; }
+  .ears-legend { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .slice td:last-child { width: auto; }
+  .verdict .pc { grid-template-columns: minmax(0, 1fr); }
+  .big-notch { grid-template-columns: 52px auto 52px; }
+  .big-notch .camera { width: 72px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; animation-delay: 0s !important; animation-iteration-count: 1 !important; }
+}

@@ -1,0 +1,572 @@
+<!doctype html>
+<html lang="en" data-base="../">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Notch apps compared: Xotch, Notchy, NotchNook, Alcove and more</title>
+<meta name="description" content="Eight Mac notch apps side by side: price, AI, voice typing, Claude Code and lyrics, from each app's own site, Xotch's gaps included.">
+<link rel="canonical" href="https://xotch.app/compare/">
+<meta property="og:title" content="Notch apps compared: Xotch, Notchy, NotchNook, Alcove and more">
+<meta property="og:description" content="Eight Mac notch apps side by side: price, AI, voice typing, Claude Code and lyrics, from each app's own site, Xotch's gaps included.">
+<meta property="og:url" content="https://xotch.app/compare/">
+<meta property="og:image" content="https://xotch.app/og.png">
+<meta property="og:type" content="article">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#08090B" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#F2F2F5" media="(prefers-color-scheme: light)">
+<link rel="icon" href="../images/icon.png">
+<link rel="apple-touch-icon" href="../images/icon.png">
+<link rel="preload" href="../fonts/bricolage-grotesque-700-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="../fonts/hanken-grotesk-400_600-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="../site.css">
+<script>
+  // Remember a theme picked with the toggle; otherwise follow the system.
+  try {
+    const saved = localStorage.getItem("xotch-theme");
+    if (saved === "light" || saved === "dark") document.documentElement.dataset.theme = saved;
+    // Arriving from another page of the site: the notch that covered it opens again (site.js).
+    const curtain = sessionStorage.getItem("xotch-curtain");
+    if (curtain) {
+      sessionStorage.removeItem("xotch-curtain");
+      if (!matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        document.documentElement.dataset.curtain = curtain;
+        document.documentElement.classList.add("arriving");
+      }
+    }
+  } catch {}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "Eight notch apps, compared honestly",
+  "dateModified": "2026-10-06",
+  "url": "https://xotch.app/compare/",
+  "about": { "@type": "SoftwareApplication", "name": "Xotch", "operatingSystem": "macOS 14 or later" }
+}
+</script>
+<script src="../site.js" defer></script>
+</head>
+<body>
+<a class="skip" href="#content">Skip to content</a>
+
+<nav class="notch" aria-label="Main">
+  <span class="ear ear-l" aria-hidden="true"><span class="ear-slot">
+    <span data-for="top"><span class="mascot" data-character="fox"></span></span>
+    <span data-for="ai" style="color:#FF9F0A"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg></span>
+    <span data-for="dictation" style="color:#FF453A"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></span>
+    <span data-for="day"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="3"/><path d="M3 9h18M8 2v4M16 2v4M8 14l2.5 2.5L16 12"/></svg></span>
+    <span data-for="ears"><span class="art"></span></span>
+    <span data-for="yours" style="color:#FFD60A"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8.5 14.5a4.5 4.5 0 0 0 7 0"/><circle cx="9" cy="10" r=".6" fill="currentColor"/><circle cx="15" cy="10" r=".6" fill="currentColor"/></svg></span>
+    <span data-for="privacy" style="color:#30D158"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="10" width="14" height="11" rx="2.5"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span>
+    <span data-for="compare"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M3 10h18M10 4v16"/></svg></span>
+    <span data-for="faq"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6v.4M12 17h.01"/></svg></span>
+    <span data-for="beta"><span class="live"></span></span>
+  </span></span>
+  <span class="ear ear-r" aria-hidden="true"><span class="ear-slot">
+    <span data-for="top" data-turn style="color:#FF8A80"><span class="bars wave"><i></i><i></i><i></i><i></i><i></i></span></span>
+    <span data-for="top" data-turn style="color:#FF8A3D">Editing</span>
+    <span data-for="ai" style="color:#FF9F0A"><span class="dots"><i></i><i></i><i></i></span></span>
+    <span data-for="dictation"><span class="bars"><i></i><i></i><i></i><i></i><i></i></span></span>
+    <span data-for="day" data-today>Today</span>
+    <span data-for="ears" style="color:#FF8A80"><span class="bars wave"><i></i><i></i><i></i><i></i><i></i></span></span>
+    <span data-for="yours">×12</span>
+    <span data-for="privacy">Local</span>
+    <span data-for="compare">8 apps</span>
+    <span data-for="faq">FAQ</span>
+    <span data-for="beta" style="color:#FF9F0A">3 steps</span>
+  </span></span>
+  <a class="name" href="../"><span class="dot" aria-hidden="true"></span>Xotch</a>
+  <a href="../#ai" class="hide-small">AI</a>
+  <a href="../#dictation" class="hide-small">Dictation</a>
+  <a href="./" class="hide-small" aria-current="page">Compare</a>
+  <a href="../#privacy" class="hide-small">Privacy</a>
+  <a href="../#beta">Beta</a>
+  <button class="theme-toggle" type="button" aria-label="Switch between light and dark">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"/></svg>
+  </button>
+  <button class="menu-toggle" type="button" aria-label="Sections" aria-expanded="false" aria-controls="notch-menu">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 9h14"/><path d="M5 15h14"/></svg>
+  </button>
+  <div class="notch-menu" id="notch-menu">
+    <a href="../#ai">AI</a>
+    <a href="../#dictation">Dictation</a>
+    <a href="../#day">Your day</a>
+    <a href="../#yours">Make it yours</a>
+    <a href="../#privacy">Privacy</a>
+    <a href="./" aria-current="page">Compare</a>
+    <a href="../#faq">Questions</a>
+    <a href="../#beta">Beta</a>
+  </div>
+</nav>
+
+<div class="wrap">
+<main id="content">
+
+  <header class="page-head" data-ear="compare">
+    <a class="back button ghost" href="../">Xotch home</a>
+    <h1>Eight notch apps, compared honestly</h1>
+    <p class="lead">Every notch app does music and HUDs. Where they part is AI, voice, price and polish. This is where each one stands, Xotch's own gaps included.</p>
+    <nav class="jump" aria-label="On this page">
+      <a class="button ghost" href="#price">Price and platform</a>
+      <a class="button ghost" href="#ai-voice">AI and voice</a>
+      <a class="button ghost" href="#your-day">Your day</a>
+      <a class="button ghost" href="#apps-title">App by app</a>
+      <a class="button ghost" href="#sources-title">Sources</a>
+    </nav>
+  </header>
+
+  <section class="block" aria-label="Feature table" data-ear="compare">
+    <div class="notice" role="note">
+      <p>Checked 6 October 2026 against each app's own site or repository. These are the vendors' claims, not our tests. "Not stated" means we couldn't confirm it either way. Apps change fast, so check before you buy.</p>
+    </div>
+
+    <div class="legend" aria-hidden="true">
+      <span class="mark yes">Yes</span>
+      <span class="mark part">Partly</span>
+      <span class="mark no">No</span>
+      <span class="mark unk">? Not stated</span>
+    </div>
+
+    <div class="table-scroll" tabindex="0" role="region" aria-label="Feature comparison table">
+      <table class="matrix">
+        <caption>Sources for every answer are listed below the table.</caption>
+        <thead>
+          <tr>
+            <th scope="col">Feature</th>
+            <th scope="col" class="us">Xotch<small>Beta</small></th>
+            <th scope="col">Notchy<small>Free</small></th>
+            <th scope="col">NotchNook<small>Paid</small></th>
+            <th scope="col">Alcove<small>Paid</small></th>
+            <th scope="col">Boring Notch<small>Open source</small></th>
+            <th scope="col">Atoll<small>Open source</small></th>
+            <th scope="col">Crest<small>Paid</small></th>
+            <th scope="col">Droppy<small>Paid</small></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="group" id="price"><th scope="rowgroup">Price and platform</th><td colspan="8"></td></tr>
+          <tr>
+            <th scope="row">Price</th>
+            <td data-app="Xotch" class="us">Free during beta</td>
+            <td data-app="Notchy">Free, donations</td>
+            <td data-app="NotchNook">$25 once, or a subscription</td>
+            <td data-app="Alcove">$14.99</td>
+            <td data-app="Boring Notch">Free</td>
+            <td data-app="Atoll">Free</td>
+            <td data-app="Crest">$24.99 once (Pro), or $2.99/mo</td>
+            <td data-app="Droppy">$9.99 once</td>
+          </tr>
+          <tr>
+            <th scope="row">Open source</th>
+            <td data-app="Xotch" class="us"><span class="mark no">No</span></td>
+            <td data-app="Notchy"><span class="mark no">No</span></td>
+            <td data-app="NotchNook"><span class="mark no">No</span></td>
+            <td data-app="Alcove"><span class="mark no">No</span></td>
+            <td data-app="Boring Notch"><span class="mark yes">GPL-3.0</span></td>
+            <td data-app="Atoll"><span class="mark yes">GPL-3.0</span></td>
+            <td data-app="Crest"><span class="mark no">No</span></td>
+            <td data-app="Droppy"><span class="mark unk">? Not stated</span></td>
+          </tr>
+          <tr>
+            <th scope="row">Signed and notarised by Apple</th>
+            <td data-app="Xotch" class="us"><span class="mark no">Not yet</span></td>
+            <td data-app="Notchy"><span class="mark unk">? Not stated</span></td>
+            <td data-app="NotchNook"><span class="mark unk">? Not stated</span></td>
+            <td data-app="Alcove"><span class="mark unk">? Not stated</span></td>
+            <td data-app="Boring Notch"><span class="mark no">No</span><span class="note-cell">Homebrew handles it</span></td>
+            <td data-app="Atoll"><span class="mark unk">? Not stated</span></td>
+            <td data-app="Crest"><span class="mark yes">Yes</span></td>
+            <td data-app="Droppy"><span class="mark yes">Yes</span></td>
+          </tr>
+          <tr>
+            <th scope="row">Macs without a notch</th>
+            <td data-app="Xotch" class="us"><span class="mark yes">Yes</span><span class="note-cell">Drawn on every display</span></td>
+            <td data-app="Notchy"><span class="mark yes">Yes</span><span class="note-cell">Floating pill</span></td>
+            <td data-app="NotchNook"><span class="mark yes">Yes</span></td>
+            <td data-app="Alcove"><span class="mark unk">? Not stated</span></td>
+            <td data-app="Boring Notch"><span class="mark yes">Yes</span></td>
+            <td data-app="Atoll"><span class="mark no">No</span><span class="note-cell">Notched MacBook only</span></td>
+            <td data-app="Crest"><span class="mark yes">Yes</span><span class="note-cell">Pill</span></td>
+            <td data-app="Droppy"><span class="mark yes">Yes</span><span class="note-cell">Floating shelf</span></td>
+          </tr>
+          <tr>
+            <th scope="row">Oldest macOS</th>
+            <td data-app="Xotch" class="us">14</td>
+            <td data-app="Notchy">13</td>
+            <td data-app="NotchNook">14.6</td>
+            <td data-app="Alcove">15</td>
+            <td data-app="Boring Notch">14</td>
+            <td data-app="Atoll">14</td>
+            <td data-app="Crest">14</td>
+            <td data-app="Droppy">14</td>
+          </tr>
+
+          <tr class="group" id="ai-voice"><th scope="rowgroup">AI and voice</th><td colspan="8"></td></tr>
+          <tr>
+            <th scope="row">AI chat in the notch</th>
+            <td data-app="Xotch" class="us"><span class="mark yes">Yes</span><span class="note-cell">Cloud or local models</span></td>
+            <td data-app="Notchy"><span class="mark no">No</span></td>
+            <td data-app="NotchNook"><span class="mark no">No</span></td>
+            <td data-app="Alcove"><span class="mark no">No</span></td>
+            <td data-app="Boring Notch"><span class="mark no">No</span></td>
+            <td data-app="Atoll"><span class="mark no">No</span></td>
+            <td data-app="Crest"><span class="mark no">No</span></td>
+            <td data-app="Droppy"><span class="mark no">No</span></td>
+          </tr>
+          <tr>
+            <th scope="row">AI that changes your to-dos, timer, notes and calendar</th>
+            <td data-app="Xotch" class="us"><span class="mark yes">Yes</span><span class="note-cell">After you click Allow</span></td>
+            <td data-app="Notchy"><span class="mark no">No</span></td>
+            <td data-app="NotchNook"><span class="mark no">No</span></td>
+            <td data-app="Alcove"><span class="mark no">No</span></td>
+            <td data-app="Boring Notch"><span class="mark no">No</span></td>
+            <td data-app="Atoll"><span class="mark no">No</span></td>
+            <td data-app="Crest"><span class="mark no">No</span></td>
+            <td data-app="Droppy"><span class="mark no">No</span></td>
+          </tr>
+          <tr>
+            <th scope="row">Voice to text</th>
+            <td data-app="Xotch" class="us"><span class="mark yes">Yes</span><span class="note-cell">Hold Fn, types into any app, on the Mac</span></td>
+            <td data-app="Notchy"><span class="mark no">No</span></td>
+            <td data-app="NotchNook"><span class="mark no">No</span></td>
+            <td data-app="Alcove"><span class="mark no">No</span></td>
+            <td data-app="Boring Notch"><span class="mark no">No</span></td>
+            <td data-app="Atoll"><span class="mark no">No</span></td>
+            <td data-app="Crest"><span class="mark part">Partly</span><span class="note-cell">Meeting notes, in the Minutes app</span></td>
+            <td data-app="Droppy"><span class="mark part">Partly</span><span class="note-cell">Transcribes recordings, on the Mac</span></td>
+          </tr>
+          <tr>
+            <th scope="row">Coding-agent status (Claude Code)</th>
+            <td data-app="Xotch" class="us"><span class="mark yes">Yes</span></td>
+            <td data-app="Notchy"><span class="mark yes">Yes</span></td>
+            <td data-app="NotchNook"><span class="mark no">No</span></td>
+            <td data-app="Alcove"><span class="mark no">No</span></td>
+            <td data-app="Boring Notch"><span class="mark no">No</span></td>
+            <td data-app="Atoll"><span class="mark no">No</span><span class="note-cell">A fork adds it</span></td>
+            <td data-app="Crest"><span class="mark yes">Yes</span></td>
+            <td data-app="Droppy"><span class="mark yes">Yes</span><span class="note-cell">Agents add-on</span></td>
+          </tr>
+          <tr>
+            <th scope="row">Approve agent requests from the notch</th>
+            <td data-app="Xotch" class="us"><span class="mark no">No</span><span class="note-cell">Shows "Needs you"</span></td>
+            <td data-app="Notchy"><span class="mark yes">Yes</span></td>
+            <td data-app="NotchNook"><span class="mark no">No</span></td>
+            <td data-app="Alcove"><span class="mark no">No</span></td>
+            <td data-app="Boring Notch"><span class="mark no">No</span></td>
+            <td data-app="Atoll"><span class="mark no">No</span></td>
+            <td data-app="Crest"><span class="mark yes">Yes</span></td>
+            <td data-app="Droppy"><span class="mark unk">? Not stated</span></td>
+          </tr>
+
+          <tr class="group" id="your-day"><th scope="rowgroup">Your day</th><td colspan="8"></td></tr>
+          <tr>
+            <th scope="row">To-dos or reminders</th>
+            <td data-app="Xotch" class="us"><span class="mark yes">Yes</span></td>
+            <td data-app="Notchy"><span class="mark yes">Yes</span></td>
+            <td data-app="NotchNook"><span class="mark unk">? Not stated</span></td>
+            <td data-app="Alcove"><span class="mark unk">? Not stated</span></td>
+            <td data-app="Boring Notch"><span class="mark no">No</span><span class="note-cell">On the roadmap</span></td>
+            <td data-app="Atoll"><span class="mark no">No</span></td>
+            <td data-app="Crest"><span class="mark yes">Yes</span></td>
+            <td data-app="Droppy"><span class="mark no">No</span></td>
+          </tr>
+          <tr>
+            <th scope="row">Calendar</th>
+            <td data-app="Xotch" class="us"><span class="mark yes">Yes</span><span class="note-cell">One-click Join</span></td>
+            <td data-app="Notchy"><span class="mark yes">Yes</span></td>
+            <td data-app="NotchNook"><span class="mark yes">Yes</span></td>
+            <td data-app="Alcove"><span class="mark unk">? Not stated</span></td>
+            <td data-app="Boring Notch"><span class="mark yes">Yes</span></td>
+            <td data-app="Atoll"><span class="mark yes">Yes</span></td>
+            <td data-app="Crest"><span class="mark yes">Yes</span><span class="note-cell">One-click Join</span></td>
+            <td data-app="Droppy"><span class="mark unk">? Not stated</span></td>
+          </tr>
+          <tr>
+            <th scope="row">Focus timer</th>
+            <td data-app="Xotch" class="us"><span class="mark yes">Yes</span></td>
+            <td data-app="Notchy"><span class="mark yes">Yes</span></td>
+            <td data-app="NotchNook"><span class="mark unk">? Not stated</span></td>
+            <td data-app="Alcove"><span class="mark unk">? Not stated</span></td>
+            <td data-app="Boring Notch"><span class="mark unk">? Not stated</span></td>
+            <td data-app="Atoll"><span class="mark yes">Yes</span></td>
+            <td data-app="Crest"><span class="mark unk">? Not stated</span></td>
+            <td data-app="Droppy"><span class="mark unk">? Not stated</span></td>
+          </tr>
+          <tr class="same">
+            <th scope="row" data-all="All eight: Yes">Music controls</th>
+            <td data-app="Xotch" class="us"><span class="mark yes">Yes</span></td>
+            <td data-app="Notchy"><span class="mark yes">Yes</span></td>
+            <td data-app="NotchNook"><span class="mark yes">Yes</span></td>
+            <td data-app="Alcove"><span class="mark yes">Yes</span></td>
+            <td data-app="Boring Notch"><span class="mark yes">Yes</span></td>
+            <td data-app="Atoll"><span class="mark yes">Yes</span></td>
+            <td data-app="Crest"><span class="mark yes">Yes</span></td>
+            <td data-app="Droppy"><span class="mark yes">Yes</span></td>
+          </tr>
+          <tr>
+            <th scope="row">Synced lyrics</th>
+            <td data-app="Xotch" class="us"><span class="mark no">No</span></td>
+            <td data-app="Notchy"><span class="mark yes">Yes</span></td>
+            <td data-app="NotchNook"><span class="mark no">No</span></td>
+            <td data-app="Alcove"><span class="mark unk">? Not stated</span></td>
+            <td data-app="Boring Notch"><span class="mark no">No</span></td>
+            <td data-app="Atoll"><span class="mark no">No</span></td>
+            <td data-app="Crest"><span class="mark yes">Yes</span></td>
+            <td data-app="Droppy"><span class="mark yes">Yes</span><span class="note-cell">Add-on</span></td>
+          </tr>
+          <tr>
+            <th scope="row">File shelf</th>
+            <td data-app="Xotch" class="us"><span class="mark yes">Yes</span></td>
+            <td data-app="Notchy"><span class="mark yes">Yes</span></td>
+            <td data-app="NotchNook"><span class="mark yes">Yes</span></td>
+            <td data-app="Alcove"><span class="mark unk">? Not stated</span></td>
+            <td data-app="Boring Notch"><span class="mark yes">Yes</span></td>
+            <td data-app="Atoll"><span class="mark unk">? Not stated</span></td>
+            <td data-app="Crest"><span class="mark yes">Yes</span></td>
+            <td data-app="Droppy"><span class="mark yes">Yes</span></td>
+          </tr>
+          <tr>
+            <th scope="row">Clipboard history</th>
+            <td data-app="Xotch" class="us"><span class="mark yes">Yes</span></td>
+            <td data-app="Notchy"><span class="mark yes">Yes</span></td>
+            <td data-app="NotchNook"><span class="mark yes">Yes</span></td>
+            <td data-app="Alcove"><span class="mark unk">? Not stated</span></td>
+            <td data-app="Boring Notch"><span class="mark no">No</span></td>
+            <td data-app="Atoll"><span class="mark yes">Yes</span></td>
+            <td data-app="Crest"><span class="mark yes">Yes</span></td>
+            <td data-app="Droppy"><span class="mark yes">Yes</span></td>
+          </tr>
+          <tr>
+            <th scope="row">Screenshots and recording</th>
+            <td data-app="Xotch" class="us"><span class="mark yes">Yes</span></td>
+            <td data-app="Notchy"><span class="mark yes">Yes</span></td>
+            <td data-app="NotchNook"><span class="mark unk">? Not stated</span></td>
+            <td data-app="Alcove"><span class="mark unk">? Not stated</span></td>
+            <td data-app="Boring Notch"><span class="mark no">No</span></td>
+            <td data-app="Atoll"><span class="mark no">No</span></td>
+            <td data-app="Crest"><span class="mark yes">Yes</span><span class="note-cell">Take app</span></td>
+            <td data-app="Droppy"><span class="mark yes">Yes</span></td>
+          </tr>
+          <tr class="same">
+            <th scope="row" data-all="All eight: Yes">Volume and brightness HUDs</th>
+            <td data-app="Xotch" class="us"><span class="mark yes">Yes</span></td>
+            <td data-app="Notchy"><span class="mark yes">Yes</span></td>
+            <td data-app="NotchNook"><span class="mark yes">Yes</span></td>
+            <td data-app="Alcove"><span class="mark yes">Yes</span></td>
+            <td data-app="Boring Notch"><span class="mark yes">Yes</span></td>
+            <td data-app="Atoll"><span class="mark yes">Yes</span></td>
+            <td data-app="Crest"><span class="mark yes">Yes</span></td>
+            <td data-app="Droppy"><span class="mark yes">Yes</span></td>
+          </tr>
+          <tr>
+            <th scope="row">Camera mirror</th>
+            <td data-app="Xotch" class="us"><span class="mark yes">Yes</span><span class="note-cell">On Home, after a click</span></td>
+            <td data-app="Notchy"><span class="mark unk">? Not stated</span></td>
+            <td data-app="NotchNook"><span class="mark yes">Yes</span></td>
+            <td data-app="Alcove"><span class="mark unk">? Not stated</span></td>
+            <td data-app="Boring Notch"><span class="mark no">No</span><span class="note-cell">On the roadmap</span></td>
+            <td data-app="Atoll"><span class="mark unk">? Not stated</span></td>
+            <td data-app="Crest"><span class="mark unk">? Not stated</span></td>
+            <td data-app="Droppy"><span class="mark unk">? Not stated</span></td>
+          </tr>
+          <tr>
+            <th scope="row">A companion character</th>
+            <td data-app="Xotch" class="us"><span class="mark yes">Yes</span><span class="note-cell">Page mascot</span></td>
+            <td data-app="Notchy"><span class="mark no">No</span></td>
+            <td data-app="NotchNook"><span class="mark no">No</span></td>
+            <td data-app="Alcove"><span class="mark no">No</span></td>
+            <td data-app="Boring Notch"><span class="mark no">No</span></td>
+            <td data-app="Atoll"><span class="mark no">No</span></td>
+            <td data-app="Crest"><span class="mark no">No</span></td>
+            <td data-app="Droppy"><span class="mark no">No</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    </section>
+
+  <section class="block" aria-labelledby="apps-title" data-ear="compare">
+    <div class="head"><h2 id="apps-title">App by app</h2><p class="lead">Which one fits depends on what you want the notch to be.</p></div>
+
+    <ol class="verdicts">
+      <li class="verdict us">
+        <header><h3>Xotch</h3><span class="price">Free during beta</span></header>
+        <p class="best"><b>Best for</b> people who want an assistant in the notch that does things, and dictation that stays on the Mac.</p>
+        <div class="pc">
+          <div class="pro"><h4>Pros</h4><ul>
+            <li>The only one with an AI chat, cloud or local</li>
+            <li>AI actions, each approved first</li>
+            <li>Push-to-talk dictation into any app, on the Mac</li>
+            <li>Live Claude Code status and usage</li>
+            <li>Light: about 0.3% CPU closed, 29 MB</li>
+          </ul></div>
+          <div class="con"><h4>Cons</h4><ul>
+            <li>Private beta, not yet notarised</li>
+            <li>Permissions reset with each beta build</li>
+            <li>Dictation needs Apple silicon and macOS 26</li>
+            <li>No lyrics, launcher or agent approvals</li>
+            <li>No macOS 13</li>
+          </ul></div>
+        </div>
+      </li>
+
+      <li class="verdict">
+        <header><h3>Notchy</h3><span class="price">Free, donations</span></header>
+        <p class="best"><b>Best for</b> the most features for nothing.</p>
+        <div class="pc">
+          <div class="pro"><h4>Pros</h4><ul>
+            <li>Free, with 70-plus features</li>
+            <li>Synced lyrics, Face Unlock, OCR, launcher</li>
+            <li>Claude Code activity and approvals</li>
+            <li>Runs on macOS 13, and as a pill without a notch</li>
+          </ul></div>
+          <div class="con"><h4>Cons</h4><ul>
+            <li>No AI chat or voice typing</li>
+            <li>Closed source</li>
+            <li>So much in one app can feel busy</li>
+          </ul></div>
+        </div>
+      </li>
+
+      <li class="verdict">
+        <header><h3>NotchNook</h3><span class="price">$25 once, or subscription</span></header>
+        <p class="best"><b>Best for</b> a polished, established widget dock.</p>
+        <div class="pc">
+          <div class="pro"><h4>Pros</h4><ul>
+            <li>Long-running and widely reviewed</li>
+            <li>Media, calendar, file tray, AirDrop, mirror</li>
+            <li>Lots of visual customisation, and a camera mirror</li>
+          </ul></div>
+          <div class="con"><h4>Cons</h4><ul>
+            <li>The priciest one-time licence here</li>
+            <li>No AI or voice features</li>
+            <li>Recent reviews report slow support</li>
+            <li>Needs macOS 14.6</li>
+          </ul></div>
+        </div>
+      </li>
+
+      <li class="verdict">
+        <header><h3>Alcove</h3><span class="price">$14.99</span></header>
+        <p class="best"><b>Best for</b> the most iPhone-like Dynamic Island.</p>
+        <div class="pc">
+          <div class="pro"><h4>Pros</h4><ul>
+            <li>Known for fluid, polished animation</li>
+            <li>Live Activities, notifications, HUDs</li>
+            <li>Lock Screen widgets</li>
+          </ul></div>
+          <div class="con"><h4>Cons</h4><ul>
+            <li>Needs macOS 15</li>
+            <li>Narrower: little for to-dos or files</li>
+            <li>No AI or voice features</li>
+          </ul></div>
+        </div>
+      </li>
+
+      <li class="verdict">
+        <header><h3>The Boring Notch</h3><span class="price">Free, GPL-3.0</span></header>
+        <p class="best"><b>Best for</b> a free, open-source music and shelf notch.</p>
+        <div class="pc">
+          <div class="pro"><h4>Pros</h4><ul>
+            <li>Free and open source, about 11k stars</li>
+            <li>Music with a visualiser, shelf with AirDrop</li>
+            <li>Full HUD replacement</li>
+          </ul></div>
+          <div class="con"><h4>Cons</h4><ul>
+            <li>Not signed: a security bypass to open</li>
+            <li>No AI; to-dos only on the roadmap</li>
+            <li>No clipboard or capture</li>
+          </ul></div>
+        </div>
+      </li>
+
+      <li class="verdict">
+        <header><h3>Atoll</h3><span class="price">Free, GPL-3.0</span></header>
+        <p class="best"><b>Best for</b> a free notch with system stats.</p>
+        <div class="pc">
+          <div class="pro"><h4>Pros</h4><ul>
+            <li>Free and open source</li>
+            <li>Media, timers, clipboard, colour picker</li>
+            <li>CPU, GPU, memory and network at a glance</li>
+          </ul></div>
+          <div class="con"><h4>Cons</h4><ul>
+            <li>Needs a MacBook with a notch</li>
+            <li>No AI or voice features</li>
+            <li>No to-dos</li>
+          </ul></div>
+        </div>
+      </li>
+
+      <li class="verdict">
+        <header><h3>Crest</h3><span class="price">$24.99 Pro, or $2.99/mo</span></header>
+        <p class="best"><b>Best for</b> developers who want agent approvals and GitHub in the notch.</p>
+        <div class="pc">
+          <div class="pro"><h4>Pros</h4><ul>
+            <li>Approves Claude Code, Codex and Copilot CLI requests</li>
+            <li>GitHub pull requests and CI</li>
+            <li>Lyrics, calendar, to-dos, shelf, clipboard</li>
+            <li>Signed, notarised, two Macs per licence</li>
+          </ul></div>
+          <div class="con"><h4>Cons</h4><ul>
+            <li>Screenshots and meeting notes are separate apps</li>
+            <li>No AI chat or dictation into any app</li>
+            <li>Subscription or bundle pricing</li>
+          </ul></div>
+        </div>
+      </li>
+
+      <li class="verdict">
+        <header><h3>Droppy</h3><span class="price">$9.99 once</span></header>
+        <p class="best"><b>Best for</b> a cheap, extensible shelf and clipboard.</p>
+        <div class="pc">
+          <div class="pro"><h4>Pros</h4><ul>
+            <li>Low one-time price, 3-day trial</li>
+            <li>Shelf, clipboard, window snapping, launcher</li>
+            <li>35 add-ons: lyrics, agents, on-device transcription</li>
+          </ul></div>
+          <div class="con"><h4>Cons</h4><ul>
+            <li>Key features are add-ons to set up</li>
+            <li>Transcribes recordings rather than typing as you talk</li>
+            <li>No AI chat, to-dos or calendar</li>
+          </ul></div>
+        </div>
+      </li>
+    </ol>
+  </section>
+
+  <section class="block" aria-labelledby="sources-title" data-ear="compare">
+    <h2 id="sources-title">Sources</h2>
+
+    <div class="sources">
+      <p><b>Sources</b>, read on 6 October 2026. Third-party "best notch apps" lists are often published by one of the apps they rank, so we used each app's own page wherever we could.</p>
+      <ul>
+        <li><a href="https://notchy.dev/">notchy.dev</a></li>
+        <li><a href="https://notchnook.macupdate.com">NotchNook on MacUpdate</a></li>
+        <li><a href="https://tryalcove.com">tryalcove.com</a></li>
+        <li><a href="https://github.com/TheBoredTeam/boring.notch">TheBoredTeam/boring.notch on GitHub</a></li>
+        <li><a href="https://github.com/Ebullioscopic/Atoll">Ebullioscopic/Atoll on GitHub</a></li>
+        <li><a href="https://crestnotch.app">crestnotch.app</a></li>
+        <li><a href="https://getdroppy.app/">getdroppy.app</a> and <a href="https://getdroppy.app/blog/voice-transcription-mac-private">its voice transcription post</a></li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="page-cta" data-ear="beta">
+    <h2>Want the one with the AI in it?</h2>
+    <p class="lead">Xotch is in private beta while it's signed and notarised.</p>
+    <a class="button primary" href="../#beta">Ask for an invite</a>
+  </section>
+
+</main>
+
+<footer>
+  <p class="sign">Xotch, a Mac notch app. Built solo.</p>
+  <p>Questions: <a href="mailto:hello@xotch.app">hello@xotch.app</a></p>
+  <p>Speech recognition by <a href="https://huggingface.co/Cactus-Compute/whistle">Whistle</a> from Cactus Compute (Apache 2.0). Characters from <a href="https://github.com/nilbuild/page-mascot">page-mascot</a> by Kamran Ahmed (MIT).</p>
+  <p>Notchy, NotchNook, Alcove, The Boring Notch, Atoll, Crest and Droppy are their owners' products, named here only for comparison.</p>
+</footer>
+</div>
+</body>
+</html>
